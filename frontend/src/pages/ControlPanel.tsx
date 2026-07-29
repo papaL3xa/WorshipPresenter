@@ -156,7 +156,7 @@ export default function ControlPanel() {
   }, [activeItem, activeSegment, mode, playlist]);
 
   const openDisplay = () => {
-    window.open('/display', '_blank', 'width=1280,height=720');
+    window.open('#/display', '_blank', 'width=1280,height=720');
   };
 
   const handleBackgroundUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -259,7 +259,7 @@ export default function Library() {
           <h1 className="text-xl font-bold text-indigo-900">Library (Database)</h1>
         </div>
         <div className="flex items-center">
-          <button onClick={() => window.open('/display', '_blank', 'width=1280,height=720')} className="glass-button text-indigo-900 flex items-center gap-2">
+          <button onClick={() => window.open('#/display', '_blank', 'width=1280,height=720')} className="glass-button text-indigo-900 flex items-center gap-2">
             <Monitor size={16}/> Buka Display
           </button>
         </div>
