@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Loader2, Music, BookOpen, Edit, Save, Trash2, X, ArrowLeft, ArrowRight, Monitor } from 'lucide-react';
+import { Search, Plus, Loader2, Music, BookOpen, Edit, Save, Trash2, X, ArrowLeft, ArrowRight, Monitor, Star } from 'lucide-react';
 import { callApi } from '../api';
 import { splitLongSegments } from '../utils/textSplitter';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useFavorites } from '../hooks/useFavorites';
 
 const bibleBooks = [
   "Kejadian", "Keluaran", "Imamat", "Bilangan", "Ulangan",
@@ -21,7 +22,7 @@ const bibleBooks = [
   "Yudas", "Wahyu"
 ];
 
-interface SearchResult {
+export interface SearchResult {
   id: string;
   type: string;
   title: string;
@@ -46,7 +47,10 @@ export default function Library() {
   const [isEditingItem, setIsEditingItem] = useState(false);
   const [isSavingItem, setIsSavingItem] = useState(false);
   const [dragSegmentIdx, setDragSegmentIdx] = useState<number | null>(null);
+  const [showFavorites, setShowFavorites] = useState(false);
   const lastSearchedRef = useRef({ query: '', type: '' });
+  
+  const { favorites, toggleFavorite, isFavorite } = useFavorites();
 
   // Gunakan BroadcastChannel untuk sinkronisasi ke DisplayWindow
   const channel = new BroadcastChannel('worship_live_sync');
@@ -141,7 +145,10 @@ export default function Library() {
       const endpoint = type === 'song' ? 'searchSongs' : 'searchBible';
       const res = await callApi(endpoint, { q: query });
       if (res.success) {
-        const processedData = splitLongSegments(res.data);
+        let processedData = splitLongSegments(res.data);
+        if (showFavorites) {
+          processedData = processedData.filter(item => isFavorite(item.id));
+        }
         setResults(processedData);
         if (autoSelectFirst && processedData && processedData.length > 0) {
           setSelectedResultIds([processedData[0].id]);
@@ -158,13 +165,21 @@ export default function Library() {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchQuery.trim().length > 0) {
-        performSearch(searchQuery, searchType);
+        if (!showFavorites) {
+          performSearch(searchQuery, searchType);
+        } else {
+          setResults(favorites.filter(f => f.type === searchType && (searchQuery ? f.title.toLowerCase().includes(searchQuery.toLowerCase()) : true)));
+        }
       } else {
-        setResults([]);
+        if (showFavorites) {
+          setResults(favorites.filter(f => f.type === searchType));
+        } else {
+          setResults([]);
+        }
       }
     }, 500); // 500ms debounce
     return () => clearTimeout(timer);
-  }, [searchQuery, searchType]);
+  }, [searchQuery, searchType, showFavorites, favorites]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -274,7 +289,19 @@ export default function Library() {
             <button onClick={() => {setSearchType('bible'); setResults([]); setSelectedItem(null); setSelectedResultIds([]);}} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'bible' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white/30 text-indigo-900'}`}><BookOpen size={16}/> Alkitab</button>
           </div>
 
-          <form onSubmit={handleSearch} className="flex gap-2 mb-4">
+          <div className="flex gap-2 mb-4">
+            <button 
+              onClick={() => {
+                const newShowFavs = !showFavorites;
+                setShowFavorites(newShowFavs);
+                // The useEffect will automatically handle fetching or filtering favorites
+              }}
+              className={`p-3 rounded-xl flex items-center justify-center transition shadow-sm ${showFavorites ? 'bg-yellow-400 text-yellow-900 shadow-yellow-400/50' : 'bg-white/30 text-indigo-900 hover:bg-white/50'}`}
+              title="Tampilkan hanya favorit"
+            >
+              <Star size={20} className={showFavorites ? 'fill-yellow-900' : ''} />
+            </button>
+            <form onSubmit={handleSearch} className="flex gap-2 flex-1 relative">
             <div className="relative flex-1">
               <input 
                 type="text" 
@@ -301,48 +328,63 @@ export default function Library() {
               {isSearching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16}/>}
             </button>
           </form>
+          </div>
 
           <div className="flex-1 overflow-y-auto space-y-2 pr-2">
             {results.map((res) => (
-              <button 
+              <div 
                 key={res.id} 
-                onClick={(e) => {
-                  let newSelection = [...selectedResultIds];
-                  if (e.ctrlKey || e.metaKey) {
-                    if (newSelection.includes(res.id)) {
-                      newSelection = newSelection.filter(id => id !== res.id);
-                    } else {
-                      newSelection.push(res.id);
-                    }
-                  } else if (e.shiftKey && newSelection.length > 0) {
-                    const lastId = newSelection[newSelection.length - 1];
-                    const lastIndex = results.findIndex(r => r.id === lastId);
-                    const currentIndex = results.findIndex(r => r.id === res.id);
-                    if (lastIndex !== -1 && currentIndex !== -1) {
-                      const start = Math.min(lastIndex, currentIndex);
-                      const end = Math.max(lastIndex, currentIndex);
-                      const rangeIds = results.slice(start, end + 1).map(r => r.id);
-                      newSelection = [...new Set([...newSelection, ...rangeIds])];
-                    } else {
-                      newSelection = [res.id];
-                    }
-                  } else {
-                    newSelection = [res.id];
-                  }
-                  
-                  setSelectedResultIds(newSelection);
-                  setActiveSegment(null);
-                  setIsEditingItem(false);
-                }}
-                className={`w-full text-left p-3 rounded-xl border transition ${
+                className={`w-full flex items-stretch rounded-xl border transition overflow-hidden ${
                   selectedResultIds.includes(res.id) 
                     ? 'bg-white/60 border-indigo-500/50 shadow-sm ring-1 ring-indigo-500' 
                     : 'bg-white/40 border-white/20 hover:bg-white/60'
                 }`}
               >
-                <div className="font-semibold text-indigo-900">{res.title}</div>
-                <div className="text-xs text-indigo-800/60 line-clamp-1">{res.segments[0]}</div>
-              </button>
+                <button
+                  onClick={(e) => {
+                    let newSelection = [...selectedResultIds];
+                    if (e.ctrlKey || e.metaKey) {
+                      if (newSelection.includes(res.id)) {
+                        newSelection = newSelection.filter(id => id !== res.id);
+                      } else {
+                        newSelection.push(res.id);
+                      }
+                    } else if (e.shiftKey && newSelection.length > 0) {
+                      const lastId = newSelection[newSelection.length - 1];
+                      const lastIndex = results.findIndex(r => r.id === lastId);
+                      const currentIndex = results.findIndex(r => r.id === res.id);
+                      if (lastIndex !== -1 && currentIndex !== -1) {
+                        const start = Math.min(lastIndex, currentIndex);
+                        const end = Math.max(lastIndex, currentIndex);
+                        const rangeIds = results.slice(start, end + 1).map(r => r.id);
+                        newSelection = [...new Set([...newSelection, ...rangeIds])];
+                      } else {
+                        newSelection = [res.id];
+                      }
+                    } else {
+                      newSelection = [res.id];
+                    }
+                    
+                    setSelectedResultIds(newSelection);
+                    setActiveSegment(null);
+                    setIsEditingItem(false);
+                  }}
+                  className="flex-1 text-left p-3"
+                >
+                  <div className="font-semibold text-indigo-900">{res.title}</div>
+                  <div className="text-xs text-indigo-800/60 line-clamp-1">{res.segments[0]}</div>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite(res);
+                  }}
+                  className="px-4 border-l border-white/20 flex items-center justify-center transition hover:bg-white/50"
+                  title={isFavorite(res.id) ? "Hapus dari Favorit" : "Tambahkan ke Favorit"}
+                >
+                  <Star size={18} className={isFavorite(res.id) ? "text-yellow-500 fill-yellow-500" : "text-indigo-300"} />
+                </button>
+              </div>
             ))}
             {results.length === 0 && !isSearching && searchQuery !== '' && (
               <div className="text-center text-sm text-indigo-900/60 p-4">Tidak ada hasil ditemukan.</div>
