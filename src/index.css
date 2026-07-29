@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    /* Gradasi dinamis agar efek glassmorphism menonjol */
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-attachment: fixed;
+    color: #1a202c;
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-white/60 backdrop-blur-md border border-white/20 shadow-xl rounded-2xl;
+  }
+  
+  .glass-panel-dark {
+    @apply bg-black/60 backdrop-blur-md border border-white/10 shadow-xl rounded-2xl text-white;
+  }
+
+  .glass-button {
+    @apply bg-white/40 hover:bg-white/60 backdrop-blur-sm border border-white/30 
+           transition-all duration-200 shadow-md rounded-lg px-4 py-2 text-sm font-medium
+           focus:outline-none focus:ring-2 focus:ring-white/50 active:scale-95;
+  }
+
+  .glass-input {
+    @apply bg-white/50 border border-white/30 rounded-lg px-4 py-2 w-full
+           focus:bg-white/70 focus:outline-none focus:ring-2 focus:ring-indigo-400
+           placeholder-gray-500 transition-all duration-200;
+  }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(100vw); }
+  100% { transform: translateX(-100%); }
+}
+
+@keyframes marquee-seamless {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee-seamless {
+  display: flex;
+  width: max-content;
+  animation: marquee-seamless linear infinite;
+}
+
+.animate-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee linear infinite;
+}
