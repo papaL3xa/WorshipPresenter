@@ -1,9 +1,7 @@
 #!/bin/bash
-# Script Otomatis Deploy WorshipPresenter
+# Script Otomatis Deploy ke GitHub Pages (WorshipPresenter)
 # Script ini akan melakukan commit semua perubahan di lokal, 
-# mem-push kode utama ke branch "main",
-# lalu secara khusus mem-push folder frontend/ ke branch "frontend-deploy" 
-# agar Vercel/Netlify otomatis melakukan build ulang.
+# mem-push ke branch "main", dan mendeploy frontend ke branch "gh-pages"
 
 cd /home/sagala/pisgahbisdac/PB
 
@@ -16,19 +14,19 @@ git commit -m "Auto deploy update: $(date +'%Y-%m-%d %H:%M:%S')" || echo "Tidak 
 
 echo ""
 echo "==============================================="
-echo "2. Push seluruh kode ke branch 'main'..."
+echo "2. Push seluruh kode ke GitHub..."
 echo "==============================================="
 git push origin main
 
 echo ""
 echo "==============================================="
-echo "3. Mengekstrak folder frontend dan mem-push ke 'frontend-deploy'..."
+echo "3. Melakukan build dan deploy ke GitHub Pages..."
 echo "==============================================="
-# Menggunakan fitur subtree agar folder 'frontend' dikonversi menjadi root di branch frontend-deploy
-git subtree push --prefix frontend origin frontend-deploy
+cd frontend
+npm run deploy
 
 echo ""
 echo "==============================================="
 echo "DEPLOY SELESAI!"
-echo "Silakan periksa dashboard Vercel/Netlify Anda, build seharusnya sudah berjalan."
+echo "Perubahan akan muncul di https://papal3xa.github.io/WorshipPresenter/ dalam 1-2 menit."
 echo "==============================================="
