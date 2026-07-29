@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ControlPanel from './pages/ControlPanel';
@@ -25,7 +25,7 @@ const RequireAdmin = ({ children }: { children: JSX.Element }) => {
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         {/* Rute Terbuka (Public) */}
         <Route path="/" element={<Login />} />
@@ -39,7 +39,7 @@ function App() {
         <Route path="/playlist/new" element={<RequireAuth><PlaylistEditor /></RequireAuth>} />
         <Route path="/playlist/edit" element={<RequireAuth><PlaylistEditor /></RequireAuth>} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
