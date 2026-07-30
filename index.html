@@ -2,13 +2,30 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/WorshipPresenter/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
-    <script type="module" crossorigin src="/WorshipPresenter/assets/index-DpXYH-z0.js"></script>
-    <link rel="stylesheet" crossorigin href="/WorshipPresenter/assets/index-CVXsD8AQ.css">
+    <link rel="icon" type="image/svg+xml" href="/WorshipPresenter/favicon.svg" />
+    <link rel="apple-touch-icon" href="/WorshipPresenter/favicon.svg" />
+    <link rel="manifest" href="/WorshipPresenter/manifest.json" />
+    <meta name="theme-color" content="#4f46e5" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>WorshipPresenter</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script type="module" crossorigin src="/WorshipPresenter/assets/index-B03spKyx.js"></script>
+    <link rel="stylesheet" crossorigin href="/WorshipPresenter/assets/index-DO8zpFWX.css">
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(err => {
+            console.log('SW registration failed:', err);
+          });
+        });
+      }
+    </script>
   </body>
 </html>
