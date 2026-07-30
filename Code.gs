@@ -31,6 +31,7 @@ function handleRequest(e, method) {
     getPlaylistItems: getPlaylistItems,
     deletePlaylist: deletePlaylist,
     uploadImages: uploadImagesHandler,
+    uploadVideo: uploadVideoHandler,
     saveSongItem: saveSongItem
   };
 
@@ -119,7 +120,7 @@ function savePlaylist(e) {
     for (let i = 1; i < pData.length; i++) {
       if (String(pData[i][0]).trim() === String(playlistId).trim()) {
         sPlaylists.getRange(i + 1, 2).setValue(data.name);
-        if (data.date) sPlaylists.getRange(i + 1, 3).setValue(data.date);
+        if (data.date) sPlaylists.getRange(i + 1, 3).setValue("'" + data.date);
         found = true;
         break;
       }
@@ -128,7 +129,7 @@ function savePlaylist(e) {
     // Jika karena alasan tertentu ID tidak ditemukan di database, paksa buat baru
     if (!found) {
       playlistId = "pl_" + new Date().getTime();
-      sPlaylists.appendRow([playlistId, data.name, data.date, "scheduled", new Date().getTime()]);
+      sPlaylists.appendRow([playlistId, data.name, "'" + data.date, "scheduled", new Date().getTime()]);
     } else {
       // Hapus items lama HANYA jika playlist ada
       const iData = sPlaylistItems.getDataRange().getValues();
@@ -141,7 +142,7 @@ function savePlaylist(e) {
   } else {
     // Create new
     playlistId = "pl_" + new Date().getTime();
-    sPlaylists.appendRow([playlistId, data.name, data.date, "scheduled", new Date().getTime()]);
+    sPlaylists.appendRow([playlistId, data.name, "'" + data.date, "scheduled", new Date().getTime()]);
   }
   
   // Insert ke PlaylistItems
@@ -416,7 +417,19 @@ function getPlaylistItems(e) {
   for (let r of pData) {
     if (r[0] === playlistId) {
       playlistName = r[1];
-      playlistDate = r[2];
+      
+      // Pastikan format date adalah string YYYY-MM-DD
+      let d = r[2];
+      if (d instanceof Date) {
+        // Karena Google Sheets mungkin sudah mengubahnya jadi Date object di zona waktu lokal
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        playlistDate = `${yyyy}-${mm}-${dd}`;
+      } else {
+        playlistDate = String(d).replace(/^'/, ''); // hilangkan tanda kutip jika ada
+      }
+      
       break;
     }
   }
@@ -443,6 +456,13 @@ function getPlaylistItems(e) {
         id: iId,
         type: 'announcement',
         title: refId || 'Pengumuman / Teks Bebas',
+        segments: [customText || '']
+      });
+    } else if (type === 'video') {
+      resultItems.push({
+        id: iId,
+        type: 'video',
+        title: refId || 'Video / Multimedia',
         segments: [customText || '']
       });
     } else if (type === 'song') {
@@ -682,6 +702,34 @@ function uploadImagesHandler(e) {
     urls.push("https://drive.google.com/uc?export=download&id=" + file.getId());
   }
   return { urls: urls };
+}
+
+function uploadVideoHandler(e) {
+  const payloadStr = e.parameter.payload || (e.postData ? e.postData.contents : "{}");
+  const data = JSON.parse(payloadStr);
+  
+  if (!data.video || !data.video.base64) {
+    throw new Error("Data video tidak valid.");
+  }
+  
+  let folder;
+  const folders = DriveApp.getFoldersByName("WorshipPresenter_Videos");
+  if (folders.hasNext()) {
+    folder = folders.next();
+  } else {
+    folder = DriveApp.createFolder("WorshipPresenter_Videos");
+    folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  }
+  
+  const blob = Utilities.newBlob(Utilities.base64Decode(data.video.base64), data.video.mimeType, data.video.name);
+  const file = folder.createFile(blob);
+  
+  // Untuk video, kita return link 'preview' agar bisa di-embed via iframe jika formatnya tidak didukung direct play
+  // atau menggunakan 'download' untuk native <video> tag jika MP4.
+  // Sebaiknya kita gunakan 'view' URL untuk drive dan biarkan iframe menanganinya, atau 'download'.
+  // 'download' (uc?export=download) akan sangat lambat untuk video besar di tag <video>. Tapi kita coba 'download'.
+  const url = "https://drive.google.com/uc?export=download&id=" + file.getId();
+  return { url: url };
 }
 
 function validateAuth(e) {

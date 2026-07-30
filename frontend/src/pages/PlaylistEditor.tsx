@@ -42,6 +42,10 @@ export default function PlaylistEditor() {
   const [customTextValue, setCustomTextValue] = useState('');
   const [editingCustomTextIndex, setEditingCustomTextIndex] = useState<number | null>(null);
 
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [videoUrlInput, setVideoUrlInput] = useState('');
+  const [isVideoUploading, setIsVideoUploading] = useState(false);
+
   const [isSegmentModalOpen, setIsSegmentModalOpen] = useState(false);
   const [segmentEditIndex, setSegmentEditIndex] = useState<number | null>(null);
   const [tempVisibleSegments, setTempVisibleSegments] = useState<number[]>([]);
@@ -176,6 +180,69 @@ export default function PlaylistEditor() {
     setEditingCustomTextIndex(null);
   };
 
+  const openVideoModal = (index: number | null = null) => {
+    if (index !== null) setReplaceIndex(index);
+    setVideoUrlInput('');
+    setIsVideoModalOpen(true);
+  };
+
+  const handleVideoSubmit = () => {
+    if (!videoUrlInput.trim()) return;
+    const newItem = {
+      id: 'video-' + Date.now(),
+      type: 'video',
+      title: 'Video / Multimedia',
+      segments: [videoUrlInput.trim()],
+      localId: Math.random().toString(36).substr(2, 9)
+    } as any;
+
+    if (replaceIndex !== null) {
+      const newR = [...rundown];
+      newR[replaceIndex] = newItem;
+      setRundown(newR);
+      setReplaceIndex(null);
+    } else {
+      setRundown([...rundown, newItem]);
+    }
+    setIsVideoModalOpen(false);
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    if (file.size > 30 * 1024 * 1024) {
+      alert("Ukuran video maksimal 30MB.");
+      return;
+    }
+    
+    setIsVideoUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64Data = (event.target?.result as string).split(',')[1];
+        try {
+          const res = await callApi('uploadVideo', {}, { 
+            method: 'POST', 
+            payload: { video: { name: file.name, mimeType: file.type, base64: base64Data } } 
+          });
+          if (res.success && res.data.url) {
+            setVideoUrlInput(res.data.url);
+          } else {
+            alert('Gagal mengupload video');
+          }
+        } catch (err) {
+          alert('Error saat upload video');
+        } finally {
+          setIsVideoUploading(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setIsVideoUploading(false);
+      alert("Gagal membaca file");
+    }
+  };
+
   const removeRundownItem = (index: number) => {
     const newR = [...rundown];
     newR.splice(index, 1);
@@ -224,12 +291,12 @@ export default function PlaylistEditor() {
       date: playlistDate,
       items: rundown.map((item) => {
         let customText = '';
-        if (item.type === 'announcement') customText = item.segments[0];
+        if (item.type === 'announcement' || item.type === 'video') customText = item.segments[0];
         if (item.type === 'slideshow') customText = JSON.stringify(item.segments);
         if (item.type === 'song' || item.type === 'bible') customText = item.visibleSegments ? JSON.stringify(item.visibleSegments) : '';
         return {
           type: item.type,
-          refId: item.type === 'announcement' ? item.title : (item.type === 'slideshow' ? null : (item.refId || item.id)),
+          refId: (item.type === 'announcement' || item.type === 'video') ? item.title : (item.type === 'slideshow' ? null : (item.refId || item.id)),
           customText: customText
         };
       })
@@ -472,9 +539,14 @@ export default function PlaylistEditor() {
             )}
           </div>
 
-          <button onClick={addCustomText} className="glass-button w-full border-dashed border-2 flex justify-center items-center gap-2 text-indigo-900">
-            + Tambah Teks Bebas / Pengumuman
-          </button>
+          <div className="flex gap-2 w-full">
+            <button onClick={addCustomText} className="glass-button flex-1 border-dashed border-2 flex justify-center items-center gap-2 text-indigo-900">
+              + Pengumuman
+            </button>
+            <button onClick={() => openVideoModal(null)} className="glass-button flex-1 border-dashed border-2 flex justify-center items-center gap-2 text-indigo-900">
+              + Video
+            </button>
+          </div>
         </section>
       </main>
 
@@ -499,15 +571,17 @@ export default function PlaylistEditor() {
       )}
 
       {isTextModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm transition-opacity">
-          <div className="bg-white/90 backdrop-blur-xl p-6 rounded-2xl shadow-2xl max-w-lg w-full border border-white/40">
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
+          <div className="bg-white/95 backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-2xl max-w-xl w-full border border-white/50 relative">
+            <button onClick={() => setIsTextModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full p-2 transition-all">
+              <X size={20} />
+            </button>
             <h2 className="text-xl font-bold text-indigo-900 mb-4">Teks Bebas / Pengumuman</h2>
             <input 
-              type="text" 
+              placeholder="Judul"
               value={customTextTitle}
               onChange={(e) => setCustomTextTitle(e.target.value)}
-              className="w-full bg-white border border-indigo-200 rounded-xl px-4 py-3 text-indigo-900 mb-4 shadow-inner"
-              placeholder="Judul"
+              className="glass-input w-full mb-4 font-semibold text-lg" 
             />
             <textarea 
               value={customTextValue}
@@ -523,6 +597,54 @@ export default function PlaylistEditor() {
           </div>
         </div>
       )}
+
+      {isVideoModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
+          <div className="bg-white/95 backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-2xl max-w-xl w-full border border-white/50 relative">
+            <button onClick={() => setIsVideoModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full p-2 transition-all">
+              <X size={20} />
+            </button>
+            <h2 className="text-xl font-bold text-indigo-900 mb-4">Tambahkan Video</h2>
+            <div className="mb-4 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Paste Link (YouTube / MP4 / Google Drive)</label>
+                <input 
+                  className="glass-input w-full font-semibold text-sm" 
+                  value={videoUrlInput} 
+                  onChange={e => setVideoUrlInput(e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                />
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="h-px bg-slate-200 flex-1"></div>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">ATAU</span>
+                <div className="h-px bg-slate-200 flex-1"></div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Upload File Video (Maks 30MB)</label>
+                <input 
+                  type="file" 
+                  accept="video/*" 
+                  id="pe-video-file-upload"
+                  className="hidden"
+                  onChange={handleVideoUpload}
+                />
+                <label 
+                  htmlFor="pe-video-file-upload"
+                  className={`glass-button text-sm py-2 cursor-pointer flex justify-center items-center gap-2 w-full ${isVideoUploading ? 'bg-indigo-200 text-indigo-500' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                >
+                  {isVideoUploading ? <Loader2 size={16} className="animate-spin" /> : 'Pilih File Video'}
+                </label>
+              </div>
+            </div>
+            
+            <button onClick={handleVideoSubmit} disabled={isVideoUploading || !videoUrlInput.trim()} className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/40 hover:-translate-y-0.5 transition-all mt-4">
+              Tambahkan Video
+            </button>
+          </div>
+        </div>
+      )}
+
 
       {isDeleteModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm transition-opacity">

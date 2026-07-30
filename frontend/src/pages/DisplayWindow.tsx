@@ -121,6 +121,7 @@ export default function DisplayWindow() {
   let itemType = '';
   let isSlideshow = false;
   let segmentLabel = '';
+  let displayLabel = '';
   let totalSegments = 1;
   
   // 1. Prioritaskan item yang datang dari BroadcastChannel (liveState.item)
@@ -167,7 +168,7 @@ export default function DisplayWindow() {
     if (label.startsWith('Slide ')) {
        label = label.replace('Slide ', 'Bait ');
     }
-    title = `${title} - ${label}`;
+    displayLabel = label;
     
     const allLabels = liveState.item?.segmentLabels || playlistMap[liveState.currentItemId || '']?.segmentLabels || [];
     const isBait = (l: string) => l.toLowerCase().includes('bait') || l.toLowerCase().includes('verse') || l.toLowerCase().includes('slide');
@@ -255,7 +256,7 @@ export default function DisplayWindow() {
       )}
 
       {/* Judul Lagu / Ayat / Pengumuman */}
-      {title && !isSlideshow && (itemType === 'song' || itemType === 'bible' || itemType === 'announcement') && (
+      {title && !isSlideshow && itemType !== 'video' && (itemType === 'song' || itemType === 'bible' || itemType === 'announcement') && (
         <h2 
           key={`title-${title}-${liveState.segmentIndex}`}
           className={`absolute left-0 right-0 w-full px-8 md:px-64 text-center text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-yellow-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] opacity-90 tracking-wider z-20 animate-fade-in ${
@@ -269,9 +270,39 @@ export default function DisplayWindow() {
         </h2>
       )}
 
-      {/* Konten Lirik/Ayat atau Slideshow */}
+      {/* Konten Lirik/Ayat atau Slideshow atau Video */}
       <div className="absolute top-40 bottom-32 left-0 right-0 flex flex-col justify-center items-center px-16 z-10">
-        {isSlideshow ? (
+        {itemType === 'video' ? (
+          (() => {
+            const url = text;
+            if (url.includes('youtube.com') || url.includes('youtu.be')) {
+              let videoId = '';
+              if (url.includes('youtube.com/watch?v=')) {
+                videoId = url.split('v=')[1].split('&')[0];
+              } else if (url.includes('youtu.be/')) {
+                videoId = url.split('youtu.be/')[1].split('?')[0];
+              }
+              return (
+                <iframe 
+                  key={url}
+                  className="w-full h-full object-contain bg-black shadow-2xl rounded-2xl animate-fade-in" 
+                  src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0`} 
+                  allow="autoplay; encrypted-media" 
+                  allowFullScreen
+                ></iframe>
+              );
+            }
+            return (
+              <video 
+                key={url}
+                className="w-full h-full object-contain bg-black shadow-2xl rounded-2xl animate-fade-in" 
+                src={url} 
+                controls 
+                autoPlay 
+              />
+            );
+          })()
+        ) : isSlideshow ? (
           <img 
             key={`img-${text}`}
             src={text.replace('export=view', 'export=download')} 
@@ -279,20 +310,32 @@ export default function DisplayWindow() {
             className="w-full h-full object-contain animate-fade-in"
           />
         ) : (
-          <h1 
-            key={`text-${text}`}
+          <>
+            {displayLabel && (
+              <div 
+                className="text-yellow-300 font-bold text-2xl md:text-3xl mb-4 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] animate-fade-in tracking-wider uppercase"
+                style={{
+                  textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
+                }}
+              >
+                {displayLabel}
+              </div>
+            )}
+            <h1 
+              key={`text-${text}`}
             className={`${fontSizeClass} font-bold text-white text-center leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] animate-fade-in`}
             style={{
               textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
             }}
             dangerouslySetInnerHTML={{ __html: processText(text) }}
-          >
-          </h1>
+            >
+            </h1>
+          </>
         )}
       </div>
 
       {/* Progress Slide di Bawah */}
-      {progressText && !isSlideshow && (
+      {progressText && !isSlideshow && itemType !== 'video' && (
         <div 
           className="absolute left-0 right-0 w-full text-center text-white/60 text-lg font-medium tracking-wider lowercase z-20"
           style={{ 
