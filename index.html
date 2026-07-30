@@ -13,18 +13,21 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/WorshipPresenter/assets/index-C5fZAw50.js"></script>
-    <link rel="stylesheet" crossorigin href="/WorshipPresenter/assets/index-DsZ7DKMM.css">
+    <script type="module" crossorigin src="./assets/index-CRioqSsO.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-C7yZn9Ls.css">
   </head>
   <body>
     <div id="root"></div>
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js').catch(err => {
-            console.log('SW registration failed:', err);
+        // Do not register service worker if running in Electron (file:// protocol)
+        if (!navigator.userAgent.toLowerCase().includes('electron') && window.location.protocol !== 'file:') {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').catch(err => {
+              console.log('SW registration failed:', err);
+            });
           });
-        });
+        }
       }
     </script>
   </body>
