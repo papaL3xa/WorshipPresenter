@@ -294,6 +294,13 @@ export const searchLocalBible = async (query: string, versionId: string): Promis
     );
   }
   
+  // Support exact book reference: "Kejadian"
+  const cleanQ = q.trim();
+  const matchingVerses = verses.filter(v => v.book.toLowerCase() === cleanQ);
+  if (matchingVerses.length > 0) {
+    return matchingVerses.slice(0, 100);
+  }
+  
   // Free text search
   return verses.filter(v => v.text.toLowerCase().includes(q)).slice(0, 100);
 };
