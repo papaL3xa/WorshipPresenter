@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Monitor, Square, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, Upload, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X } from 'lucide-react';
+import { Monitor, Square, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, Upload, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw } from 'lucide-react';
 import { callApi } from '../api';
 import { SyncButton } from '../components/SyncButton';
 import { splitLongSegments } from '../utils/textSplitter';
@@ -22,6 +22,7 @@ export default function ControlPanel() {
   const [isLogoModalOpen, setIsLogoModalOpen] = useState(false);
   const [isRunningTextModalOpen, setIsRunningTextModalOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [replaceIndex, setReplaceIndex] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [logoPos, setLogoPos] = useState(localStorage.getItem('worship_logo_position') || 'bottom-right');
   
@@ -152,10 +153,18 @@ export default function ControlPanel() {
       segments: [''],
     };
     
-    const newPlaylist = [...playlist, newAnnouncement as any];
-    setPlaylist(newPlaylist);
+    if (replaceIndex !== null) {
+      const newPlaylist = [...playlist];
+      newPlaylist[replaceIndex] = newAnnouncement as any;
+      setPlaylist(newPlaylist);
+      setActiveItem(replaceIndex);
+      setReplaceIndex(null);
+    } else {
+      const newPlaylist = [...playlist, newAnnouncement as any];
+      setPlaylist(newPlaylist);
+      setActiveItem(newPlaylist.length - 1);
+    }
     
-    setActiveItem(newPlaylist.length - 1);
     setActiveSegment(0);
     setIsEditingRundown(true);
   };
@@ -198,8 +207,15 @@ export default function ControlPanel() {
 
   const addToRundown = (item: any) => {
     const newItem = { ...item, localId: Math.random().toString(36).substr(2, 9) };
-    const newPlaylist = [...playlist, newItem];
-    setPlaylist(newPlaylist);
+    if (replaceIndex !== null) {
+      const newPlaylist = [...playlist];
+      newPlaylist[replaceIndex] = newItem;
+      setPlaylist(newPlaylist);
+      setReplaceIndex(null);
+    } else {
+      const newPlaylist = [...playlist, newItem];
+      setPlaylist(newPlaylist);
+    }
     setIsAddItemModalOpen(false);
     setIsEditingRundown(true);
   };
@@ -235,8 +251,15 @@ export default function ControlPanel() {
           segments: res.data.urls,
           localId: Math.random().toString(36).substr(2, 9)
         };
-        const newPlaylist = [...playlist, newItem];
-        setPlaylist(newPlaylist);
+        if (replaceIndex !== null) {
+          const newPlaylist = [...playlist];
+          newPlaylist[replaceIndex] = newItem as any;
+          setPlaylist(newPlaylist);
+          setReplaceIndex(null);
+        } else {
+          const newPlaylist = [...playlist, newItem as any];
+          setPlaylist(newPlaylist);
+        }
         setIsAddItemModalOpen(false);
         setIsEditingRundown(true);
       } else {
@@ -568,6 +591,17 @@ export default function ControlPanel() {
                           </button>
                         )}
                         <button 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            if (replaceIndex === idx) setReplaceIndex(null); 
+                            else { setReplaceIndex(idx); setIsAddItemModalOpen(true); } 
+                          }}
+                          className={`p-1.5 rounded-lg transition-colors ${replaceIndex === idx ? 'bg-indigo-600 text-white' : 'text-indigo-600 hover:text-indigo-800 bg-indigo-100'}`}
+                          title="Ganti Item"
+                        >
+                          <RefreshCw size={14} />
+                        </button>
+                        <button 
                           onClick={(e) => removePlaylistItem(idx, e)}
                           className="text-red-500 hover:text-red-700 bg-red-100 p-1.5 rounded-lg transition-colors"
                           title="Hapus"
@@ -583,6 +617,13 @@ export default function ControlPanel() {
             ))}
           </div>
           
+          {replaceIndex !== null && (
+            <div className="mt-2 bg-indigo-100 text-indigo-900 text-xs p-2 rounded-lg border border-indigo-200 flex justify-between items-center shrink-0">
+              <span>Ganti: <strong>{playlist[replaceIndex]?.title}</strong></span>
+              <button onClick={() => setReplaceIndex(null)} className="text-red-500 hover:bg-red-500/10 p-1 rounded"><X size={12}/></button>
+            </div>
+          )}
+
           <div className="mt-3 flex gap-2 shrink-0">
             <button 
               onClick={() => setIsAddItemModalOpen(true)}

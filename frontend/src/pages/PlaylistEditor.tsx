@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Search, Save, Trash2, ArrowUp, ArrowDown, FileText, Music, BookOpen, Loader2, CheckCircle, Edit3, Settings, CheckSquare } from 'lucide-react';
+import { Search, Save, Trash2, ArrowUp, ArrowDown, FileText, Music, BookOpen, Loader2, CheckCircle, Edit3, Settings, CheckSquare, RefreshCw, X } from 'lucide-react';
 import { callApi } from '../api';
 import { SyncButton } from '../components/SyncButton';
 
@@ -25,6 +25,7 @@ export default function PlaylistEditor() {
   const [playlistDate, setPlaylistDate] = useState(new Date().toISOString().split('T')[0]);
   
   const [rundown, setRundown] = useState<SearchResult[]>([]);
+  const [replaceIndex, setReplaceIndex] = useState<number | null>(null);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState<'song'|'bible'>('song');
@@ -118,7 +119,14 @@ export default function PlaylistEditor() {
       originalSegments: item.segments,
       visibleSegments: item.segments.map((_, i) => i) 
     };
-    setRundown([...rundown, newItem as any]);
+    if (replaceIndex !== null) {
+      const newR = [...rundown];
+      newR[replaceIndex] = newItem as any;
+      setRundown(newR);
+      setReplaceIndex(null);
+    } else {
+      setRundown([...rundown, newItem as any]);
+    }
   };
 
   const addCustomText = () => {
@@ -143,6 +151,17 @@ export default function PlaylistEditor() {
         newR[editingCustomTextIndex].segments = [customTextValue];
         newR[editingCustomTextIndex].title = finalTitle;
         setRundown(newR);
+      } else if (replaceIndex !== null) {
+        const newR = [...rundown];
+        newR[replaceIndex] = {
+          id: 'custom-' + Date.now(),
+          type: 'announcement',
+          title: finalTitle,
+          segments: [customTextValue],
+          localId: Math.random().toString(36).substr(2, 9)
+        } as any;
+        setRundown(newR);
+        setReplaceIndex(null);
       } else {
         setRundown([...rundown, {
           id: 'custom-' + Date.now(),
@@ -280,12 +299,22 @@ export default function PlaylistEditor() {
       const res = await callApi('uploadImages', {}, { method: 'POST', payload: { images: imagesData } });
       
       if (res.success && res.data && res.data.urls) {
-        setRundown([...rundown, {
+        const newItem = {
           id: 'slideshow-' + Date.now(),
           type: 'slideshow',
           title: `Slideshow (${res.data.urls.length} Slide)`,
-          segments: res.data.urls
-        }]);
+          segments: res.data.urls,
+          localId: Math.random().toString(36).substr(2, 9)
+        } as any;
+        
+        if (replaceIndex !== null) {
+          const newR = [...rundown];
+          newR[replaceIndex] = newItem;
+          setRundown(newR);
+          setReplaceIndex(null);
+        } else {
+          setRundown([...rundown, newItem]);
+        }
       } else {
         alert("Gagal mengunggah gambar: " + (res.error?.message || 'Unknown error'));
       }
@@ -389,6 +418,7 @@ export default function PlaylistEditor() {
                     {(item.type === 'song' || item.type === 'bible') && (
                       <button onClick={() => openSegmentModal(idx)} className="p-2 hover:bg-white/50 rounded-lg text-indigo-900" title="Atur Slide / Bait"><Settings size={16}/></button>
                     )}
+                    <button onClick={() => setReplaceIndex(replaceIndex === idx ? null : idx)} className={`p-2 rounded-lg ${replaceIndex === idx ? 'bg-indigo-600 text-white' : 'hover:bg-white/50 text-indigo-900'}`} title="Ganti Item ini"><RefreshCw size={16}/></button>
                     <button onClick={() => moveItem(idx, -1)} className="p-2 hover:bg-white/50 rounded-lg text-indigo-900"><ArrowUp size={16}/></button>
                     <button onClick={() => moveItem(idx, 1)} className="p-2 hover:bg-white/50 rounded-lg text-indigo-900"><ArrowDown size={16}/></button>
                     <button onClick={() => removeRundownItem(idx)} className="p-2 hover:bg-red-500/20 rounded-lg text-red-600"><Trash2 size={16}/></button>
@@ -402,6 +432,13 @@ export default function PlaylistEditor() {
         <section className="w-1/3 glass-panel p-4 flex flex-col">
           <h2 className="text-xl font-bold text-indigo-900 mb-4">Tambah Item</h2>
           
+          {replaceIndex !== null && (
+            <div className="bg-indigo-100 text-indigo-900 text-sm p-3 rounded-xl mb-4 border border-indigo-200 shadow-inner flex justify-between items-center">
+              <span>Pilih item di bawah untuk mengganti: <strong>{rundown[replaceIndex]?.title}</strong></span>
+              <button onClick={() => setReplaceIndex(null)} className="text-red-500 hover:bg-red-500/10 p-1 rounded"><X size={16}/></button>
+            </div>
+          )}
+
           <div className="flex gap-2 mb-4">
             <button onClick={() => setSearchType('song')} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'song' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white/30 text-indigo-900'}`}><Music size={16}/> Lagu</button>
             <button onClick={() => setSearchType('bible')} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'bible' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white/30 text-indigo-900'}`}><BookOpen size={16}/> Ayat</button>
