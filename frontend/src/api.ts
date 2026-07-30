@@ -32,7 +32,7 @@ export async function callApi(action: string, params: Record<string, string> = {
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 detik timeout
+  const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 menit timeout
   fetchOptions.signal = controller.signal;
 
   try {

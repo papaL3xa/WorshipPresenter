@@ -276,17 +276,33 @@ export default function DisplayWindow() {
           (() => {
             const url = text;
             if (url.includes('youtube.com') || url.includes('youtu.be')) {
-              let videoId = '';
-              if (url.includes('youtube.com/watch?v=')) {
-                videoId = url.split('v=')[1].split('&')[0];
+              let embedUrl = '';
+              if (url.includes('list=')) {
+                const listId = url.split('list=')[1].split('&')[0];
+                let videoId = '';
+                if (url.includes('v=')) {
+                  videoId = url.split('v=')[1].split('&')[0];
+                }
+                embedUrl = videoId 
+                  ? `https://www.youtube.com/embed/${videoId}?list=${listId}&autoplay=0&mute=0`
+                  : `https://www.youtube.com/embed/videoseries?list=${listId}&autoplay=0&mute=0`;
+              } else if (url.includes('youtube.com/watch?v=')) {
+                const videoId = url.split('v=')[1].split('&')[0];
+                embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&mute=0`;
               } else if (url.includes('youtu.be/')) {
-                videoId = url.split('youtu.be/')[1].split('?')[0];
+                const videoId = url.split('youtu.be/')[1].split('?')[0];
+                embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&mute=0`;
+              } else if (url.includes('youtube.com/embed/')) {
+                embedUrl = url.includes('?') ? url.replace('autoplay=1', 'autoplay=0') : `${url}?autoplay=0`;
+              } else {
+                embedUrl = url; // Fallback
               }
+              
               return (
                 <iframe 
-                  key={url}
+                  key={embedUrl}
                   className="w-full h-full object-contain animate-fade-in" 
-                  src={`https://www.youtube.com/embed/${videoId}?autoplay=0&mute=0`} 
+                  src={embedUrl} 
                   allow="encrypted-media" 
                   allowFullScreen
                 ></iframe>

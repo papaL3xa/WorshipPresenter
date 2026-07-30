@@ -214,8 +214,8 @@ export default function ControlPanel() {
           } else {
             alert('Gagal mengupload video');
           }
-        } catch (err) {
-          alert('Error saat upload video');
+        } catch (err: any) {
+          alert('Error saat upload video: ' + (err.message || 'Unknown error'));
         } finally {
           setIsVideoUploading(false);
         }
@@ -727,8 +727,7 @@ export default function ControlPanel() {
               <button onClick={() => setReplaceIndex(null)} className="text-red-500 hover:bg-red-500/10 p-1 rounded"><X size={12}/></button>
             </div>
           )}
-
-          <div className="mt-3 flex gap-2 shrink-0">
+          <div className="mt-3 flex flex-wrap gap-2 shrink-0">
             <button 
               onClick={() => setIsAddItemModalOpen(true)}
               className="flex-1 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-2 text-indigo-900 py-2 text-xs font-semibold hover:bg-white/70 transition-all"

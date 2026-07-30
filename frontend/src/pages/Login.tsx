@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, MonitorPlay, Loader2 } from 'lucide-react';
+import { MonitorPlay, Loader2 } from 'lucide-react';
 import { callApi } from '../api';
 
 export default function Login() {
@@ -58,14 +58,11 @@ export default function Login() {
         <form onSubmit={handleLogin} className="flex flex-col gap-6">
           <div>
             <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                <Lock className={`h-6 w-6 transition-colors ${errorMsg ? 'text-red-500' : 'text-slate-800'}`} />
-              </div>
               <input
                 type="password"
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                className={`w-full bg-white/60 backdrop-blur-sm border-2 rounded-2xl pl-14 py-5 text-center text-3xl tracking-[0.5em] font-bold shadow-inner transition-all duration-300 outline-none placeholder-slate-600 ${errorMsg ? 'border-red-400 text-red-700 bg-red-50/50 focus:ring-4 focus:ring-red-400/20' : 'border-white/60 text-black focus:border-indigo-400 focus:bg-white/90 focus:ring-4 focus:ring-indigo-400/20'}`}
+                className={`w-full bg-white/60 backdrop-blur-sm border-2 rounded-2xl px-6 py-5 text-center text-3xl tracking-[0.5em] font-bold shadow-inner transition-all duration-300 outline-none placeholder-slate-600 ${errorMsg ? 'border-red-400 text-red-700 bg-red-50/50 focus:ring-4 focus:ring-red-400/20' : 'border-white/60 text-black focus:border-indigo-400 focus:bg-white/90 focus:ring-4 focus:ring-indigo-400/20'}`}
                 placeholder="••••••"
                 maxLength={6}
                 inputMode="numeric"
