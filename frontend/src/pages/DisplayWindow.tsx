@@ -230,7 +230,7 @@ export default function DisplayWindow() {
 
   return (
     <div 
-      className="w-screen h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-12 text-center transition-all duration-300 overflow-hidden cursor-none"
+      className="fixed inset-0 flex flex-col items-center justify-center bg-gray-900 text-white p-12 text-center transition-all duration-300 overflow-hidden cursor-none"
       style={{
         backgroundImage: liveState.bgUrl ? `url(${liveState.bgUrl})` : 'none',
         backgroundSize: 'cover',
@@ -271,7 +271,7 @@ export default function DisplayWindow() {
       )}
 
       {/* Konten Lirik/Ayat atau Slideshow atau Video */}
-      <div className="absolute top-40 bottom-32 left-0 right-0 flex flex-col justify-center items-center px-16 z-10">
+      <div className={itemType === 'video' ? "absolute inset-0 z-50 bg-black flex justify-center items-center" : "absolute top-40 bottom-32 left-0 right-0 flex flex-col justify-center items-center px-16 z-10"}>
         {itemType === 'video' ? (
           (() => {
             const url = text;
@@ -285,9 +285,9 @@ export default function DisplayWindow() {
               return (
                 <iframe 
                   key={url}
-                  className="w-full h-full object-contain bg-black shadow-2xl rounded-2xl animate-fade-in" 
-                  src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0`} 
-                  allow="autoplay; encrypted-media" 
+                  className="w-full h-full object-contain animate-fade-in" 
+                  src={`https://www.youtube.com/embed/${videoId}?autoplay=0&mute=0`} 
+                  allow="encrypted-media" 
                   allowFullScreen
                 ></iframe>
               );
@@ -295,10 +295,9 @@ export default function DisplayWindow() {
             return (
               <video 
                 key={url}
-                className="w-full h-full object-contain bg-black shadow-2xl rounded-2xl animate-fade-in" 
+                className="w-full h-full object-contain animate-fade-in" 
                 src={url} 
                 controls 
-                autoPlay 
               />
             );
           })()

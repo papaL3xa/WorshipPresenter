@@ -117,6 +117,7 @@ export default function ControlPanel() {
     const newPlaylist = [...playlist];
     newPlaylist.splice(index, 1);
     setPlaylist(newPlaylist);
+    saveRundown(newPlaylist);
   };
 
   const removePlaylistItem = (index: number, e: React.MouseEvent) => {
@@ -143,6 +144,7 @@ export default function ControlPanel() {
     
     setPlaylist(newPlaylist);
     setDragItem(null);
+    saveRundown(newPlaylist);
   };
 
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
@@ -150,8 +152,16 @@ export default function ControlPanel() {
   const [isVideoUploading, setIsVideoUploading] = useState(false);
 
   const openVideoModal = (index: number | null = null) => {
-    if (index !== null) setReplaceIndex(index);
-    setVideoUrlInput('');
+    if (index !== null) {
+      setReplaceIndex(index);
+      if (playlist[index]?.type === 'video') {
+        setVideoUrlInput(playlist[index].segments[0] || '');
+      } else {
+        setVideoUrlInput('');
+      }
+    } else {
+      setVideoUrlInput('');
+    }
     setIsVideoModalOpen(true);
   };
 
@@ -164,19 +174,21 @@ export default function ControlPanel() {
       segments: [videoUrlInput.trim()],
     } as any;
     
+    let finalPlaylist = [];
     if (replaceIndex !== null) {
-      const newPlaylist = [...playlist];
-      newPlaylist[replaceIndex] = newItem;
-      setPlaylist(newPlaylist);
+      finalPlaylist = [...playlist];
+      finalPlaylist[replaceIndex] = newItem;
+      setPlaylist(finalPlaylist);
       setActiveItem(replaceIndex);
       setReplaceIndex(null);
     } else {
-      setPlaylist([...playlist, newItem]);
-      setActiveItem(playlist.length);
+      finalPlaylist = [...playlist, newItem];
+      setPlaylist(finalPlaylist);
+      setActiveItem(finalPlaylist.length);
     }
     setIsVideoModalOpen(false);
     setIsAddItemModalOpen(false);
-    saveRundown();
+    saveRundown(finalPlaylist);
   };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -223,16 +235,17 @@ export default function ControlPanel() {
       segments: [''],
     };
     
+    let finalPlaylist = [];
     if (replaceIndex !== null) {
-      const newPlaylist = [...playlist];
-      newPlaylist[replaceIndex] = newAnnouncement as any;
-      setPlaylist(newPlaylist);
+      finalPlaylist = [...playlist];
+      finalPlaylist[replaceIndex] = newAnnouncement as any;
+      setPlaylist(finalPlaylist);
       setActiveItem(replaceIndex);
       setReplaceIndex(null);
     } else {
-      const newPlaylist = [...playlist, newAnnouncement as any];
-      setPlaylist(newPlaylist);
-      setActiveItem(newPlaylist.length - 1);
+      finalPlaylist = [...playlist, newAnnouncement as any];
+      setPlaylist(finalPlaylist);
+      setActiveItem(finalPlaylist.length - 1);
     }
     
     setActiveSegment(0);
@@ -277,17 +290,19 @@ export default function ControlPanel() {
 
   const addToRundown = (item: any) => {
     const newItem = { ...item, localId: Math.random().toString(36).substr(2, 9) };
+    let finalPlaylist = [];
     if (replaceIndex !== null) {
-      const newPlaylist = [...playlist];
-      newPlaylist[replaceIndex] = newItem;
-      setPlaylist(newPlaylist);
+      finalPlaylist = [...playlist];
+      finalPlaylist[replaceIndex] = newItem;
+      setPlaylist(finalPlaylist);
       setReplaceIndex(null);
     } else {
-      const newPlaylist = [...playlist, newItem];
-      setPlaylist(newPlaylist);
+      finalPlaylist = [...playlist, newItem];
+      setPlaylist(finalPlaylist);
     }
     setIsAddItemModalOpen(false);
     setIsEditingRundown(true);
+    saveRundown(finalPlaylist);
   };
 
   const handleSlideUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -321,17 +336,19 @@ export default function ControlPanel() {
           segments: res.data.urls,
           localId: Math.random().toString(36).substr(2, 9)
         };
+        let finalPlaylist = [];
         if (replaceIndex !== null) {
-          const newPlaylist = [...playlist];
-          newPlaylist[replaceIndex] = newItem as any;
-          setPlaylist(newPlaylist);
+          finalPlaylist = [...playlist];
+          finalPlaylist[replaceIndex] = newItem as any;
+          setPlaylist(finalPlaylist);
           setReplaceIndex(null);
         } else {
-          const newPlaylist = [...playlist, newItem as any];
-          setPlaylist(newPlaylist);
+          finalPlaylist = [...playlist, newItem as any];
+          setPlaylist(finalPlaylist);
         }
         setIsAddItemModalOpen(false);
         setIsEditingRundown(true);
+        saveRundown(finalPlaylist);
       } else {
         alert("Gagal mengunggah gambar: " + (res.error?.message || 'Unknown error'));
       }
@@ -343,19 +360,20 @@ export default function ControlPanel() {
     }
   };
 
-  const saveRundown = async () => {
+  const saveRundown = async (overridePlaylist?: any[]) => {
     setIsSaving(true);
+    const targetPlaylist = overridePlaylist || playlist;
     const payload = {
       id: playlistId,
       name: playlistName,
-      items: playlist.map((item) => {
+      items: targetPlaylist.map((item) => {
         let customText = '';
-        if (item.type === 'announcement') customText = item.segments[0];
+        if (item.type === 'announcement' || item.type === 'video') customText = item.segments[0];
         if (item.type === 'slideshow') customText = JSON.stringify(item.segments);
         if (item.type === 'song' || item.type === 'bible') customText = item.visibleSegments ? JSON.stringify(item.visibleSegments) : '';
         return {
           type: item.type,
-          refId: item.type === 'announcement' ? item.title : (item.type === 'slideshow' ? null : (item.refId || item.id)),
+          refId: (item.type === 'announcement' || item.type === 'video') ? item.title : (item.type === 'slideshow' ? null : (item.refId || item.id)),
           customText: customText
         };
       })
@@ -384,10 +402,11 @@ export default function ControlPanel() {
   };
 
   const saveSegmentSelection = () => {
+    let finalPlaylist = [...playlist];
     if (segmentEditIndex !== null) {
-      const newP = [...playlist];
-      newP[segmentEditIndex].visibleSegments = tempVisibleSegments;
-      setPlaylist(newP);
+      finalPlaylist[segmentEditIndex].visibleSegments = tempVisibleSegments;
+      setPlaylist(finalPlaylist);
+      saveRundown(finalPlaylist);
     }
     setIsSegmentModalOpen(false);
     setSegmentEditIndex(null);
@@ -574,41 +593,43 @@ export default function ControlPanel() {
     <div className="h-screen flex flex-col p-4 md:p-6 gap-4 overflow-hidden relative">
       <div className="absolute inset-0 bg-white/20 pointer-events-none -z-10 backdrop-blur-[2px]"></div>
       
-      <header className="glass-panel p-5 flex flex-col md:flex-row justify-between items-center shrink-0 gap-4 shadow-lg border-white/50">
-        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
-          <button onClick={() => navigate('/dashboard')} className="glass-button text-indigo-900 flex items-center gap-2 font-medium">
-            <ArrowLeft size={18}/> Dashboard
+      <header className="glass-panel p-3 md:p-5 flex flex-col md:flex-row justify-between items-center shrink-0 gap-3 md:gap-4 shadow-lg border-white/50">
+        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start shrink-0">
+          <button onClick={() => navigate('/dashboard')} className="glass-button text-indigo-900 flex items-center gap-2 font-medium px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base">
+            <ArrowLeft size={16}/> Dashboard
           </button>
-          <h1 className="text-2xl font-heading font-extrabold text-indigo-900 tracking-tight drop-shadow-sm">Control Panel</h1>
+          <h1 className="text-xl md:text-2xl font-heading font-extrabold text-indigo-900 tracking-tight drop-shadow-sm">Control Panel</h1>
         </div>
-        <div className="flex flex-wrap items-center gap-2 md:gap-4 justify-center md:justify-end">
-          {errorMsg && <div className="text-red-700 bg-red-100/90 px-3 py-1 rounded-lg text-sm border border-red-300 font-medium">{errorMsg}</div>}
-          <SyncButton isParentSyncing={isSyncing} />
-          <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold rounded-xl border border-red-400 shadow-lg shadow-red-500/30">
-            <div className="w-3 h-3 rounded-full bg-white animate-pulse"></div> LIVE
+        <div className="flex flex-nowrap overflow-x-auto w-full md:w-auto items-center gap-2 md:gap-4 justify-start md:justify-end pb-1 scrollbar-hide">
+          {errorMsg && <div className="text-red-700 bg-red-100/90 px-3 py-1 rounded-lg text-xs md:text-sm border border-red-300 font-medium whitespace-nowrap">{errorMsg}</div>}
+          <div className="shrink-0">
+            <SyncButton isParentSyncing={isSyncing} />
+          </div>
+          <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold rounded-xl border border-red-400 shadow-lg shadow-red-500/30 text-sm md:text-base">
+            <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-white animate-pulse"></div> LIVE
           </div>
           <button 
             onClick={() => setIsRunningTextModalOpen(true)} 
-            className={`glass-button flex items-center gap-2 transition-all ${isRtVisible ? 'bg-red-500 text-white hover:bg-red-600 border-red-500 shadow-red-500/30 shadow-md' : 'text-indigo-900'}`}
+            className={`shrink-0 glass-button flex items-center gap-2 transition-all px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base ${isRtVisible ? 'bg-red-500 text-white hover:bg-red-600 border-red-500 shadow-red-500/30 shadow-md' : 'text-indigo-900'}`}
           >
-            <Type size={18}/> Running Text
+            <Type size={16}/> Running Text
           </button>
-          <button onClick={() => setIsLogoModalOpen(true)} className="glass-button text-indigo-900 flex items-center gap-2">
-            <CheckCircle size={18}/> Ganti Logo
+          <button onClick={() => setIsLogoModalOpen(true)} className="shrink-0 glass-button text-indigo-900 flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base">
+            <CheckCircle size={16}/> Logo
           </button>
-          <button onClick={() => setIsBgModalOpen(true)} className="glass-button text-indigo-900 flex items-center gap-2">
-            <ImageIcon size={18}/> Ganti BG
+          <button onClick={() => setIsBgModalOpen(true)} className="shrink-0 glass-button text-indigo-900 flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base">
+            <ImageIcon size={16}/> BG
           </button>
-          <button onClick={openDisplay} className="glass-button bg-indigo-600/10 text-indigo-900 flex items-center gap-2 border-indigo-400/30 font-bold hover:bg-indigo-600/20">
-            <Monitor size={18}/> Buka Display
+          <button onClick={openDisplay} className="shrink-0 glass-button bg-indigo-600/10 text-indigo-900 flex items-center gap-2 border-indigo-400/30 font-bold hover:bg-indigo-600/20 px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base">
+            <Monitor size={16}/> Display
           </button>
         </div>
       </header>
       
-      <main className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
-        <aside className="w-full h-1/3 lg:h-auto lg:w-[28%] glass-panel p-5 flex flex-col overflow-hidden shadow-lg border-white/50">
-          <div className="flex justify-between items-center mb-5 shrink-0">
-            <h2 className="font-heading font-bold text-indigo-950 uppercase tracking-wide">Rundown</h2>
+      <main className="flex-1 flex flex-col lg:flex-row gap-3 md:gap-6 min-h-0">
+        <aside className="w-full h-[35%] lg:h-auto lg:w-[28%] glass-panel p-3 md:p-5 flex flex-col overflow-hidden shadow-lg border-white/50">
+          <div className="flex justify-between items-center mb-3 md:mb-5 shrink-0">
+            <h2 className="font-heading font-bold text-indigo-950 uppercase tracking-wide text-sm md:text-base">Rundown</h2>
             <button 
               onClick={() => {
                 if (isEditingRundown) {
@@ -660,11 +681,15 @@ export default function ControlPanel() {
                     </div>
                     {isEditingRundown && (
                       <div className="flex gap-2">
-                        {(item.type === 'song' || item.type === 'bible') && (
+                        {(item.type === 'song' || item.type === 'bible' || item.type === 'video') && (
                           <button 
-                            onClick={(e) => openSegmentModal(idx, e)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (item.type === 'video') openVideoModal(idx);
+                              else openSegmentModal(idx, e);
+                            }}
                             className="text-indigo-600 hover:text-indigo-800 bg-indigo-100 p-1.5 rounded-lg transition-colors"
-                            title="Atur Slide / Bait"
+                            title={item.type === 'video' ? "Edit Link Video" : "Atur Slide / Bait"}
                           >
                             <Settings size={14} />
                           </button>
@@ -725,12 +750,12 @@ export default function ControlPanel() {
           </div>
         </aside>
         
-        <section className="flex-1 flex flex-col gap-6 min-w-0">
-          <div className="glass-panel flex-1 p-8 flex flex-col items-center justify-center relative shadow-lg overflow-hidden border-white/50 bg-gradient-to-br from-white/40 to-white/10">
-              <div className="text-center max-w-5xl w-full flex flex-col items-center">
+        <section className="flex-1 flex flex-col gap-3 md:gap-6 min-w-0">
+          <div className="glass-panel flex-1 p-4 md:p-8 flex flex-col items-center justify-center relative shadow-lg overflow-hidden border-white/50 bg-gradient-to-br from-white/40 to-white/10">
+              <div className="text-center max-w-5xl w-full flex flex-col items-center overflow-y-auto max-h-full scrollbar-hide pb-10">
                 {(playlist[activeItem]?.type === 'announcement' && isEditingRundown) ? (
                   <input 
-                    className="text-3xl font-heading font-bold text-indigo-950 mb-6 drop-shadow-sm bg-white border-2 border-indigo-300 rounded-full px-6 py-2 shadow-inner text-center w-full max-w-xl focus:outline-none focus:border-indigo-500"
+                    className="text-xl md:text-3xl font-heading font-bold text-indigo-950 mb-4 md:mb-6 drop-shadow-sm bg-white border-2 border-indigo-300 rounded-full px-4 py-1.5 md:px-6 md:py-2 shadow-inner text-center w-full max-w-xl focus:outline-none focus:border-indigo-500"
                     value={playlist[activeItem]?.title || ''}
                     onChange={(e) => {
                       const newPlaylist = [...playlist];
@@ -740,11 +765,11 @@ export default function ControlPanel() {
                     placeholder="Judul Pengumuman / Teks Bebas"
                   />
                 ) : (
-                  <h3 className="text-3xl font-heading font-bold text-indigo-950 mb-4 drop-shadow-sm bg-white/30 inline-block px-6 py-2 rounded-full border border-white/40">{playlist[activeItem]?.title}</h3>
+                  <h3 className="text-xl md:text-3xl font-heading font-bold text-indigo-950 mb-3 md:mb-4 drop-shadow-sm bg-white/30 inline-block px-4 py-1.5 md:px-6 md:py-2 rounded-full border border-white/40">{playlist[activeItem]?.title}</h3>
                 )}
                 
                 {playlist[activeItem]?.segments && playlist[activeItem].segments.length > 1 && (
-                  <div className="flex justify-center flex-wrap gap-2 mb-6 z-20">
+                  <div className="flex justify-center flex-wrap gap-1.5 md:gap-2 mb-4 md:mb-6 z-20">
                     {playlist[activeItem].segments.map((_: any, idx: number) => (
                       <button 
                         key={idx}
@@ -761,13 +786,18 @@ export default function ControlPanel() {
                   </div>
                 )}
 
-                <div className="text-4xl md:text-5xl font-bold text-indigo-900 leading-tight whitespace-pre-wrap w-full p-8 min-h-[30vh] flex items-center justify-center relative z-10 transition-all duration-300 animate-fade-in" key={`${activeItem}-${activeSegment}-${mode}`}>
+                <div className="text-2xl md:text-5xl font-bold text-indigo-900 leading-tight whitespace-pre-wrap w-full p-4 md:p-8 min-h-[30vh] flex items-center justify-center relative z-10 transition-all duration-300 animate-fade-in" key={`${activeItem}-${activeSegment}-${mode}`}>
                   {mode === 'blank' ? <span className="text-indigo-900/20 italic">Layar Kosong (Blank)</span> : (
                     <>
-                      {(playlist[activeItem]?.type === 'slideshow') ? (
+                      {(playlist[activeItem]?.type === 'video') ? (
                         <div className="flex flex-col items-center">
-                          <ImageIcon size={64} className="text-indigo-900/20 mb-4" />
-                          <span className="text-indigo-900/40 italic text-xl">Slideshow Ditampilkan</span>
+                          <Monitor size={48} className="text-indigo-900/40 mb-2 md:mb-4" />
+                          <span className="text-indigo-900/60 italic text-sm md:text-xl">Memutar Video</span>
+                        </div>
+                      ) : (playlist[activeItem]?.type === 'slideshow') ? (
+                        <div className="flex flex-col items-center">
+                          <ImageIcon size={48} className="text-indigo-900/40 mb-2 md:mb-4" />
+                          <span className="text-indigo-900/60 italic text-sm md:text-xl">Slideshow Ditampilkan</span>
                         </div>
                       ) : (
                         (isEditingRundown) ? (
@@ -783,7 +813,7 @@ export default function ControlPanel() {
                             </div>
                             <textarea 
                               id="editor-textarea"
-                              className="w-full h-[30vh] bg-white/80 backdrop-blur-md border-2 border-indigo-300 rounded-2xl p-8 text-3xl md:text-4xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 shadow-inner font-medium text-slate-800 transition-all"
+                              className="w-full h-[30vh] bg-white/80 backdrop-blur-md border-2 border-indigo-300 rounded-2xl p-4 md:p-8 text-xl md:text-4xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 shadow-inner font-medium text-slate-800 transition-all"
                               value={playlist[activeItem]?.segments[activeSegment] || ''}
                               onChange={(e) => {
                                 const newPlaylist = [...playlist];
@@ -813,15 +843,15 @@ export default function ControlPanel() {
               </div>
           </div>
           
-          <div className="glass-panel p-5 shrink-0 flex flex-wrap justify-center items-center gap-4 md:gap-6 shadow-lg border-white/50">
-             <button onClick={handlePrev} className="glass-button bg-white/60 text-indigo-950 flex items-center gap-3 px-8 py-4 text-lg hover:bg-white/80 shadow-md rounded-2xl"><ArrowLeft size={24}/> Mundur</button>
-             <button onClick={handleNext} className="glass-button bg-gradient-to-r from-indigo-500 to-indigo-600 text-white border-transparent flex items-center gap-3 px-8 py-4 text-lg hover:shadow-lg hover:shadow-indigo-500/30 rounded-2xl">Lanjut <ArrowRight size={24}/></button>
-             <div className="w-px h-12 bg-indigo-900/20 mx-2 hidden md:block"></div>
+          <div className="glass-panel p-3 md:p-5 shrink-0 flex justify-center items-center gap-2 md:gap-6 shadow-lg border-white/50 overflow-x-auto flex-nowrap scrollbar-hide">
+             <button onClick={handlePrev} className="glass-button bg-white/60 text-indigo-950 flex flex-1 md:flex-none justify-center items-center gap-2 md:gap-3 px-4 py-3 md:px-8 md:py-4 text-sm md:text-lg hover:bg-white/80 shadow-md rounded-2xl shrink-0"><ArrowLeft size={20}/> Mundur</button>
+             <button onClick={handleNext} className="glass-button bg-gradient-to-r from-indigo-500 to-indigo-600 text-white border-transparent flex flex-1 md:flex-none justify-center items-center gap-2 md:gap-3 px-4 py-3 md:px-8 md:py-4 text-sm md:text-lg hover:shadow-lg hover:shadow-indigo-500/30 rounded-2xl shrink-0">Lanjut <ArrowRight size={20}/></button>
+             <div className="w-px h-10 md:h-12 bg-indigo-900/20 mx-1 md:mx-2 shrink-0"></div>
              <button 
                 onClick={() => setMode(m => m === 'blank' ? 'content' : 'blank')} 
-                className={`glass-button flex items-center gap-3 px-8 py-4 text-lg rounded-2xl transition-all shadow-md ${mode === 'blank' ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700 shadow-slate-900/40' : 'bg-white/60 text-slate-800 hover:bg-white/80'}`}
+                className={`glass-button flex items-center gap-2 md:gap-3 px-4 py-3 md:px-8 md:py-4 text-sm md:text-lg rounded-2xl transition-all shadow-md shrink-0 ${mode === 'blank' ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700 shadow-slate-900/40' : 'bg-white/60 text-slate-800 hover:bg-white/80'}`}
              >
-               <Square size={20} className={mode === 'blank' ? "fill-white" : ""}/> Blank
+               <Square size={16} className={mode === 'blank' ? "fill-white" : ""}/> Blank
              </button>
           </div>
         </section>

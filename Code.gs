@@ -145,19 +145,22 @@ function savePlaylist(e) {
     sPlaylists.appendRow([playlistId, data.name, "'" + data.date, "scheduled", new Date().getTime()]);
   }
   
-  // Insert ke PlaylistItems
+  // Insert ke PlaylistItems batch
   const items = data.items || [];
-  items.forEach((item, index) => {
-    const itemId = "it_" + new Date().getTime() + "_" + index;
-    sPlaylistItems.appendRow([
-      itemId, 
-      playlistId, 
-      index + 1, 
-      item.type, 
-      item.refId || "", 
-      item.customText || ""
-    ]);
-  });
+  if (items.length > 0) {
+    const rows = items.map((item, index) => {
+      const itemId = "it_" + new Date().getTime() + "_" + index;
+      return [
+        itemId, 
+        playlistId, 
+        index + 1, 
+        item.type, 
+        item.refId || "", 
+        item.customText || ""
+      ];
+    });
+    sPlaylistItems.getRange(sPlaylistItems.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
+  }
   
   SpreadsheetApp.flush();
   return { playlistId: playlistId, status: data.id ? "updated" : "saved" };

@@ -181,8 +181,16 @@ export default function PlaylistEditor() {
   };
 
   const openVideoModal = (index: number | null = null) => {
-    if (index !== null) setReplaceIndex(index);
-    setVideoUrlInput('');
+    if (index !== null) {
+      setReplaceIndex(index);
+      if (rundown[index]?.type === 'video') {
+        setVideoUrlInput(rundown[index].segments[0] || '');
+      } else {
+        setVideoUrlInput('');
+      }
+    } else {
+      setVideoUrlInput('');
+    }
     setIsVideoModalOpen(true);
   };
 
@@ -482,8 +490,18 @@ export default function PlaylistEditor() {
                     {item.type === 'announcement' && (
                       <button onClick={() => editCustomText(idx)} className="p-2 hover:bg-white/50 rounded-lg text-indigo-900"><Edit3 size={16}/></button>
                     )}
-                    {(item.type === 'song' || item.type === 'bible') && (
-                      <button onClick={() => openSegmentModal(idx)} className="p-2 hover:bg-white/50 rounded-lg text-indigo-900" title="Atur Slide / Bait"><Settings size={16}/></button>
+                    {(item.type === 'song' || item.type === 'bible' || item.type === 'video') && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (item.type === 'video') openVideoModal(idx);
+                          else openSegmentModal(idx);
+                        }} 
+                        className="p-2 hover:bg-white/50 rounded-lg text-indigo-900" 
+                        title={item.type === 'video' ? "Edit Link Video" : "Atur Slide / Bait"}
+                      >
+                        <Settings size={16}/>
+                      </button>
                     )}
                     <button onClick={() => setReplaceIndex(replaceIndex === idx ? null : idx)} className={`p-2 rounded-lg ${replaceIndex === idx ? 'bg-indigo-600 text-white' : 'hover:bg-white/50 text-indigo-900'}`} title="Ganti Item ini"><RefreshCw size={16}/></button>
                     <button onClick={() => moveItem(idx, -1)} className="p-2 hover:bg-white/50 rounded-lg text-indigo-900"><ArrowUp size={16}/></button>

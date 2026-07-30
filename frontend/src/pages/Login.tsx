@@ -17,9 +17,8 @@ export default function Login() {
     setErrorMsg('');
     
     try {
-      const res = await callApi('verifyLogin', {}, { 
-        method: 'POST', 
-        payload: { pin } 
+      const res = await callApi('verifyLogin', { payload: JSON.stringify({ pin }) }, { 
+        method: 'GET' 
       });
       if (res && res.success && res.data && res.data.role) {
         localStorage.setItem('worship_is_logged_in', 'true');

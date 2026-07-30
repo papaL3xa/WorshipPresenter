@@ -31,14 +31,23 @@ export async function callApi(action: string, params: Record<string, string> = {
     fetchOptions.body = formData.toString();
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 detik timeout
+  fetchOptions.signal = controller.signal;
+
   try {
     const res = await fetch(url.toString(), fetchOptions);
+    clearTimeout(timeoutId);
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
     const json = await res.json();
     return json;
-  } catch (error) {
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Koneksi timeout. Pastikan internet Anda stabil atau URL Apps Script sudah benar.');
+    }
     console.error(`Error calling API (${action}):`, error);
     throw error;
   }
