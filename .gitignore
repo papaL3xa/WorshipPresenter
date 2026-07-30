@@ -1,3 +1,13 @@
 node_modules/
 .env
 .DS_Store
+
+# Build outputs - jangan di-push ke GitHub (terlalu besar)
+frontend/release/
+frontend/dist/
+frontend/*.log
+frontend/dist-electron/
+
+# Temp files
+*.tmp
+*.log
