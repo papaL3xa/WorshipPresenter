@@ -31,14 +31,23 @@ export interface BibleVerse {
 export const initDefaultDatabases = async () => {
   const existingKeys = await keys();
   const dbKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbinfo_')) as string[];
-  
-  if (!dbKeys.includes('dbinfo_song_LSEB')) {
+  const dataKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbdata_')) as string[];
+
+  // Cek info DAN data, jika salah satu hilang → re-init
+  if (!dbKeys.includes('dbinfo_song_LSEB') || !dataKeys.includes('dbdata_song_LSEB')) {
     console.log("Initializing default song database...");
     await loadDefaultSongDatabase();
   }
   
-  if (!dbKeys.includes('dbinfo_bible_TB')) {
+  if (!dbKeys.includes('dbinfo_bible_TB') || !dataKeys.includes('dbdata_bible_TB')) {
     console.log("Initializing default bible database...");
+    await loadDefaultBibleDatabase();
+  }
+
+  // Validasi data bible tidak kosong
+  const bibleData = await get('dbdata_bible_TB');
+  if (!bibleData || (Array.isArray(bibleData) && bibleData.length === 0)) {
+    console.log("Bible data empty, re-initializing...");
     await loadDefaultBibleDatabase();
   }
 };
@@ -204,7 +213,8 @@ export const searchLocalSongs = async (query: string, versionId: string): Promis
   // 2. Get synced GAS songs (only apply to default LSEB to mix them)
   let gasSongs: SongData[] = [];
   if (versionId === 'song_LSEB') {
-    gasSongs = (await get('dbdata_song_GAS_SYNC')) || [];
+    const rawGas = await get('dbdata_song_GAS_SYNC');
+    gasSongs = Array.isArray(rawGas) ? rawGas : [];
   }
   
   // Merge (GAS overrides Base if same ID)

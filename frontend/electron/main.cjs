@@ -34,10 +34,30 @@ function createWindow() {
     // In production, we build Vite with base './' so it loads locally
     win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
   }
+
+  return win;
 }
 
 app.whenReady().then(() => {
-  createWindow();
+  const mainWin = createWindow();
+
+  // Pastikan jendela baru (Display Window) juga mendapat preload script
+  mainWin.webContents.setWindowOpenHandler(({ url }) => {
+    return {
+      action: 'allow',
+      overrideBrowserWindowOptions: {
+        width: 1280,
+        height: 720,
+        autoHideMenuBar: true,
+        webPreferences: {
+          preload: path.join(__dirname, 'preload.cjs'),
+          nodeIntegration: false,
+          contextIsolation: true,
+          webSecurity: false
+        }
+      }
+    };
+  });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -66,9 +86,21 @@ function saveDb(data) {
   fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf8');
 }
 
+// In-memory live state (tidak perlu disimpan ke disk, hanya untuk sesi aktif)
+let inMemoryLiveState = { displayMode: 'content', segmentIndex: 0, updatedAt: 0 };
+
 ipcMain.handle('api-call', async (event, { action, params, payload }) => {
   const db = loadDb();
   
+  if (action === 'getLiveState') {
+    return { success: true, data: inMemoryLiveState };
+  }
+
+  if (action === 'setLiveState') {
+    inMemoryLiveState = { ...inMemoryLiveState, ...payload, updatedAt: Date.now() };
+    return { success: true };
+  }
+
   if (action === 'getCustomSongs') {
     return { success: true, data: db.customSongs || [] };
   }

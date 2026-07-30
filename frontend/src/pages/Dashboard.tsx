@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Play, Folder, Search, Settings, Loader2, LogOut } from 'lucide-react';
+import { Plus, Play, Folder, Search, Settings, Loader2, LogOut, Trash2 } from 'lucide-react';
 import { SyncButton } from '../components/SyncButton';
 import { callApi } from '../api';
 
@@ -10,6 +10,9 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
   const [quickSearch, setQuickSearch] = useState('');
+  const [playlistToDelete, setPlaylistToDelete] = useState<{id: string, name: string} | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const fetchPlaylists = async () => {
     setIsLoading(true);
@@ -25,6 +28,36 @@ export default function Dashboard() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDeletePlaylist = async (id: string, name: string) => {
+    setPlaylistToDelete({ id, name });
+  };
+
+  const confirmDelete = async () => {
+    if (!playlistToDelete) return;
+    setIsDeleting(true);
+    setDeleteError('');
+    try {
+      const res = await callApi('deletePlaylist', {}, { method: 'POST', payload: { id: playlistToDelete.id } });
+      if (res && res.success) {
+        setPlaylistToDelete(null);
+        fetchPlaylists();
+      } else {
+        setDeleteError('Gagal menghapus. Silakan coba lagi.');
+      }
+    } catch (err) {
+      console.error(err);
+      setDeleteError('Terjadi kesalahan. Silakan coba lagi.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    if (isDeleting) return;
+    setPlaylistToDelete(null);
+    setDeleteError('');
   };
 
   useEffect(() => {
@@ -86,6 +119,13 @@ export default function Dashboard() {
                     </p>
                   </div>
                   <div className="flex gap-3 w-full md:w-auto">
+                    <button 
+                      onClick={() => handleDeletePlaylist(pl.id, pl.name)} 
+                      className="glass-button p-2 text-rose-500 hover:bg-rose-500 hover:text-white transition-colors"
+                      title="Hapus Playlist"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                     <button onClick={() => navigate('/control?id=' + pl.id)} className="glass-button flex-1 md:flex-none justify-center bg-gradient-to-r from-emerald-400 to-teal-500 text-white border-transparent shadow-lg hover:shadow-emerald-500/40 font-bold flex items-center gap-2">
                       <Play size={16} className="fill-white"/> Live
                     </button>
@@ -118,6 +158,50 @@ export default function Dashboard() {
           </div>
         </section>
       </main>
+
+      {playlistToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 text-center">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors ${isDeleting ? 'bg-red-500' : 'bg-red-100 text-red-500'}`}>
+                {isDeleting 
+                  ? <Loader2 size={32} className="animate-spin text-white" />
+                  : <Trash2 size={32} />}
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-2">
+                {isDeleting ? 'Menghapus...' : 'Hapus Playlist?'}
+              </h3>
+              {!isDeleting && (
+                <p className="text-slate-600 mb-2">
+                  Apakah Anda yakin ingin menghapus jadwal <strong className="text-slate-800">{playlistToDelete.name}</strong>? Tindakan ini tidak dapat dibatalkan.
+                </p>
+              )}
+              {isDeleting && (
+                <p className="text-slate-500 mb-4 text-sm">Sedang menghapus playlist, mohon tunggu...</p>
+              )}
+              {deleteError && (
+                <p className="text-red-500 text-sm mb-4 bg-red-50 p-3 rounded-xl">{deleteError}</p>
+              )}
+              <div className="flex gap-3 w-full mt-4">
+                <button 
+                  onClick={cancelDelete} 
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 shadow-md shadow-red-500/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isDeleting ? <><Loader2 size={16} className="animate-spin" /> Menghapus...</> : 'Ya, Hapus'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

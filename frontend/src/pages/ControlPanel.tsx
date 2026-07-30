@@ -119,7 +119,14 @@ export default function ControlPanel() {
 
   // Fungsi untuk push state ke GAS
   const pushStateToLive = async (itemIdx: number, segIdx: number, dispMode: string) => {
-    if (playlist.length === 0) return;
+    // Jika mode blank/content, selalu broadcast meski playlist kosong
+    if (playlist.length === 0) {
+      // Hanya broadcast displayMode saja (tanpa item)
+      const channel = new BroadcastChannel('worship_live_sync');
+      channel.postMessage({ type: 'STATE_UPDATE', state: { displayMode: dispMode, updatedAt: Date.now() } });
+      channel.close();
+      return;
+    }
 
     setIsSyncing(true);
     setErrorMsg('');

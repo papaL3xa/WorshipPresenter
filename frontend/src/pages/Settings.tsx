@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Lock, Loader2, CheckCircle, ShieldAlert, Download, Upload, Database } from 'lucide-react';
 import { callApi } from '../api';
-import { exportCustomSongsTsv, exportPlaylistsTsv, importBackupTsv } from '../utils/backupRestore';
+import { exportCustomSongsJson, exportPlaylistsJson, exportAllJson, importBackupTsv } from '../utils/backupRestore';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -166,24 +166,36 @@ export default function Settings() {
               <button 
                 onClick={async () => {
                   setIsLoading(true);
-                  await exportCustomSongsTsv();
+                  await exportAllJson();
+                  setIsLoading(false);
+                }}
+                className="flex-1 glass-button bg-emerald-500/10 text-emerald-800 hover:bg-emerald-500/20 border-emerald-200 flex flex-col items-center gap-3 p-6 rounded-xl"
+              >
+                <Database size={32} />
+                <span className="font-bold">Backup Semua (.json)</span>
+                <span className="text-xs opacity-70">Lagu Kustom + Playlist</span>
+              </button>
+              <button 
+                onClick={async () => {
+                  setIsLoading(true);
+                  await exportCustomSongsJson();
                   setIsLoading(false);
                 }}
                 className="flex-1 glass-button bg-indigo-500/10 text-indigo-800 hover:bg-indigo-500/20 border-indigo-200 flex flex-col items-center gap-3 p-6 rounded-xl"
               >
                 <Database size={32} />
-                <span className="font-bold">Backup Lagu Kustom (.tsv)</span>
+                <span className="font-bold">Backup Lagu Kustom (.json)</span>
               </button>
               <button 
                 onClick={async () => {
                   setIsLoading(true);
-                  await exportPlaylistsTsv();
+                  await exportPlaylistsJson();
                   setIsLoading(false);
                 }}
                 className="flex-1 glass-button bg-purple-500/10 text-purple-800 hover:bg-purple-500/20 border-purple-200 flex flex-col items-center gap-3 p-6 rounded-xl"
               >
                 <Database size={32} />
-                <span className="font-bold">Backup Playlist (.tsv)</span>
+                <span className="font-bold">Backup Playlist (.json)</span>
               </button>
             </div>
           </div>
@@ -194,10 +206,10 @@ export default function Settings() {
               Impor (Restore Backup)
             </h2>
             <div className="relative z-10">
-              <p className="text-sm font-medium text-slate-600 mb-4">Unggah file .tsv hasil backup Anda ke sini. Lagu Kustom dan Playlist akan otomatis dikenali dan ditambahkan ke database Anda.</p>
+              <p className="text-sm font-medium text-slate-600 mb-4">Unggah file <strong>.json</strong> hasil backup Anda. Lagu Kustom dan Playlist akan otomatis dikenali dan ditambahkan. File <strong>.tsv</strong> lama juga tetap didukung.</p>
               <input 
                 type="file"
-                accept=".tsv"
+                accept=".json,.tsv"
                 onChange={async (e) => {
                   if (!e.target.files || e.target.files.length === 0) return;
                   const file = e.target.files[0];

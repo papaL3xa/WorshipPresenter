@@ -70,13 +70,19 @@ export default function DisplayWindow() {
     const channel = new BroadcastChannel('worship_live_sync');
     channel.onmessage = (msg) => {
       if (msg.data.type === 'STATE_UPDATE') {
+        const newState = msg.data.state;
+        if (!newState) return; // Safety guard
         setLiveState(prevState => {
-          // Hanya update jika timestamp tidak disediakan (berarti dari lokal) atau lebih baru
-          const newState = msg.data.state;
-          if (!newState.updatedAt) newState.updatedAt = Date.now(); 
-          if (newState.updatedAt >= lastUpdateRef.current) {
-            lastUpdateRef.current = newState.updatedAt;
-            return { ...prevState, ...newState };
+          // Jangan mutasi object langsung - buat salinan
+          const appliedState = { updatedAt: Date.now(), ...newState };
+          // Always apply displayMode changes immediately (blank toggle must always work)
+          if (appliedState.displayMode !== undefined && appliedState.displayMode !== prevState.displayMode) {
+            lastUpdateRef.current = appliedState.updatedAt;
+            return { ...prevState, ...appliedState };
+          }
+          if (appliedState.updatedAt >= lastUpdateRef.current) {
+            lastUpdateRef.current = appliedState.updatedAt;
+            return { ...prevState, ...appliedState };
           }
           return prevState;
         });
@@ -115,20 +121,16 @@ export default function DisplayWindow() {
              }
           }
 
-          // Cek apakah data dari GAS lebih baru
+          // Cek apakah data dari server lebih baru (timestamp guard mencegah override state lokal)
           if (gasState.updatedAt && gasState.updatedAt > lastUpdateRef.current) {
              lastUpdateRef.current = gasState.updatedAt;
-             setLiveState(prev => {
-                // Jangan timpa 'item' jika kita sudah punya map dari server,
-                // agar kita bisa me-lookup liriknya.
-                return {
-                  ...prev,
-                  playlistId: gasState.playlistId,
-                  currentItemId: gasState.currentItemId,
-                  segmentIndex: gasState.segmentIndex || 0,
-                  displayMode: gasState.displayMode || 'content',
-                };
-             });
+             setLiveState(prev => ({
+               ...prev,
+               playlistId: gasState.playlistId,
+               currentItemId: gasState.currentItemId,
+               segmentIndex: gasState.segmentIndex || 0,
+               displayMode: gasState.displayMode || 'content',
+             }));
           }
         }
       } catch (err) {
@@ -145,9 +147,8 @@ export default function DisplayWindow() {
     };
   }, []);
 
-  if (liveState.displayMode === 'blank') {
-    return <div className="w-screen h-screen bg-black overflow-hidden cursor-none"></div>;
-  }
+  // Mode blank: jangan early return, gunakan overlay agar komponen tetap render
+  const isBlank = liveState.displayMode === 'blank';
 
   // Cari textToDisplay
   let text = '';
@@ -391,7 +392,7 @@ export default function DisplayWindow() {
             )}
             <h1 
               key={`text-${text}`}
-            className={`${fontSizeClass} font-bold text-white text-center leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] animate-fade-in`}
+            className={`${fontSizeClass} font-bold text-white text-center leading-relaxed tracking-wide drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] animate-fade-in`}
             style={{
               textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
             }}
@@ -441,6 +442,11 @@ export default function DisplayWindow() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Blank Mode Overlay - menutupi semua konten tanpa unmount komponen */}
+      {isBlank && (
+        <div className="absolute inset-0 bg-black z-[999] cursor-none" />
       )}
     </div>
   );

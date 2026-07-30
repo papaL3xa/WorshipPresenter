@@ -1,132 +1,141 @@
 import { callApi } from '../api';
 
-export const exportCustomSongsTsv = async () => {
-  const res = await callApi('getCustomSongs');
-  const songs = res?.data || [];
-  
-  if (songs.length === 0) {
-    alert("Tidak ada lagu kustom untuk diekspor.");
-    return;
-  }
-  
-  // Create TSV header
-  let tsv = "songId\ttitle\tauthor\tcategory\tsegment1\tsegment2\tsegment3\tsegment4\tsegment5\tsegment6\tsegment7\tsegment8\n";
-  
-  songs.forEach((s: any) => {
-    const row = [
-      s.id || '',
-      s.title || '',
-      s.author || '',
-      s.category || 'Pujian'
-    ];
-    
-    // Add segments
-    if (s.segments && Array.isArray(s.segments)) {
-      s.segments.forEach((seg: string) => {
-        // Escape newlines and tabs inside the segment text
-        const safeSeg = seg.replace(/\t/g, ' ').replace(/\n/g, '\\n');
-        row.push(safeSeg);
-      });
-    }
-    
-    tsv += row.join('\t') + '\n';
-  });
-  
-  downloadFile(tsv, 'CustomSongs_Backup.tsv', 'text/tab-separated-values');
-};
+// ─── EXPORT ALL (Lagu Kustom + Playlist dalam 1 file JSON) ─────────────────
+export const exportAllJson = async () => {
+  const [songsRes, playlistsRes] = await Promise.all([
+    callApi('getCustomSongs'),
+    callApi('getPlaylists'),
+  ]);
 
-export const exportPlaylistsTsv = async () => {
-  const res = await callApi('getPlaylists');
-  const playlists = res?.data || [];
-  
-  if (playlists.length === 0) {
-    alert("Tidak ada playlist untuk diekspor.");
-    return;
-  }
-  
-  // Ambil detail items untuk setiap playlist jika belum ada (terutama untuk versi WebApp)
+  const songs = songsRes?.data || [];
+  const playlists = playlistsRes?.data || [];
+
+  // Ambil items untuk tiap playlist
   for (const p of playlists) {
     if (!p.items || p.items.length === 0) {
       try {
         const itemsRes = await callApi('getPlaylistItems', { id: p.id });
-        if (itemsRes?.success) {
-          p.items = itemsRes.data || [];
-        }
-      } catch (err) {
-        console.error('Failed to fetch items for playlist', p.id);
+        if (itemsRes?.success) p.items = itemsRes.data || [];
+      } catch {
+        // ignore
       }
     }
   }
-  
-  let tsv = "id\tname\titems_json\n";
-  playlists.forEach((p: any) => {
-    const itemsJson = JSON.stringify(p.items || []).replace(/\t/g, ' ');
-    tsv += `${p.id}\t${p.name}\t${itemsJson}\n`;
-  });
-  
-  downloadFile(tsv, 'Playlists_Backup.tsv', 'text/tab-separated-values');
+
+  const backup = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    songs,
+    playlists,
+  };
+
+  const json = JSON.stringify(backup, null, 2);
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  downloadFile(json, `WorshipBackup_${dateStr}.json`, 'application/json');
 };
 
-export const importBackupTsv = async (file: File) => {
-  return new Promise<string>((resolve, reject) => {
+// ─── EXPORT ONLY LAGU KUSTOM ───────────────────────────────────────────────
+export const exportCustomSongsJson = async () => {
+  const res = await callApi('getCustomSongs');
+  const songs = res?.data || [];
+  if (songs.length === 0) { alert("Tidak ada lagu kustom untuk diekspor."); return; }
+  const backup = { version: 1, exportedAt: new Date().toISOString(), songs };
+  downloadFile(JSON.stringify(backup, null, 2), 'CustomSongs_Backup.json', 'application/json');
+};
+
+// Alias lama untuk kompatibilitas Settings.tsx yang mungkin masih import ini
+export const exportCustomSongsTsv = exportCustomSongsJson;
+
+// ─── EXPORT ONLY PLAYLIST ─────────────────────────────────────────────────
+export const exportPlaylistsJson = async () => {
+  const res = await callApi('getPlaylists');
+  const playlists = res?.data || [];
+  if (playlists.length === 0) { alert("Tidak ada playlist untuk diekspor."); return; }
+  for (const p of playlists) {
+    if (!p.items || p.items.length === 0) {
+      try {
+        const ir = await callApi('getPlaylistItems', { id: p.id });
+        if (ir?.success) p.items = ir.data || [];
+      } catch { /* ignore */ }
+    }
+  }
+  const backup = { version: 1, exportedAt: new Date().toISOString(), playlists };
+  downloadFile(JSON.stringify(backup, null, 2), 'Playlists_Backup.json', 'application/json');
+};
+
+// Alias lama
+export const exportPlaylistsTsv = exportPlaylistsJson;
+
+// ─── IMPORT (JSON atau TSV lama) ──────────────────────────────────────────
+export const importBackupTsv = async (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
         const text = e.target?.result as string;
+
+        // ── JSON path ──────────────────────────────────────────────────────
+        if (file.name.endsWith('.json') || text.trimStart().startsWith('{')) {
+          const backup = JSON.parse(text);
+          let songCount = 0, playlistCount = 0;
+
+          if (backup.songs && Array.isArray(backup.songs)) {
+            for (const s of backup.songs) {
+              await callApi('saveSongItem', {}, { method: 'POST', payload: s });
+              songCount++;
+            }
+          }
+          if (backup.playlists && Array.isArray(backup.playlists)) {
+            for (const p of backup.playlists) {
+              await callApi('savePlaylist', {}, { method: 'POST', payload: p });
+              playlistCount++;
+            }
+          }
+          const parts = [];
+          if (songCount) parts.push(`${songCount} Lagu Kustom`);
+          if (playlistCount) parts.push(`${playlistCount} Playlist`);
+          if (!parts.length) throw new Error("File JSON tidak mengandung data lagu atau playlist.");
+          resolve(`${parts.join(' dan ')} berhasil diimpor!`);
+          return;
+        }
+
+        // ── TSV fallback (format lama) ─────────────────────────────────────
         const lines = text.split('\n');
         if (lines.length < 2) throw new Error("File kosong atau format salah.");
-        
         const header = lines[0].toLowerCase();
-        
-        // Detect if it's CustomSongs or Playlists
+
         if (header.includes('items_json')) {
-          // Playlists import
           let count = 0;
           for (let i = 1; i < lines.length; i++) {
             if (!lines[i].trim()) continue;
             const cols = lines[i].split('\t');
             if (cols.length >= 3) {
-              const id = cols[0];
-              const name = cols[1];
+              const id = cols[0], name = cols[1];
               const items = JSON.parse(cols[2] || '[]');
-              await callApi('savePlaylist', {}, {
-                method: 'POST',
-                payload: { id, name, items }
-              });
+              await callApi('savePlaylist', {}, { method: 'POST', payload: { id, name, items } });
               count++;
             }
           }
           resolve(`${count} Playlist berhasil diimpor!`);
-        } 
-        else if (header.includes('songid') && header.includes('title')) {
-          // Custom Songs import
+        } else if (header.includes('songid') && header.includes('title')) {
           let count = 0;
           for (let i = 1; i < lines.length; i++) {
             if (!lines[i].trim()) continue;
             const cols = lines[i].split('\t');
             if (cols.length >= 2) {
-              const id = cols[0];
-              const title = cols[1];
-              const author = cols[2] || '';
-              const category = cols[3] || 'Pujian';
-              const segments = [];
-              for(let j=4; j<cols.length; j++) {
-                if(cols[j]) {
-                   // unescape newlines
-                   segments.push(cols[j].replace(/\\n/g, '\n'));
-                }
+              const id = cols[0], title = cols[1], author = cols[2] || '', category = cols[3] || 'Pujian';
+              const segments: string[] = [];
+              for (let j = 4; j < cols.length; j++) {
+                if (cols[j]) segments.push(cols[j].replace(/\\n/g, '\n'));
               }
-              await callApi('saveSongItem', {}, {
-                method: 'POST',
-                payload: { id, title, author, category, segments }
-              });
+              await callApi('saveSongItem', {}, { method: 'POST', payload: { id, title, author, category, segments } });
               count++;
             }
           }
           resolve(`${count} Lagu Kustom berhasil diimpor!`);
-        }
-        else {
-          throw new Error("Format TSV tidak dikenali. Pastikan Anda mengunggah file backup yang valid.");
+        } else {
+          throw new Error("Format file tidak dikenali. Harap gunakan file .json atau .tsv yang valid.");
         }
       } catch (err: any) {
         reject(err.message || "Gagal memproses file.");
