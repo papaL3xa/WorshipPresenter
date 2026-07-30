@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Loader2, Music, BookOpen, Edit, Save, Trash2, X, ArrowLeft, ArrowRight, Monitor, Star, Copy } from 'lucide-react';
+import { Search, Plus, Loader2, Music, BookOpen, Edit, Save, Trash2, X, ArrowLeft, ArrowRight, Monitor, Star, Copy, Settings } from 'lucide-react';
 import { callApi } from '../api';
 import { splitLongSegments } from '../utils/textSplitter';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useFavorites } from '../hooks/useFavorites';
 import { SyncButton } from '../components/SyncButton';
+import { initDefaultDatabases, searchLocalSongs, searchLocalBible, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, deleteDatabase, addCustomDatabase } from '../utils/dbStorage';
 
 const bibleBooks = [
   "Kejadian", "Keluaran", "Imamat", "Bilangan", "Ulangan",
@@ -49,6 +50,28 @@ export default function Library() {
   const [isSavingItem, setIsSavingItem] = useState(false);
   const [dragSegmentIdx, setDragSegmentIdx] = useState<number | null>(null);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [allSongTitles, setAllSongTitles] = useState<{id: string, title: string}[] | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  const [dbList, setDbList] = useState<DatabaseVersion[]>([]);
+  const [selectedSongVersion, setSelectedSongVersion] = useState('song_LSEB');
+  const [selectedBibleVersion, setSelectedBibleVersion] = useState('bible_TB');
+  const [isDbManagerOpen, setIsDbManagerOpen] = useState(false);
+
+  useEffect(() => {
+    initDefaultDatabases().then(() => {
+      getDatabaseList().then(setDbList);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (searchType === 'song') {
+      getAllLocalSongTitles(selectedSongVersion).then(res => {
+        if (Array.isArray(res)) setAllSongTitles(res);
+      }).catch(err => console.error("Gagal memuat judul lagu", err));
+    }
+  }, [searchType, selectedSongVersion]);
+  
   const lastSearchedRef = useRef({ query: '', type: '' });
   
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
@@ -143,18 +166,31 @@ export default function Library() {
     }
 
     try {
-      const endpoint = type === 'song' ? 'searchSongs' : 'searchBible';
-      const res = await callApi(endpoint, { q: query });
-      if (res.success) {
-        let processedData = splitLongSegments(res.data);
-        if (showFavorites) {
-          processedData = processedData.filter(item => isFavorite(item.id));
-        }
-        setResults(processedData);
-        if (autoSelectFirst && processedData && processedData.length > 0) {
-          setSelectedResultIds([processedData[0].id]);
-        }
+      let resultsData: any[] = [];
+      if (type === 'song') {
+        const res = await searchLocalSongs(query, selectedSongVersion);
+        resultsData = res.slice(0, 100);
+      } else {
+        const res = await searchLocalBible(query, selectedBibleVersion);
+        resultsData = res.map((item: any, idx: number) => ({
+          id: `b_${idx}`,
+          title: `${item.book} ${item.chapter}:${item.verse}`,
+          author: 'Alkitab',
+          category: 'Alkitab',
+          segments: [item.text],
+          segmentOrder: [0]
+        }));
       }
+      
+      let processedData = splitLongSegments(resultsData);
+      if (showFavorites) {
+        processedData = processedData.filter((item: any) => isFavorite(item.id));
+      }
+      setResults(processedData);
+      if (autoSelectFirst && processedData && processedData.length > 0) {
+        setSelectedResultIds([processedData[0].id]);
+      }
+
     } catch (err) {
       console.error(err);
       alert('Gagal mencari data');
@@ -272,7 +308,10 @@ export default function Library() {
           <button onClick={() => navigate('/dashboard')} className="glass-button text-indigo-900 flex items-center gap-2">
             <ArrowLeft size={16}/> Kembali
           </button>
-          <h1 className="text-xl font-bold text-indigo-900">Library (Database)</h1>
+          <button onClick={() => setIsDbManagerOpen(true)} className="glass-button text-indigo-900 flex items-center gap-2 bg-indigo-100 hover:bg-indigo-200 border-indigo-300 shadow-sm">
+            Database Manager
+          </button>
+          <h1 className="text-xl font-bold text-indigo-900 ml-2">Library (Database)</h1>
         </div>
         <div className="flex items-center gap-3">
           <SyncButton />
@@ -286,9 +325,21 @@ export default function Library() {
         <section className="w-full h-[45%] md:h-auto md:w-1/3 glass-panel p-4 flex flex-col">
           <h2 className="text-lg font-bold text-indigo-900 mb-4">Pencarian Data</h2>
           
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-2 mb-2">
             <button onClick={() => {setSearchType('song'); setResults([]); setSelectedItem(null); setSelectedResultIds([]);}} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'song' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white/30 text-indigo-900'}`}><Music size={16}/> Lagu</button>
             <button onClick={() => {setSearchType('bible'); setResults([]); setSelectedItem(null); setSelectedResultIds([]);}} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'bible' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white/30 text-indigo-900'}`}><BookOpen size={16}/> Alkitab</button>
+          </div>
+          
+          <div className="mb-4">
+            <select 
+              className="w-full bg-white/50 border border-indigo-200 rounded-lg px-2 py-2 text-sm text-indigo-900 font-semibold focus:outline-none focus:border-indigo-500 transition"
+              value={searchType === 'song' ? selectedSongVersion : selectedBibleVersion}
+              onChange={(e) => searchType === 'song' ? setSelectedSongVersion(e.target.value) : setSelectedBibleVersion(e.target.value)}
+            >
+              {dbList.filter(d => d.type === searchType).map(db => (
+                <option key={db.id} value={db.id}>{db.name}</option>
+              ))}
+            </select>
           </div>
 
           {searchType === 'song' && (
@@ -413,21 +464,49 @@ export default function Library() {
             {results.length === 0 && !isSearching && searchQuery === '' && (
               <div className="p-1">
                 {searchType === 'song' ? (
-                  <div className="grid grid-cols-5 gap-1.5">
-                    {Array.from({length: 525}, (_, i) => i + 1).map(num => (
-                      <button 
-                        key={num}
-                        onClick={() => {
-                          setSearchQuery(num.toString());
-                          performSearch(num.toString(), 'song', true);
-                          document.getElementById('searchInputBox')?.focus();
-                        }}
-                        className="py-2 px-1 text-center text-xs font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm"
-                      >
-                        {num}
-                      </button>
-                    ))}
-                  </div>
+                  <>
+                    <div className="flex justify-end gap-2 mb-3">
+                      <button onClick={() => setViewMode('grid')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-900 border border-indigo-200'}`}>Nomor Saja</button>
+                      <button onClick={() => setViewMode('list')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-900 border border-indigo-200'}`}>Nomor & Judul</button>
+                    </div>
+                    
+                    {viewMode === 'grid' ? (
+                      <div className="grid grid-cols-5 gap-1.5">
+                        {Array.from({length: 525}, (_, i) => i + 1).map(num => (
+                          <button 
+                            key={num}
+                            onClick={() => {
+                              setSearchQuery(num.toString());
+                              performSearch(num.toString(), 'song', true);
+                              document.getElementById('searchInputBox')?.focus();
+                            }}
+                            className="py-2 px-1 text-center text-xs font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm"
+                          >
+                            {num}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-1.5 max-h-[60vh] overflow-y-auto pr-2">
+                        {allSongTitles ? allSongTitles.map((song: any) => (
+                          <button 
+                            key={song.id}
+                            onClick={() => {
+                              setSearchQuery(song.id.toString());
+                              performSearch(song.id.toString(), 'song', true);
+                              document.getElementById('searchInputBox')?.focus();
+                            }}
+                            className="p-2 text-left text-sm font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm flex items-center gap-3"
+                          >
+                            <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded text-xs min-w-[32px] text-center">{song.id}</span>
+                            <span className="line-clamp-1">{song.title}</span>
+                          </button>
+                        )) : (
+                          <div className="text-center p-4"><Loader2 size={20} className="animate-spin text-indigo-500 mx-auto"/></div>
+                        )}
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="grid grid-cols-2 gap-1.5">
                     {bibleBooks.map(book => (
@@ -642,6 +721,95 @@ export default function Library() {
           )}
         </section>
       </main>
+      
+      {/* DATABASE MANAGER MODAL */}
+      {isDbManagerOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
+          <div className="bg-white/90 backdrop-blur-xl p-6 rounded-2xl shadow-2xl max-w-2xl w-full border border-white/40 max-h-[85vh] flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-indigo-900 flex items-center gap-2">
+                <Settings size={20} /> Database Manager
+              </h2>
+              <button onClick={() => setIsDbManagerOpen(false)} className="p-2 text-indigo-900/50 hover:text-indigo-900 hover:bg-indigo-100 rounded-lg transition">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto mb-6 pr-2 space-y-4">
+              <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+                <h3 className="font-bold text-indigo-900 mb-2">Unggah Versi Baru (.tsv)</h3>
+                <div className="flex gap-2 items-center mb-3">
+                  <select id="newDbType" className="glass-input !py-2 !text-sm">
+                    <option value="song">Lagu</option>
+                    <option value="bible">Alkitab</option>
+                  </select>
+                  <input id="newDbName" type="text" placeholder="Nama Versi (mis: KJV, NKB)" className="glass-input !py-2 !text-sm flex-1" />
+                </div>
+                <input 
+                  type="file" 
+                  accept=".tsv"
+                  onChange={async (e) => {
+                    if (!e.target.files || e.target.files.length === 0) return;
+                    const file = e.target.files[0];
+                    const type = (document.getElementById('newDbType') as HTMLSelectElement).value as 'song'|'bible';
+                    const name = (document.getElementById('newDbName') as HTMLInputElement).value;
+                    
+                    if (!name) {
+                      alert("Silakan masukkan Nama Versi terlebih dahulu.");
+                      return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = async (evt) => {
+                      const text = evt.target?.result as string;
+                      try {
+                        const newId = `${type}_${Date.now()}`;
+                        await addCustomDatabase({ id: newId, name, type }, text);
+                        alert("Database berhasil ditambahkan!");
+                        const list = await getDatabaseList();
+                        setDbList(list);
+                      } catch (err: any) {
+                        alert("Gagal memproses file: " + err.message);
+                      }
+                    };
+                    reader.readAsText(file);
+                  }}
+                  className="w-full text-sm text-indigo-900 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <h3 className="font-bold text-indigo-900 mb-3">Database Terpasang</h3>
+                <div className="space-y-2">
+                  {dbList.map(db => (
+                    <div key={db.id} className="flex justify-between items-center p-3 bg-white border border-indigo-100 rounded-lg shadow-sm">
+                      <div>
+                        <div className="font-semibold text-indigo-900">{db.name}</div>
+                        <div className="text-xs text-indigo-500 uppercase tracking-wider">{db.type} • {db.isDefault ? 'Bawaan' : 'Kustom'}</div>
+                      </div>
+                      {!db.isDefault && (
+                        <button 
+                          onClick={async () => {
+                            if (confirm(`Hapus database ${db.name}?`)) {
+                              await deleteDatabase(db.id);
+                              const list = await getDatabaseList();
+                              setDbList(list);
+                            }
+                          }}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+      )}
     </div>
   );
 }

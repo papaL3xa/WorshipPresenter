@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Lock, Loader2, CheckCircle, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Save, Lock, Loader2, CheckCircle, ShieldAlert, Download, Upload, Database } from 'lucide-react';
 import { callApi } from '../api';
+import { exportCustomSongsTsv, exportPlaylistsTsv, importBackupTsv } from '../utils/backupRestore';
 
 export default function Settings() {
   const navigate = useNavigate();
   const [currentAdminPin, setCurrentAdminPin] = useState('');
   const [newOperatorPin, setNewOperatorPin] = useState('');
   const [newAdminPin, setNewAdminPin] = useState('');
+  const [activeTab, setActiveTab] = useState<'security' | 'backup'>('security');
   
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -75,7 +77,23 @@ export default function Settings() {
             <span className="font-semibold">{message}</span>
           </div>
         )}
+        
+        <div className="flex gap-4 mb-8">
+          <button 
+            onClick={() => setActiveTab('security')}
+            className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'security' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white/40 text-indigo-900 hover:bg-white/60'}`}
+          >
+            Keamanan (PIN)
+          </button>
+          <button 
+            onClick={() => setActiveTab('backup')}
+            className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'backup' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white/40 text-indigo-900 hover:bg-white/60'}`}
+          >
+            Backup & Restore
+          </button>
+        </div>
 
+        {activeTab === 'security' && (
         <div className="space-y-8">
           <div className="bg-white/40 p-8 rounded-2xl border border-white/60 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:bg-white/50 transition-colors">
             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none group-hover:bg-indigo-500/20 transition-colors"></div>
@@ -135,6 +153,74 @@ export default function Settings() {
             </div>
           </div>
         </div>
+        )}
+        
+        {activeTab === 'backup' && (
+        <div className="space-y-8">
+          <div className="bg-white/40 p-8 rounded-2xl border border-white/60 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:bg-white/50 transition-colors">
+            <h2 className="text-xl font-heading font-bold text-indigo-950 mb-6 flex items-center gap-3 drop-shadow-sm">
+              <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600"><Download size={20} /></div>
+              Ekspor (Download Backup)
+            </h2>
+            <div className="flex flex-col sm:flex-row gap-4 relative z-10">
+              <button 
+                onClick={async () => {
+                  setIsLoading(true);
+                  await exportCustomSongsTsv();
+                  setIsLoading(false);
+                }}
+                className="flex-1 glass-button bg-indigo-500/10 text-indigo-800 hover:bg-indigo-500/20 border-indigo-200 flex flex-col items-center gap-3 p-6 rounded-xl"
+              >
+                <Database size={32} />
+                <span className="font-bold">Backup Lagu Kustom (.tsv)</span>
+              </button>
+              <button 
+                onClick={async () => {
+                  setIsLoading(true);
+                  await exportPlaylistsTsv();
+                  setIsLoading(false);
+                }}
+                className="flex-1 glass-button bg-purple-500/10 text-purple-800 hover:bg-purple-500/20 border-purple-200 flex flex-col items-center gap-3 p-6 rounded-xl"
+              >
+                <Database size={32} />
+                <span className="font-bold">Backup Playlist (.tsv)</span>
+              </button>
+            </div>
+          </div>
+          
+          <div className="bg-white/40 p-8 rounded-2xl border border-white/60 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:bg-white/50 transition-colors">
+            <h2 className="text-xl font-heading font-bold text-indigo-950 mb-6 flex items-center gap-3 drop-shadow-sm">
+              <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600"><Upload size={20} /></div>
+              Impor (Restore Backup)
+            </h2>
+            <div className="relative z-10">
+              <p className="text-sm font-medium text-slate-600 mb-4">Unggah file .tsv hasil backup Anda ke sini. Lagu Kustom dan Playlist akan otomatis dikenali dan ditambahkan ke database Anda.</p>
+              <input 
+                type="file"
+                accept=".tsv"
+                onChange={async (e) => {
+                  if (!e.target.files || e.target.files.length === 0) return;
+                  const file = e.target.files[0];
+                  setIsLoading(true);
+                  setMessage('');
+                  try {
+                    const resultMsg = await importBackupTsv(file);
+                    setIsError(false);
+                    setMessage(resultMsg);
+                  } catch (err: any) {
+                    setIsError(true);
+                    setMessage(err);
+                  } finally {
+                    setIsLoading(false);
+                    e.target.value = ''; // reset
+                  }
+                }}
+                className="w-full text-sm text-indigo-900 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200 cursor-pointer border-2 border-dashed border-emerald-200 p-4 rounded-xl bg-white/50"
+              />
+            </div>
+          </div>
+        </div>
+        )}
       </div>
     </div>
   );

@@ -19,11 +19,14 @@
     <script type="module" src="/src/main.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js').catch(err => {
-            console.log('SW registration failed:', err);
+        // Do not register service worker if running in Electron (file:// protocol)
+        if (!navigator.userAgent.toLowerCase().includes('electron') && window.location.protocol !== 'file:') {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').catch(err => {
+              console.log('SW registration failed:', err);
+            });
           });
-        });
+        }
       }
     </script>
   </body>

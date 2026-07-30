@@ -4,6 +4,13 @@ import { callApi } from '../api';
 import { SyncButton } from '../components/SyncButton';
 import { BackgroundPickerModal } from '../components/BackgroundPickerModal';
 import { saveLocalVideo } from '../utils/imageStorage';
+import { initDefaultDatabases, searchLocalSongs, searchLocalBible, syncCustomSongs, getDatabaseList, DatabaseVersion, getAllLocalSongTitles } from '../utils/dbStorage';
+
+const bibleBooks = [
+  "Kejadian", "Keluaran", "Imamat", "Bilangan", "Ulangan", "Yosua", "Hakim-Hakim", "Rut", 
+  "1 Samuel", "2 Samuel", "1 Raja-Raja", "2 Raja-Raja", "1 Tawarikh", "2 Tawarikh", "Ezra", "Nehemia", "Ester", "Ayub", "Mazmur", "Amsal", "Pengkhotbah", "Kidung Agung", "Yesaya", "Yeremia", "Ratapan", "Yehezkiel", "Daniel", "Hosea", "Yoel", "Amos", "Obaja", "Yunus", "Mikha", "Nahum", "Habakuk", "Zefanya", "Hagai", "Zakharia", "Maleakhi",
+  "Matius", "Markus", "Lukas", "Yohanes", "Kisah Para Rasul", "Roma", "1 Korintus", "2 Korintus", "Galatia", "Efesus", "Filipi", "Kolose", "1 Tesalonika", "2 Tesalonika", "1 Timotius", "2 Timotius", "Titus", "Filemon", "Ibrani", "Yakobus", "1 Petrus", "2 Petrus", "1 Yohanes", "2 Yohanes", "3 Yohanes", "Yudas", "Wahyu"
+];
 import { splitLongSegments } from '../utils/textSplitter';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -33,6 +40,20 @@ export default function ControlPanel() {
   const [isEditingRundown, setIsEditingRundown] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [dragItem, setDragItem] = useState<number | null>(null);
+  const [allSongTitles, setAllSongTitles] = useState<{id: string, title: string}[] | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  
+  const [dbList, setDbList] = useState<DatabaseVersion[]>([]);
+  const [selectedSongVersion, setSelectedSongVersion] = useState('song_LSEB');
+  const [selectedBibleVersion, setSelectedBibleVersion] = useState('bible_TB');
+
+  // Initialize DBs on mount
+  useEffect(() => {
+    initDefaultDatabases().then(() => {
+      getDatabaseList().then(setDbList);
+      syncCustomSongs(); // Sync background
+    });
+  }, []);
 
   // Segment Edit State
   const [isSegmentModalOpen, setIsSegmentModalOpen] = useState(false);
@@ -48,6 +69,14 @@ export default function ControlPanel() {
   
   // Add Item States
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (isAddItemModalOpen) {
+      getAllLocalSongTitles(selectedSongVersion).then(res => {
+        if (Array.isArray(res)) setAllSongTitles(res);
+      }).catch(err => console.error("Gagal memuat judul lagu", err));
+    }
+  }, [isAddItemModalOpen, selectedSongVersion]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState<'song'|'bible'>('song');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -247,10 +276,20 @@ export default function ControlPanel() {
     }
     setIsSearching(true);
     try {
-      const endpoint = type === 'song' ? 'searchSongs' : 'searchBible';
-      const res = await callApi(endpoint, { q: query });
-      if (res.success) {
-        setSearchResults(res.data);
+      if (type === 'song') {
+        const results = await searchLocalSongs(query, selectedSongVersion);
+        setSearchResults(results.slice(0, 50));
+      } else {
+        const results = await searchLocalBible(query, selectedBibleVersion);
+        const formattedResults = results.map((item: any, idx: number) => ({
+          id: `b_${idx}`,
+          title: `${item.book} ${item.chapter}:${item.verse}`,
+          author: 'Alkitab',
+          category: 'Alkitab',
+          segments: [item.text],
+          segmentOrder: [0]
+        }));
+        setSearchResults(formattedResults);
       }
     } catch (err) {
       console.error(err);
@@ -291,6 +330,45 @@ export default function ControlPanel() {
     setIsAddItemModalOpen(false);
     setIsEditingRundown(true);
     saveRundown(finalPlaylist);
+  };
+
+  const handleQuickAddSong = async (id: string) => {
+    try {
+      setIsSearching(true);
+      const res = await searchLocalSongs(id, selectedSongVersion);
+      if (res && res.length > 0) {
+        // Find exact match just in case
+        const exact = res.find((s: any) => s.id == id) || res[0];
+        const processed = splitLongSegments([exact])[0];
+        
+        // Add to rundown
+        let newIndex = playlist.length;
+        setPlaylist(prev => {
+          let newPlaylist = [...prev];
+          if (replaceIndex !== null) {
+            newPlaylist[replaceIndex] = processed;
+            newIndex = replaceIndex;
+          } else {
+            newPlaylist.push(processed);
+          }
+          return newPlaylist;
+        });
+        
+        setReplaceIndex(null);
+        setIsAddItemModalOpen(false);
+        setSearchQuery('');
+        setSearchResults([]);
+        
+        // Make it active immediately
+        setActiveItem(newIndex);
+        setActiveSegment(0);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Gagal mengambil data lagu');
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleSlideUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -859,9 +937,22 @@ export default function ControlPanel() {
               <Plus size={20} /> Tambah Item ke Rundown
             </h2>
             
-            <div className="flex gap-2 mb-4">
-              <button onClick={() => setSearchType('song')} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition text-sm font-semibold ${searchType === 'song' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-indigo-900 border border-indigo-200'}`}><Music size={14}/> Lagu</button>
-              <button onClick={() => setSearchType('bible')} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition text-sm font-semibold ${searchType === 'bible' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-indigo-900 border border-indigo-200'}`}><BookOpen size={14}/> Ayat</button>
+            <div className="flex gap-2 mb-4 justify-between items-center">
+              <div className="flex gap-2 flex-1">
+                <button onClick={() => setSearchType('song')} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition text-sm font-semibold ${searchType === 'song' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-indigo-900 border border-indigo-200'}`}><Music size={14}/> Lagu</button>
+                <button onClick={() => setSearchType('bible')} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition text-sm font-semibold ${searchType === 'bible' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-indigo-900 border border-indigo-200'}`}><BookOpen size={14}/> Ayat</button>
+              </div>
+              <div className="flex-1">
+                <select 
+                  className="w-full bg-white/50 border border-indigo-200 rounded-lg px-2 py-2 text-sm text-indigo-900 font-semibold focus:outline-none focus:border-indigo-500 transition"
+                  value={searchType === 'song' ? selectedSongVersion : selectedBibleVersion}
+                  onChange={(e) => searchType === 'song' ? setSelectedSongVersion(e.target.value) : setSelectedBibleVersion(e.target.value)}
+                >
+                  {dbList.filter(d => d.type === searchType).map(db => (
+                    <option key={db.id} value={db.id}>{db.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <form onSubmit={handleSearch} className="flex gap-2 mb-4">
@@ -892,7 +983,60 @@ export default function ControlPanel() {
                 <div className="text-center text-sm text-indigo-900/60 p-4">Tidak ada hasil ditemukan.</div>
               )}
               {searchResults.length === 0 && !isSearching && searchQuery === '' && (
-                <div className="text-center text-sm text-indigo-900/40 p-4 mt-8">Ketik kata kunci untuk mencari.</div>
+                <div className="p-1">
+                  {searchType === 'song' ? (
+                    <>
+                      <div className="flex justify-end gap-2 mb-3">
+                        <button onClick={() => setViewMode('grid')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-900 border border-indigo-200'}`}>Nomor Saja</button>
+                        <button onClick={() => setViewMode('list')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-900 border border-indigo-200'}`}>Nomor & Judul</button>
+                      </div>
+                      
+                      {viewMode === 'grid' ? (
+                        <div className="grid grid-cols-6 gap-1.5">
+                          {Array.from({length: 525}, (_, i) => i + 1).map(num => (
+                            <button 
+                              key={num}
+                              onClick={() => handleQuickAddSong(num.toString())}
+                              className="py-2 px-1 text-center text-xs font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm"
+                            >
+                              {num}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-1.5">
+                          {allSongTitles ? allSongTitles.map((song: any) => (
+                            <button 
+                              key={song.id}
+                              onClick={() => handleQuickAddSong(song.id.toString())}
+                              className="p-2 text-left text-sm font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm flex items-center gap-3"
+                            >
+                              <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded text-xs min-w-[32px] text-center">{song.id}</span>
+                              <span className="line-clamp-1">{song.title}</span>
+                            </button>
+                          )) : (
+                            <div className="text-center p-4"><Loader2 size={20} className="animate-spin text-indigo-500 mx-auto"/></div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {bibleBooks.map(book => (
+                        <button 
+                          key={book}
+                          onClick={() => {
+                            setSearchQuery(book + " ");
+                            document.getElementById('searchInputBox')?.focus();
+                          }}
+                          className="p-2 text-left text-xs font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition line-clamp-1 shadow-sm"
+                        >
+                          {book}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 

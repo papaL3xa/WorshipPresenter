@@ -6,6 +6,11 @@ interface ApiOptions {
 }
 
 export async function callApi(action: string, params: Record<string, string> = {}, options: ApiOptions = { method: 'GET' }) {
+  // Bridge to Electron if running as Desktop App
+  if (typeof window !== 'undefined' && (window as any).electronAPI) {
+    return await (window as any).electronAPI.callApi(action, params, options.payload);
+  }
+
   const url = new URL(CONFIG.GAS_WEB_APP_URL);
   url.searchParams.set('action', action);
   

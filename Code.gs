@@ -26,7 +26,10 @@ function handleRequest(e, method) {
     updatePins: updatePinsHandler,
     getPlaylists: getPlaylists,
     savePlaylist: savePlaylist,
+    getLibraryStats: getLibraryStats,
     searchSongs: searchSongs,
+    getAllSongTitles: getAllSongTitles,
+    getCustomSongs: getCustomSongs,
     searchBible: searchBible,
     getPlaylistItems: getPlaylistItems,
     deletePlaylist: deletePlaylist,
@@ -246,6 +249,60 @@ function deletePlaylist(e) {
   
   SpreadsheetApp.flush(); // Pastikan perubahan tersimpan langsung ke database
   return { status: "deleted" };
+}
+
+function getAllSongTitles(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sSongs = ss.getSheetByName("Songs");
+  if (sSongs.getLastRow() <= 1) return [];
+
+  const data = sSongs.getRange(2, 1, sSongs.getLastRow() - 1, 2).getValues();
+  return data.map(row => ({
+    id: row[0],
+    title: row[1]
+  }));
+}
+
+function getCustomSongs(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sSongs = ss.getSheetByName("Songs");
+  const lastRow = sSongs.getLastRow();
+  // We assume rows 2 to 525 are base songs. Row 526+ are custom.
+  if (lastRow < 526) return { success: true, data: [] };
+
+  const sSongSegments = ss.getSheetByName("SongSegments");
+  const segData = sSongSegments.getDataRange().getValues();
+
+  // Get custom songs only
+  const customData = sSongs.getRange(526, 1, lastRow - 525, 5).getValues();
+  
+  let results = [];
+  for (let i = 0; i < customData.length; i++) {
+    let row = customData[i];
+    let songId = row[0];
+    
+    // Find segments
+    let segmentsObj = [];
+    for (let j = 1; j < segData.length; j++) {
+      if (segData[j][1] === songId) {
+        segmentsObj.push({
+          text: segData[j][3],
+          order: segData[j][4]
+        });
+      }
+    }
+    segmentsObj.sort((a,b) => a.order - b.order);
+    
+    results.push({
+      id: songId,
+      title: row[1],
+      author: row[2],
+      category: row[3],
+      segmentOrder: row[4] ? JSON.parse(row[4]) : [],
+      segments: segmentsObj.map(s => s.text)
+    });
+  }
+  return { success: true, data: results };
 }
 
 function searchSongs(e) {
