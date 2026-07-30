@@ -32,7 +32,7 @@ const PRESET_BACKGROUNDS: DriveImage[] = Array.from({ length: 20 }, (_, i) => {
   return {
     id: `preset_bg_${num}`,
     name: names[i],
-    url: `/backgrounds/bg_${num}_${fileNames[i]}.svg`
+    url: `${import.meta.env.BASE_URL}backgrounds/bg_${num}_${fileNames[i]}.svg`
   };
 });
 
