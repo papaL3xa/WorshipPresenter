@@ -1,6 +1,39 @@
 import { useState, useEffect, useRef } from 'react';
 import { callApi } from '../api';
 import { CONFIG } from '../config';
+import { getSlideBackground } from '../utils/imageStorage';
+
+const LocalVideoPlayer = ({ id }: { id: string }) => {
+  const [url, setUrl] = useState<string>('');
+  
+  useEffect(() => {
+    let objectUrl = '';
+    const load = async () => {
+      import('../utils/imageStorage').then(async (m) => {
+        const blob = await m.getLocalVideo(id);
+        if (blob) {
+          objectUrl = URL.createObjectURL(blob);
+          setUrl(objectUrl);
+        }
+      });
+    };
+    load();
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [id]);
+
+  if (!url) return <div className="text-white text-2xl font-semibold animate-pulse flex flex-col items-center justify-center h-full"><div className="animate-spin border-4 border-indigo-500 border-t-transparent rounded-full w-12 h-12 mb-4"></div>Memuat Video...</div>;
+
+  return (
+    <video 
+      className="w-full h-full object-contain animate-fade-in" 
+      src={url} 
+      controls 
+      autoPlay
+    />
+  );
+};
 
 export default function DisplayWindow() {
   const [liveState, setLiveState] = useState<{
@@ -18,7 +51,8 @@ export default function DisplayWindow() {
     bgUrl: localStorage.getItem('custom_bg'),
     logoUrl: localStorage.getItem('worship_logo_b64')
   });
-  const [logoPos, setLogoPos] = useState(localStorage.getItem('worship_logo_position') || 'bottom-right');
+  const [logoPos, setLogoPos] = useState<'top-left'|'top-right'|'bottom-left'|'bottom-right'>( (localStorage.getItem('worship_logo_position') as any) || 'bottom-right');
+  const [actualBgUrl, setActualBgUrl] = useState<string | null>(null);
   
   const [rtState, setRtState] = useState({
     text: localStorage.getItem('worship_rt_text') || '',
@@ -228,11 +262,27 @@ export default function DisplayWindow() {
     return t;
   };
 
+  const itemBg = liveState.item?.segmentBackgrounds?.[liveState.segmentIndex] 
+    || playlistMap[liveState.currentItemId || '']?.segmentBackgrounds?.[liveState.segmentIndex];
+
+  useEffect(() => {
+    const fetchBg = async () => {
+      const currentBg = itemBg || liveState.bgUrl;
+      if (currentBg?.startsWith('slide_bg_')) {
+        const base64 = await getSlideBackground(currentBg);
+        setActualBgUrl(base64 || null);
+      } else {
+        setActualBgUrl(currentBg || null);
+      }
+    };
+    fetchBg();
+  }, [itemBg, liveState.bgUrl]);
+
   return (
     <div 
       className="fixed inset-0 flex flex-col items-center justify-center bg-gray-900 text-white p-12 text-center transition-all duration-300 overflow-hidden cursor-none"
       style={{
-        backgroundImage: liveState.bgUrl ? `url(${liveState.bgUrl})` : 'none',
+        backgroundImage: actualBgUrl ? `url(${actualBgUrl})` : 'none',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
@@ -240,8 +290,8 @@ export default function DisplayWindow() {
     >
       <div className="absolute inset-0 bg-black/40 z-0"></div>
 
-      {/* Watermark Logo Kanan Bawah */}
-      {liveState.logoUrl && (
+      {/* Watermark Logo Kanan Bawah (Disembunyikan jika tidak ada konten karena logo sudah besar di tengah) */}
+      {liveState.logoUrl && (text || isSlideshow || itemType === 'video') && (
         <img 
           src={liveState.logoUrl} 
           alt="Logo" 
@@ -308,6 +358,9 @@ export default function DisplayWindow() {
                 ></iframe>
               );
             }
+            if (url.startsWith('local_vid_')) {
+              return <LocalVideoPlayer key={url} id={url} />;
+            }
             return (
               <video 
                 key={url}
@@ -324,7 +377,7 @@ export default function DisplayWindow() {
             alt="Slideshow" 
             className="w-full h-full object-contain animate-fade-in"
           />
-        ) : (
+        ) : text ? (
           <>
             {displayLabel && (
               <div 
@@ -346,7 +399,13 @@ export default function DisplayWindow() {
             >
             </h1>
           </>
-        )}
+        ) : liveState.logoUrl ? (
+          <img 
+            src={liveState.logoUrl} 
+            alt="Logo" 
+            className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 object-contain animate-fade-in opacity-80"
+          />
+        ) : null}
       </div>
 
       {/* Progress Slide di Bawah */}

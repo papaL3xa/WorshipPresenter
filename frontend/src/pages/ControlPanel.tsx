@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Monitor, Square, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, Upload, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw } from 'lucide-react';
 import { callApi } from '../api';
 import { SyncButton } from '../components/SyncButton';
+import { BackgroundPickerModal } from '../components/BackgroundPickerModal';
+import { saveLocalVideo } from '../utils/imageStorage';
 import { splitLongSegments } from '../utils/textSplitter';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -19,6 +21,7 @@ export default function ControlPanel() {
   const [activeSegment, setActiveSegment] = useState(0);
   const [mode, setMode] = useState<'content' | 'blank' | 'logo'>('content');
   const [isBgModalOpen, setIsBgModalOpen] = useState(false);
+  const [isBgPickerOpen, setIsBgPickerOpen] = useState(false);
   const [isLogoModalOpen, setIsLogoModalOpen] = useState(false);
   const [isRunningTextModalOpen, setIsRunningTextModalOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -194,36 +197,21 @@ export default function ControlPanel() {
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
-    if (file.size > 30 * 1024 * 1024) {
-      alert("Ukuran video maksimal 30MB.");
-      return;
-    }
     
     setIsVideoUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const base64Data = (event.target?.result as string).split(',')[1];
-        try {
-          const res = await callApi('uploadVideo', {}, { 
-            method: 'POST', 
-            payload: { video: { name: file.name, mimeType: file.type, base64: base64Data } } 
-          });
-          if (res.success && res.data.url) {
-            setVideoUrlInput(res.data.url);
-          } else {
-            alert('Gagal mengupload video');
-          }
-        } catch (err: any) {
-          alert('Error saat upload video: ' + (err.message || 'Unknown error'));
-        } finally {
-          setIsVideoUploading(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
+      const vidId = Date.now().toString();
+      // Simpan file blob langsung ke IndexedDB
+      await saveLocalVideo(vidId, file);
+      
+      // Set referensi ID ke input URL
+      setVideoUrlInput(`local_vid_${vidId}`);
+      // Opsional: ganti nama file jadi title agar rapi
+      // Tapi karena komponen handleVideoSubmit menggunakan videoUrlInput sebagai segment, kita set ke local_vid_
+    } catch (err: any) {
+      alert('Error saat menyimpan video ke memori lokal: ' + (err.message || 'Unknown error'));
+    } finally {
       setIsVideoUploading(false);
-      alert("Gagal membaca file");
     }
   };
 
@@ -414,8 +402,10 @@ export default function ControlPanel() {
 
   // Sync saat ada perubahan
   useEffect(() => {
-    pushStateToLive(activeItem, activeSegment, mode);
-  }, [activeItem, activeSegment, mode, playlist]);
+    if (!isEditingRundown) {
+      pushStateToLive(activeItem, activeSegment, mode);
+    }
+  }, [activeItem, activeSegment, mode, playlist, isEditingRundown]);
 
   const wrapText = (colorTag: string) => {
     const textarea = document.getElementById('editor-textarea') as HTMLTextAreaElement;
@@ -829,6 +819,15 @@ export default function ControlPanel() {
                               }}
                               placeholder="Ketik teks di sini (blok teks untuk mewarnai)..."
                             />
+                            <div className="flex justify-end mt-2">
+                              <button 
+                                onClick={() => setIsBgPickerOpen(true)}
+                                className="flex items-center gap-2 text-sm font-semibold text-indigo-700 bg-white/50 hover:bg-white/80 px-3 py-1.5 rounded-lg border border-indigo-200 shadow-sm transition"
+                              >
+                                <ImageIcon size={16} /> 
+                                {playlist[activeItem]?.segmentBackgrounds?.[activeSegment] ? 'Ubah Background Slide Ini' : 'Set Background Slide Ini'}
+                              </button>
+                            </div>
                           </div>
                         ) : playlist[activeItem]?.segments[activeSegment] ? (
                           playlist[activeItem].segments[activeSegment]
@@ -1197,6 +1196,20 @@ export default function ControlPanel() {
         </div>
       )}
 
+      {/* Modal Pilih Background Per Slide */}
+      <BackgroundPickerModal
+        isOpen={isBgPickerOpen}
+        onClose={() => setIsBgPickerOpen(false)}
+        currentBgUrl={playlist[activeItem]?.segmentBackgrounds?.[activeSegment]}
+        onSelect={(url) => {
+          const newPlaylist = [...playlist];
+          if (!newPlaylist[activeItem].segmentBackgrounds) {
+            newPlaylist[activeItem].segmentBackgrounds = [];
+          }
+          newPlaylist[activeItem].segmentBackgrounds[activeSegment] = url;
+          setPlaylist(newPlaylist);
+        }}
+      />
     </div>
   );
 }

@@ -31,7 +31,7 @@ function handleRequest(e, method) {
     getPlaylistItems: getPlaylistItems,
     deletePlaylist: deletePlaylist,
     uploadImages: uploadImagesHandler,
-    uploadVideo: uploadVideoHandler,
+    getDriveImages: getDriveImagesHandler,
     saveSongItem: saveSongItem
   };
 
@@ -691,6 +691,8 @@ function uploadImagesHandler(e) {
   const folders = DriveApp.getFoldersByName("WorshipPresenter_Images");
   if (folders.hasNext()) {
     folder = folders.next();
+    // Force sharing to ensure images are public
+    folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   } else {
     folder = DriveApp.createFolder("WorshipPresenter_Images");
     folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
@@ -701,38 +703,10 @@ function uploadImagesHandler(e) {
     // img format: { name: "slide1.jpg", mimeType: "image/jpeg", base64: "..." }
     const blob = Utilities.newBlob(Utilities.base64Decode(img.base64), img.mimeType, img.name);
     const file = folder.createFile(blob);
-    // return direct drive link. export=download lebih ramah untuk tag <img> dibandingkan export=view
-    urls.push("https://drive.google.com/uc?export=download&id=" + file.getId());
+    // Use standard uc?id for direct image embedding
+    urls.push("https://drive.google.com/uc?id=" + file.getId());
   }
   return { urls: urls };
-}
-
-function uploadVideoHandler(e) {
-  const payloadStr = e.parameter.payload || (e.postData ? e.postData.contents : "{}");
-  const data = JSON.parse(payloadStr);
-  
-  if (!data.video || !data.video.base64) {
-    throw new Error("Data video tidak valid.");
-  }
-  
-  let folder;
-  const folders = DriveApp.getFoldersByName("WorshipPresenter_Videos");
-  if (folders.hasNext()) {
-    folder = folders.next();
-  } else {
-    folder = DriveApp.createFolder("WorshipPresenter_Videos");
-    folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  }
-  
-  const blob = Utilities.newBlob(Utilities.base64Decode(data.video.base64), data.video.mimeType, data.video.name);
-  const file = folder.createFile(blob);
-  
-  // Untuk video, kita return link 'preview' agar bisa di-embed via iframe jika formatnya tidak didukung direct play
-  // atau menggunakan 'download' untuk native <video> tag jika MP4.
-  // Sebaiknya kita gunakan 'view' URL untuk drive dan biarkan iframe menanganinya, atau 'download'.
-  // 'download' (uc?export=download) akan sangat lambat untuk video besar di tag <video>. Tapi kita coba 'download'.
-  const url = "https://drive.google.com/uc?export=download&id=" + file.getId();
-  return { url: url };
 }
 
 function validateAuth(e) {
@@ -743,4 +717,29 @@ function validateAuth(e) {
 
 function respondJson(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function getDriveImagesHandler(e) {
+  const folders = DriveApp.getFoldersByName("WorshipPresenter_Images");
+  if (!folders.hasNext()) {
+    return { images: [] };
+  }
+  const folder = folders.next();
+  // Ensure the folder is public so old images become accessible
+  folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  
+  const files = folder.getFiles();
+  const images = [];
+  while (files.hasNext()) {
+    const file = files.next();
+    const mime = file.getMimeType();
+    if (mime.indexOf("image/") !== -1) {
+      images.push({
+        id: file.getId(),
+        name: file.getName(),
+        url: "https://drive.google.com/uc?id=" + file.getId()
+      });
+    }
+  }
+  return { images: images };
 }
