@@ -224,6 +224,20 @@ export default function Library() {
     performSearch(searchQuery, searchType);
   };
 
+  const handleQuickOpenSong = async (id: string) => {
+    try {
+      const res = await searchLocalSongs(id, selectedSongVersion);
+      if (res && res.length > 0) {
+        const exact = res.find((s: any) => s.id == id) || res[0];
+        const processed = splitLongSegments([exact])[0];
+        setSelectedItem(JSON.parse(JSON.stringify(processed)));
+        setSelectedResultIds([processed.id]);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     if (selectedResultIds.length === 0) {
       setSelectedItem(null);
@@ -477,9 +491,7 @@ export default function Library() {
                           <button 
                             key={num}
                             onClick={() => {
-                              setSearchQuery(num.toString());
-                              performSearch(num.toString(), 'song', true);
-                              document.getElementById('searchInputBox')?.focus();
+                              handleQuickOpenSong(num.toString());
                             }}
                             className="py-2 px-1 text-center text-xs font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm"
                           >
@@ -493,9 +505,7 @@ export default function Library() {
                           <button 
                             key={song.id}
                             onClick={() => {
-                              setSearchQuery(song.id.toString());
-                              performSearch(song.id.toString(), 'song', true);
-                              document.getElementById('searchInputBox')?.focus();
+                              handleQuickOpenSong(song.id.toString());
                             }}
                             className="p-2 text-left text-sm font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm flex items-center gap-3"
                           >
