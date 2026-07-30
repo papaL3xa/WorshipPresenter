@@ -233,6 +233,32 @@ export const searchLocalBible = async (query: string, versionId: string): Promis
   
   const q = query.toLowerCase();
   
+  // Support range reference: "Kejadian 1:1-9"
+  const rangeMatch = q.match(/^([1-3]?[a-z\s]+?)\s*(\d+):(\d+)\s*-\s*(\d+)$/i);
+  if (rangeMatch) {
+    let bookQuery = rangeMatch[1].trim();
+    const chapQuery = parseInt(rangeMatch[2], 10);
+    const startVerse = parseInt(rangeMatch[3], 10);
+    const endVerse = parseInt(rangeMatch[4], 10);
+    
+    const foundVerses = verses.filter(v => 
+      v.book.toLowerCase().includes(bookQuery) && 
+      v.chapter === chapQuery && 
+      v.verse >= startVerse &&
+      v.verse <= endVerse
+    );
+
+    if (foundVerses.length > 0) {
+      return [{
+        isRange: true,
+        id: `r_${Date.now()}`,
+        title: `${foundVerses[0].book} ${chapQuery}:${startVerse}-${endVerse}`,
+        segments: foundVerses.map(v => v.text)
+      }];
+    }
+    return [];
+  }
+
   // Support exact reference: "Kejadian 1:1"
   const refMatch = q.match(/^([1-3]?[a-z\s]+?)\s*(\d+):(\d+)$/i);
   if (refMatch) {
@@ -246,7 +272,7 @@ export const searchLocalBible = async (query: string, versionId: string): Promis
       v.verse === verseQuery
     );
   }
-  
+
   // Support chapter reference: "Kejadian 1"
   const chapMatch = q.match(/^([1-3]?[a-z\s]+?)\s*(\d+)$/i);
   if (chapMatch) {

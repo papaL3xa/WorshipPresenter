@@ -63,7 +63,7 @@ export default function Dashboard() {
         <section className="glass-panel p-6 lg:col-span-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-heading font-bold text-slate-800 drop-shadow-sm">Jadwal Ibadah Mendatang</h2>
-            <button onClick={() => navigate('/playlist/new')} className="glass-button bg-indigo-500/20 text-indigo-900 border-indigo-500/30 hover:bg-indigo-500/30 flex items-center gap-2">
+            <button onClick={() => navigate('/control?id=new')} className="glass-button bg-indigo-500/20 text-indigo-900 border-indigo-500/30 hover:bg-indigo-500/30 flex items-center gap-2">
               <Plus size={18} /> Playlist Baru
             </button>
           </div>
@@ -86,7 +86,6 @@ export default function Dashboard() {
                     </p>
                   </div>
                   <div className="flex gap-3 w-full md:w-auto">
-                    <button onClick={() => navigate('/playlist/edit?id=' + pl.id)} className="glass-button flex-1 md:flex-none justify-center">Buka</button>
                     <button onClick={() => navigate('/control?id=' + pl.id)} className="glass-button flex-1 md:flex-none justify-center bg-gradient-to-r from-emerald-400 to-teal-500 text-white border-transparent shadow-lg hover:shadow-emerald-500/40 font-bold flex items-center gap-2">
                       <Play size={16} className="fill-white"/> Live
                     </button>

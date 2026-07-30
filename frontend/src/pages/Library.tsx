@@ -173,12 +173,13 @@ export default function Library() {
       } else {
         const res = await searchLocalBible(query, selectedBibleVersion);
         resultsData = res.map((item: any, idx: number) => ({
-          id: `b_${idx}`,
-          title: `${item.book} ${item.chapter}:${item.verse}`,
+          id: item.isRange ? item.id : `b_${idx}`,
+          type: 'bible',
+          title: item.isRange ? item.title : `${item.book} ${item.chapter}:${item.verse}`,
           author: 'Alkitab',
           category: 'Alkitab',
-          segments: [item.text],
-          segmentOrder: [0]
+          segments: item.isRange ? item.segments : [item.text],
+          segmentOrder: item.isRange ? item.segments.map((_:any, i:number) => i) : [0]
         }));
       }
       

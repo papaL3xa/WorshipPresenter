@@ -8,7 +8,6 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  // Hanya pass-through, tidak melakukan cache offline berat
-  // karena aplikasi ini membutuhkan koneksi ke Google Sheets
-  e.respondWith(fetch(e.request).catch(() => new Response("Offline")));
+  // Pass-through without masking network errors
+  e.respondWith(fetch(e.request));
 });

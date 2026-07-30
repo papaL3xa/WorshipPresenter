@@ -87,7 +87,7 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
     if (idx >= 0) db.customSongs[idx] = newSong;
     else db.customSongs.push(newSong);
     saveDb(db);
-    return { status: 'saved', songId: payload.id };
+    return { success: true, status: 'saved', songId: payload.id };
   }
   
   if (action === 'getPlaylists') {
@@ -105,7 +105,7 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
     if (idx >= 0) db.playlists[idx] = newPlaylist;
     else db.playlists.push(newPlaylist);
     saveDb(db);
-    return { playlistId: newPlaylist.id, status: payload.id ? 'updated' : 'saved' };
+    return { success: true, playlistId: newPlaylist.id, status: payload.id ? 'updated' : 'saved' };
   }
   
   if (action === 'getPlaylistItems') {
@@ -118,7 +118,7 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
       db.playlists = db.playlists.filter(p => p.id !== payload.id);
       saveDb(db);
     }
-    return { status: 'deleted' };
+    return { success: true, status: 'deleted' };
   }
   
   if (action === 'getLibraryStats') {

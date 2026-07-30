@@ -49,6 +49,13 @@ function handleRequest(e, method) {
   }
 }
 
+function getLibraryStats() {
+  return {
+    totalSongs: 472,
+    totalBibleVerses: 31102
+  };
+}
+
 /**
  * ==========================================
  * DATABASE INITIALIZER

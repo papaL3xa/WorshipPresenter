@@ -18,7 +18,10 @@ export default function ControlPanel() {
   const location = useLocation();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
-  const playlistId = searchParams.get('id');
+  const urlId = searchParams.get('id');
+  
+  const [playlistId] = useState<string | null>(urlId === 'new' ? 'pl_' + Date.now() : urlId);
+  const [playlistDate, setPlaylistDate] = useState(new Date().toISOString().split('T')[0]);
 
   const [playlist, setPlaylist] = useState<any[]>([]);
   const [playlistName, setPlaylistName] = useState('Memuat...');
@@ -37,7 +40,7 @@ export default function ControlPanel() {
   const [logoPos, setLogoPos] = useState(localStorage.getItem('worship_logo_position') || 'bottom-right');
   
   // Edit Rundown States
-  const [isEditingRundown, setIsEditingRundown] = useState(false);
+  const [isEditingRundown, setIsEditingRundown] = useState(urlId === 'new');
   const [isSaving, setIsSaving] = useState(false);
   const [dragItem, setDragItem] = useState<number | null>(null);
   const [allSongTitles, setAllSongTitles] = useState<{id: string, title: string}[] | null>(null);
@@ -90,8 +93,9 @@ export default function ControlPanel() {
   // Ambil playlist dari server
   useEffect(() => {
     async function fetchPlaylist() {
-      if (!playlistId) {
-        setErrorMsg('ID Playlist tidak ditemukan di URL.');
+      if (!playlistId || urlId === 'new') {
+        setPlaylistName('Ibadah Umum');
+        setPlaylist([]);
         setIsLoading(false);
         return;
       }
@@ -176,7 +180,6 @@ export default function ControlPanel() {
     
     setPlaylist(newPlaylist);
     setDragItem(null);
-    saveRundown(newPlaylist);
   };
 
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
@@ -282,12 +285,13 @@ export default function ControlPanel() {
       } else {
         const results = await searchLocalBible(query, selectedBibleVersion);
         const formattedResults = results.map((item: any, idx: number) => ({
-          id: `b_${idx}`,
-          title: `${item.book} ${item.chapter}:${item.verse}`,
+          id: item.isRange ? item.id : `b_${idx}`,
+          type: 'bible',
+          title: item.isRange ? item.title : `${item.book} ${item.chapter}:${item.verse}`,
           author: 'Alkitab',
           category: 'Alkitab',
-          segments: [item.text],
-          segmentOrder: [0]
+          segments: item.isRange ? item.segments : [item.text],
+          segmentOrder: item.isRange ? item.segments.map((_:any, i:number) => i) : [0]
         }));
         setSearchResults(formattedResults);
       }
@@ -432,6 +436,7 @@ export default function ControlPanel() {
     const payload = {
       id: playlistId,
       name: playlistName,
+      date: playlistDate,
       items: targetPlaylist.map((item) => {
         let customText = '';
         if (item.type === 'announcement' || item.type === 'video') customText = item.segments[0];
@@ -650,9 +655,6 @@ export default function ControlPanel() {
     return <div className="h-screen flex justify-center items-center"><Loader2 className="animate-spin text-indigo-900" size={48} /></div>;
   }
 
-  if (playlist.length === 0 && !isLoading) {
-    return <div className="h-screen flex justify-center items-center text-red-500 font-bold">{errorMsg || 'Playlist kosong.'}</div>;
-  }
 
   return (
     <div className="h-screen flex flex-col p-4 md:p-6 gap-4 overflow-hidden relative">
@@ -693,8 +695,31 @@ export default function ControlPanel() {
       
       <main className="flex-1 flex flex-col lg:flex-row gap-3 md:gap-6 min-h-0">
         <aside className="w-full h-[35%] lg:h-auto lg:w-[28%] glass-panel p-3 md:p-5 flex flex-col overflow-hidden shadow-lg border-white/50">
-          <div className="flex justify-between items-center mb-3 md:mb-5 shrink-0">
-            <h2 className="font-heading font-bold text-indigo-950 uppercase tracking-wide text-sm md:text-base">Rundown</h2>
+          <div className="flex justify-between items-start mb-3 md:mb-5 shrink-0 gap-2">
+            <div className="flex-1">
+              {isEditingRundown ? (
+                <div className="flex flex-col gap-1 w-full">
+                  <input 
+                    type="text"
+                    value={playlistName}
+                    onChange={(e) => setPlaylistName(e.target.value)}
+                    className="bg-white/50 text-indigo-950 font-bold px-2 py-1 rounded border border-indigo-200 focus:outline-none focus:border-indigo-500 w-full text-sm"
+                    placeholder="Nama Playlist"
+                  />
+                  <input 
+                    type="date"
+                    value={playlistDate}
+                    onChange={(e) => setPlaylistDate(e.target.value)}
+                    className="bg-white/50 text-indigo-900 px-2 py-1 rounded border border-indigo-200 focus:outline-none focus:border-indigo-500 w-full text-xs"
+                  />
+                </div>
+              ) : (
+                <>
+                  <h2 className="font-heading font-bold text-indigo-950 uppercase tracking-wide text-sm md:text-base leading-tight">{playlistName}</h2>
+                  <div className="text-xs text-indigo-600/80 font-medium">{playlistDate}</div>
+                </>
+              )}
+            </div>
             <button 
               onClick={() => {
                 if (isEditingRundown) {

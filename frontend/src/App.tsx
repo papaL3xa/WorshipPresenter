@@ -5,7 +5,6 @@ import ControlPanel from './pages/ControlPanel';
 import DisplayWindow from './pages/DisplayWindow';
 import Library from './pages/Library';
 import Settings from './pages/Settings';
-import PlaylistEditor from './pages/PlaylistEditor';
 
 const RequireAuth = ({ children }: { children: JSX.Element }) => {
   const isLoggedIn = localStorage.getItem('worship_is_logged_in') === 'true';
@@ -36,8 +35,6 @@ function App() {
         <Route path="/control" element={<RequireAuth><ControlPanel /></RequireAuth>} />
         <Route path="/library" element={<RequireAuth><Library /></RequireAuth>} />
         <Route path="/settings" element={<RequireAuth><RequireAdmin><Settings /></RequireAdmin></RequireAuth>} />
-        <Route path="/playlist/new" element={<RequireAuth><PlaylistEditor /></RequireAuth>} />
-        <Route path="/playlist/edit" element={<RequireAuth><PlaylistEditor /></RequireAuth>} />
       </Routes>
     </HashRouter>
   );

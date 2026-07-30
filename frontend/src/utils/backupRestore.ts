@@ -44,6 +44,20 @@ export const exportPlaylistsTsv = async () => {
     return;
   }
   
+  // Ambil detail items untuk setiap playlist jika belum ada (terutama untuk versi WebApp)
+  for (const p of playlists) {
+    if (!p.items || p.items.length === 0) {
+      try {
+        const itemsRes = await callApi('getPlaylistItems', { id: p.id });
+        if (itemsRes?.success) {
+          p.items = itemsRes.data || [];
+        }
+      } catch (err) {
+        console.error('Failed to fetch items for playlist', p.id);
+      }
+    }
+  }
+  
   let tsv = "id\tname\titems_json\n";
   playlists.forEach((p: any) => {
     const itemsJson = JSON.stringify(p.items || []).replace(/\t/g, ' ');
