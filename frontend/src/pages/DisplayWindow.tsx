@@ -163,7 +163,7 @@ export default function DisplayWindow() {
   if (liveState.item && liveState.item.segments) {
     text = liveState.item.segments[liveState.segmentIndex];
     title = liveState.item.title;
-    itemType = liveState.item.type;
+    itemType = liveState.item.type || (liveState.item.book ? 'bible' : 'song');
     if (liveState.item.segmentLabels && liveState.item.segmentLabels.length > liveState.segmentIndex) {
       segmentLabel = liveState.item.segmentLabels[liveState.segmentIndex];
     }
@@ -176,7 +176,7 @@ export default function DisplayWindow() {
     if (pItem.segments && pItem.segments.length > liveState.segmentIndex) {
       text = pItem.segments[liveState.segmentIndex];
       title = pItem.title;
-      itemType = pItem.type;
+      itemType = pItem.type || (pItem.book ? 'bible' : 'song');
       if (pItem.segmentLabels && pItem.segmentLabels.length > liveState.segmentIndex) {
         segmentLabel = pItem.segmentLabels[liveState.segmentIndex];
       }

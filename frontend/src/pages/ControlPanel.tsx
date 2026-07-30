@@ -160,7 +160,7 @@ export default function ControlPanel() {
     const newPlaylist = [...playlist];
     newPlaylist.splice(index, 1);
     setPlaylist(newPlaylist);
-    saveRundown(newPlaylist);
+    setIsEditingRundown(true);
   };
 
   const removePlaylistItem = (index: number, e: React.MouseEvent) => {
@@ -230,7 +230,7 @@ export default function ControlPanel() {
     }
     setIsVideoModalOpen(false);
     setIsAddItemModalOpen(false);
-    saveRundown(finalPlaylist);
+    setIsEditingRundown(true);
   };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -327,7 +327,15 @@ export default function ControlPanel() {
   };
 
   const addToRundown = (item: any) => {
-    const newItem = { ...item, localId: Math.random().toString(36).substr(2, 9) };
+    // Add type if missing
+    if (!item.type) {
+      item.type = item.book ? 'bible' : 'song';
+    }
+    
+    // Process segments for long texts
+    const processedItem = splitLongSegments([item])[0];
+    
+    const newItem = { ...processedItem, localId: Math.random().toString(36).substr(2, 9) };
     let finalPlaylist = [];
     if (replaceIndex !== null) {
       finalPlaylist = [...playlist];
@@ -340,7 +348,6 @@ export default function ControlPanel() {
     }
     setIsAddItemModalOpen(false);
     setIsEditingRundown(true);
-    saveRundown(finalPlaylist);
   };
 
   const handleQuickAddSong = async (id: string) => {
@@ -373,6 +380,7 @@ export default function ControlPanel() {
         // Make it active immediately
         setActiveItem(newIndex);
         setActiveSegment(0);
+        setIsEditingRundown(true);
       }
     } catch (err) {
       console.error(err);
@@ -417,15 +425,13 @@ export default function ControlPanel() {
         if (replaceIndex !== null) {
           finalPlaylist = [...playlist];
           finalPlaylist[replaceIndex] = newItem as any;
-          setPlaylist(finalPlaylist);
           setReplaceIndex(null);
         } else {
           finalPlaylist = [...playlist, newItem as any];
-          setPlaylist(finalPlaylist);
         }
+        setPlaylist(finalPlaylist);
         setIsAddItemModalOpen(false);
         setIsEditingRundown(true);
-        saveRundown(finalPlaylist);
       } else {
         alert("Gagal mengunggah gambar: " + (res.error?.message || 'Unknown error'));
       }
@@ -484,7 +490,7 @@ export default function ControlPanel() {
     if (segmentEditIndex !== null) {
       finalPlaylist[segmentEditIndex].visibleSegments = tempVisibleSegments;
       setPlaylist(finalPlaylist);
-      saveRundown(finalPlaylist);
+      setIsEditingRundown(true);
     }
     setIsSegmentModalOpen(false);
     setSegmentEditIndex(null);

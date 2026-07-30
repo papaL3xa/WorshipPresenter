@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Play, Folder, Search, Settings, Loader2, LogOut, Trash2 } from 'lucide-react';
+import { Plus, Play, Folder, Search, Settings, Loader2, Trash2 } from 'lucide-react';
 import { SyncButton } from '../components/SyncButton';
 import { callApi } from '../api';
 
@@ -79,16 +79,6 @@ export default function Dashboard() {
           {localStorage.getItem('worship_role') === 'admin' && (
             <button onClick={() => navigate('/settings')} className="glass-button flex items-center gap-2"><Settings size={18}/> Settings</button>
           )}
-          <button 
-            onClick={() => {
-              localStorage.removeItem('worship_is_logged_in');
-              localStorage.removeItem('worship_role');
-              navigate('/');
-            }} 
-            className="glass-button bg-red-500/20 text-red-900 border-red-500/30 hover:bg-red-500/30 hover:text-red-950 flex items-center gap-2"
-          >
-            <LogOut size={18}/> Keluar
-          </button>
         </div>
       </header>
       
