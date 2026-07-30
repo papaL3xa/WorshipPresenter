@@ -435,25 +435,22 @@ export default function ControlPanel() {
     window.open('#/display', '_blank', 'width=1280,height=720');
   };
 
-  const handleBackgroundUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        try {
-          localStorage.setItem('custom_bg', dataUrl);
-          // Broadcast custom background
-          const channel = new BroadcastChannel('worship_live_sync');
-          channel.postMessage({ type: 'BG_UPDATE', bg: dataUrl });
-          channel.close();
-          setIsBgModalOpen(false); // Close modal on success
-        } catch (err) {
-          console.error(err);
-          alert('Gagal mengganti background. Kemungkinan ukuran gambar terlalu besar (Maksimal ~3MB). Silakan gunakan gambar dengan resolusi lebih kecil.');
-        }
-      };
-      reader.readAsDataURL(file);
+  const handleGlobalBackgroundSelect = (bgUrl: string | null) => {
+    try {
+      if (bgUrl === null) {
+        localStorage.removeItem('custom_bg');
+      } else {
+        localStorage.setItem('custom_bg', bgUrl);
+      }
+      
+      // Broadcast custom background
+      const channel = new BroadcastChannel('worship_live_sync');
+      channel.postMessage({ type: 'BG_UPDATE', bg: bgUrl || '' });
+      channel.close();
+      setIsBgModalOpen(false); // Close modal on success
+    } catch (err) {
+      console.error(err);
+      alert('Gagal mengganti background.');
     }
   };
 
@@ -971,35 +968,12 @@ export default function ControlPanel() {
         </div>
       )}
       {/* MODAL GANTI BACKGROUND */}
-      {isBgModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
-          <div className="bg-white/90 backdrop-blur-xl p-8 rounded-2xl shadow-2xl max-w-md w-full border border-white/40">
-            <h2 className="text-2xl font-bold text-indigo-900 mb-4 flex items-center gap-2">
-              <ImageIcon size={24} /> Ganti Latar Belakang
-            </h2>
-            <p className="text-indigo-900/70 mb-6">Pilih gambar dari komputer Anda untuk dijadikan latar belakang di layar Display. (Maksimal ~3MB)</p>
-            
-            <div className="flex flex-col gap-4">
-              <label className="flex flex-col items-center justify-center border-2 border-dashed border-indigo-500/40 rounded-xl p-8 cursor-pointer hover:bg-indigo-50/50 transition">
-                <ImageIcon size={48} className="text-indigo-300 mb-2" />
-                <span className="font-semibold text-indigo-900">Pilih Gambar...</span>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleBackgroundUpload} 
-                  className="hidden" 
-                />
-              </label>
-              
-              <div className="flex justify-end gap-2 mt-4">
-                <button onClick={() => setIsBgModalOpen(false)} className="px-6 py-2 rounded-lg font-bold text-indigo-900 bg-black/5 hover:bg-black/10 transition">
-                  Batal
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <BackgroundPickerModal 
+        isOpen={isBgModalOpen} 
+        onClose={() => setIsBgModalOpen(false)} 
+        onSelect={handleGlobalBackgroundSelect} 
+        currentBgUrl={localStorage.getItem('custom_bg')} 
+      />
 
       {/* LOGO MODAL */}
       {isLogoModalOpen && (
