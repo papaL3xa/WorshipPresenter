@@ -9,7 +9,8 @@ export default function Settings() {
   const [currentAdminPin, setCurrentAdminPin] = useState('');
   const [newOperatorPin, setNewOperatorPin] = useState('');
   const [newAdminPin, setNewAdminPin] = useState('');
-  const [activeTab, setActiveTab] = useState<'security' | 'backup'>('security');
+  const isDesktop = typeof window !== 'undefined' && (window as any).electronAPI;
+  const [activeTab, setActiveTab] = useState<'security' | 'backup'>(isDesktop ? 'backup' : 'security');
   
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -61,14 +62,16 @@ export default function Settings() {
             <button onClick={() => navigate(-1)} className="glass-button text-indigo-900 p-2.5 rounded-full hover:bg-white/70 shadow-sm"><ArrowLeft size={20}/></button>
             <h1 className="text-3xl font-heading font-extrabold text-indigo-950 drop-shadow-sm tracking-tight">Pengaturan Keamanan</h1>
           </div>
-          <button 
-            onClick={handleSave} 
-            disabled={isLoading || !currentAdminPin}
-            className="glass-button bg-gradient-to-r from-indigo-500 to-indigo-600 text-white border-transparent hover:from-indigo-600 hover:to-indigo-700 hover:shadow-lg hover:shadow-indigo-600/30 flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed hover:-translate-y-0.5"
-          >
-            {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} 
-            Simpan Perubahan
-          </button>
+          {activeTab === 'security' && !isDesktop && (
+            <button 
+              onClick={handleSave} 
+              disabled={isLoading || !currentAdminPin}
+              className="glass-button bg-gradient-to-r from-indigo-500 to-indigo-600 text-white border-transparent hover:from-indigo-600 hover:to-indigo-700 hover:shadow-lg hover:shadow-indigo-600/30 flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed hover:-translate-y-0.5"
+            >
+              {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} 
+              Simpan Perubahan
+            </button>
+          )}
         </header>
 
         {message && (
@@ -79,12 +82,14 @@ export default function Settings() {
         )}
         
         <div className="flex gap-4 mb-8">
-          <button 
-            onClick={() => setActiveTab('security')}
-            className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'security' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white/40 text-indigo-900 hover:bg-white/60'}`}
-          >
-            Keamanan (PIN)
-          </button>
+          {!isDesktop && (
+            <button 
+              onClick={() => setActiveTab('security')}
+              className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'security' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white/40 text-indigo-900 hover:bg-white/60'}`}
+            >
+              Keamanan (PIN)
+            </button>
+          )}
           <button 
             onClick={() => setActiveTab('backup')}
             className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'backup' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white/40 text-indigo-900 hover:bg-white/60'}`}
