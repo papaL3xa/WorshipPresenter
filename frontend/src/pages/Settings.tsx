@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Lock, Loader2, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Save, Lock, Loader2, CheckCircle, ShieldAlert } from 'lucide-react';
 import { callApi } from '../api';
 
 export default function Settings() {
@@ -50,75 +50,87 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen p-8 flex justify-center items-center">
-      <div className="glass-panel max-w-2xl w-full p-8">
-        <header className="flex justify-between items-center mb-8">
+    <div className="min-h-screen p-4 md:p-8 flex justify-center items-center relative overflow-hidden">
+      <div className="absolute inset-0 bg-white/20 pointer-events-none -z-10 backdrop-blur-[2px]"></div>
+
+      <div className="glass-panel max-w-2xl w-full p-6 md:p-10 shadow-2xl border-white/50 relative z-10">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-white/30 pb-6">
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate(-1)} className="glass-button text-indigo-900 p-2"><ArrowLeft size={20}/></button>
-            <h1 className="text-2xl font-bold text-indigo-900">Pengaturan Keamanan</h1>
+            <button onClick={() => navigate(-1)} className="glass-button text-indigo-900 p-2.5 rounded-full hover:bg-white/70 shadow-sm"><ArrowLeft size={20}/></button>
+            <h1 className="text-3xl font-heading font-extrabold text-indigo-950 drop-shadow-sm tracking-tight">Pengaturan Keamanan</h1>
           </div>
           <button 
             onClick={handleSave} 
             disabled={isLoading || !currentAdminPin}
-            className="glass-button bg-indigo-600 text-white hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-50"
+            className="glass-button bg-gradient-to-r from-indigo-500 to-indigo-600 text-white border-transparent hover:from-indigo-600 hover:to-indigo-700 hover:shadow-lg hover:shadow-indigo-600/30 flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed hover:-translate-y-0.5"
           >
-            {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} 
-            Simpan
+            {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} 
+            Simpan Perubahan
           </button>
         </header>
 
         {message && (
-          <div className={`p-4 rounded-xl mb-6 flex items-center gap-2 ${isError ? 'bg-red-500/20 text-red-700 border border-red-500/30' : 'bg-green-500/20 text-green-700 border border-green-500/30'}`}>
-            {isError ? <Lock size={20} /> : <CheckCircle size={20} />}
+          <div className={`p-4 rounded-xl mb-8 flex items-center gap-3 backdrop-blur-md shadow-sm border animate-fade-in ${isError ? 'bg-red-50/80 text-red-700 border-red-200' : 'bg-emerald-50/80 text-emerald-700 border-emerald-200'}`}>
+            {isError ? <ShieldAlert size={24} className="shrink-0" /> : <CheckCircle size={24} className="shrink-0" />}
             <span className="font-semibold">{message}</span>
           </div>
         )}
 
-        <div className="space-y-6">
-          <div className="bg-white/40 p-6 rounded-xl border border-white/50">
-            <h2 className="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2">
-              <Lock size={18} /> Otorisasi Admin
+        <div className="space-y-8">
+          <div className="bg-white/40 p-8 rounded-2xl border border-white/60 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:bg-white/50 transition-colors">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none group-hover:bg-indigo-500/20 transition-colors"></div>
+            
+            <h2 className="text-xl font-heading font-bold text-indigo-950 mb-6 flex items-center gap-3 drop-shadow-sm">
+              <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600"><Lock size={20} /></div>
+              Otorisasi Admin
             </h2>
-            <label className="block text-indigo-900 font-semibold mb-2">PIN Admin Saat Ini (Wajib)</label>
-            <input 
-              type="password" 
-              value={currentAdminPin}
-              onChange={(e) => setCurrentAdminPin(e.target.value.replace(/\D/g, ''))}
-              maxLength={6}
-              className="glass-input text-lg tracking-widest font-bold max-w-xs" 
-              placeholder="••••••" 
-            />
-            <p className="text-xs text-indigo-800/60 mt-2">Anda harus memasukkan PIN Admin yang aktif saat ini untuk melakukan perubahan.</p>
+            <div className="relative z-10">
+              <label className="block text-slate-700 font-semibold mb-2">PIN Admin Saat Ini <span className="text-red-500">*</span></label>
+              <input 
+                type="password" 
+                value={currentAdminPin}
+                onChange={(e) => setCurrentAdminPin(e.target.value.replace(/\D/g, ''))}
+                maxLength={6}
+                className="w-full max-w-xs bg-white/70 backdrop-blur-sm border-2 border-white/60 rounded-xl px-4 py-3 text-2xl tracking-[0.3em] font-bold shadow-inner focus:border-indigo-400 focus:bg-white/90 focus:ring-4 focus:ring-indigo-400/20 transition-all outline-none text-indigo-950" 
+                placeholder="••••••" 
+              />
+              <p className="text-sm font-medium text-slate-500 mt-3">Anda harus memasukkan PIN Admin yang aktif saat ini untuk memvalidasi dan menyimpan perubahan.</p>
+            </div>
           </div>
           
-          <div className="bg-white/40 p-6 rounded-xl border border-white/50">
-            <h2 className="text-lg font-bold text-indigo-900 mb-4">Ubah PIN</h2>
+          <div className="bg-white/40 p-8 rounded-2xl border border-white/60 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:bg-white/50 transition-colors">
+            <div className="absolute bottom-0 right-0 w-40 h-40 bg-indigo-400/10 rounded-full blur-3xl -mr-10 -mb-10 pointer-events-none group-hover:bg-indigo-400/20 transition-colors"></div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-indigo-900 font-semibold mb-2">PIN Operator Baru</label>
+            <h2 className="text-xl font-heading font-bold text-indigo-950 mb-6 flex items-center gap-3 drop-shadow-sm">
+              <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600"><ShieldAlert size={20} /></div>
+              Ubah PIN Baru
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+              <div className="bg-white/30 p-5 rounded-xl border border-white/40 shadow-inner">
+                <label className="block text-slate-700 font-semibold mb-3">PIN Operator Baru</label>
                 <input 
                   type="password" 
                   value={newOperatorPin}
                   onChange={(e) => setNewOperatorPin(e.target.value.replace(/\D/g, ''))}
                   maxLength={6}
-                  className="glass-input text-lg tracking-widest font-bold" 
+                  className="w-full bg-white/70 backdrop-blur-sm border-2 border-white/60 rounded-xl px-4 py-3 text-2xl tracking-[0.3em] font-bold shadow-inner focus:border-indigo-400 focus:bg-white/90 focus:ring-4 focus:ring-indigo-400/20 transition-all outline-none text-indigo-950" 
                   placeholder="••••••" 
                 />
-                <p className="text-xs text-indigo-800/60 mt-2">Kosongkan jika tidak ingin mengubah PIN Operator.</p>
+                <p className="text-sm font-medium text-slate-500 mt-3">Kosongkan jika tidak ingin mengubah PIN Operator.</p>
               </div>
 
-              <div>
-                <label className="block text-indigo-900 font-semibold mb-2">PIN Admin Baru</label>
+              <div className="bg-white/30 p-5 rounded-xl border border-white/40 shadow-inner">
+                <label className="block text-slate-700 font-semibold mb-3">PIN Admin Baru</label>
                 <input 
                   type="password" 
                   value={newAdminPin}
                   onChange={(e) => setNewAdminPin(e.target.value.replace(/\D/g, ''))}
                   maxLength={6}
-                  className="glass-input text-lg tracking-widest font-bold" 
+                  className="w-full bg-white/70 backdrop-blur-sm border-2 border-white/60 rounded-xl px-4 py-3 text-2xl tracking-[0.3em] font-bold shadow-inner focus:border-indigo-400 focus:bg-white/90 focus:ring-4 focus:ring-indigo-400/20 transition-all outline-none text-indigo-950" 
                   placeholder="••••••" 
                 />
-                <p className="text-xs text-indigo-800/60 mt-2">Kosongkan jika tidak ingin mengubah PIN Admin.</p>
+                <p className="text-sm font-medium text-slate-500 mt-3">Kosongkan jika tidak ingin mengubah PIN Admin.</p>
               </div>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Play, Folder, Search, Settings, Loader2, LogOut } from 'lucide-react';
+import { SyncButton } from '../components/SyncButton';
 import { callApi } from '../api';
 
 export default function Dashboard() {
@@ -32,12 +33,18 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen p-4 md:p-8">
-      <header className="glass-panel p-4 mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
-        <h1 className="text-2xl font-bold text-indigo-900">WorshipPresenter</h1>
+      <header className="glass-panel p-5 mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <h1 className="text-3xl font-heading font-extrabold text-white drop-shadow-md tracking-tight flex items-center gap-3">
+          <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm border border-white/30">
+            <Play className="text-white fill-white" size={24}/>
+          </div>
+          WorshipPresenter
+        </h1>
         <div className="flex flex-wrap justify-center items-center gap-2 md:gap-4">
-          <button onClick={() => navigate('/library')} className="glass-button text-indigo-900 flex items-center gap-2"><Folder size={16}/> Library</button>
+          <SyncButton />
+          <button onClick={() => navigate('/library')} className="glass-button flex items-center gap-2"><Folder size={18}/> Library</button>
           {localStorage.getItem('worship_role') === 'admin' && (
-            <button onClick={() => navigate('/settings')} className="glass-button text-indigo-900 flex items-center gap-2"><Settings size={16}/> Settings</button>
+            <button onClick={() => navigate('/settings')} className="glass-button flex items-center gap-2"><Settings size={18}/> Settings</button>
           )}
           <button 
             onClick={() => {
@@ -45,40 +52,43 @@ export default function Dashboard() {
               localStorage.removeItem('worship_role');
               navigate('/');
             }} 
-            className="glass-button bg-red-500/10 text-red-700 hover:bg-red-500/20 flex items-center gap-2 border-red-500/20"
+            className="glass-button bg-red-500/20 text-red-900 border-red-500/30 hover:bg-red-500/30 hover:text-red-950 flex items-center gap-2"
           >
-            <LogOut size={16}/> Keluar
+            <LogOut size={18}/> Keluar
           </button>
         </div>
       </header>
       
-      <main className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <section className="glass-panel p-6">
+      <main className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <section className="glass-panel p-6 lg:col-span-8">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-indigo-900">Jadwal Ibadah Mendatang</h2>
-            <button onClick={() => navigate('/playlist/new')} className="glass-button bg-indigo-500/20 text-indigo-900 flex items-center gap-2">
-              <Plus size={16} /> Playlist Baru
+            <h2 className="text-2xl font-heading font-bold text-slate-800 drop-shadow-sm">Jadwal Ibadah Mendatang</h2>
+            <button onClick={() => navigate('/playlist/new')} className="glass-button bg-indigo-500/20 text-indigo-900 border-indigo-500/30 hover:bg-indigo-500/30 flex items-center gap-2">
+              <Plus size={18} /> Playlist Baru
             </button>
           </div>
           
           {isLoading ? (
-            <div className="flex justify-center p-8 text-indigo-900/60"><Loader2 className="animate-spin" size={24} /></div>
+            <div className="flex justify-center p-12 text-slate-700/60"><Loader2 className="animate-spin" size={32} /></div>
           ) : errorMsg ? (
-            <div className="text-red-600 bg-red-100 p-3 rounded">{errorMsg}</div>
+            <div className="text-red-700 bg-red-100/80 backdrop-blur-sm p-4 rounded-xl border border-red-200 shadow-sm">{errorMsg}</div>
           ) : playlists.length === 0 ? (
-            <div className="text-indigo-900/60 text-center p-4">Tidak ada jadwal ibadah mendatang.</div>
+            <div className="text-slate-700/60 text-center p-8 bg-white/20 rounded-2xl border border-white/30 border-dashed">Tidak ada jadwal ibadah mendatang.</div>
           ) : (
             <div className="space-y-4">
               {playlists.map((pl) => (
-                <div key={pl.id} className="p-4 rounded-xl bg-white/40 border border-white/20 flex justify-between items-center hover:bg-white/50 transition">
+                <div key={pl.id} className="p-5 rounded-2xl bg-white/30 backdrop-blur-md border border-white/40 shadow-sm hover:shadow-lg hover:bg-white/50 hover:-translate-y-1 transition-all duration-300 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group">
                   <div>
-                    <h3 className="font-semibold text-indigo-900">{pl.name}</h3>
-                    <p className="text-sm text-indigo-800/70">{pl.date}</p>
+                    <h3 className="font-heading font-bold text-xl text-slate-800 mb-1">{pl.name}</h3>
+                    <p className="text-sm font-medium text-slate-600 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
+                      {pl.date}
+                    </p>
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => navigate('/playlist/edit?id=' + pl.id)} className="glass-button text-indigo-900">Buka</button>
-                    <button onClick={() => navigate('/control?id=' + pl.id)} className="glass-button bg-green-500/30 text-green-900 border-green-500/30 font-bold flex items-center gap-1">
-                      <Play size={16}/> Live
+                  <div className="flex gap-3 w-full md:w-auto">
+                    <button onClick={() => navigate('/playlist/edit?id=' + pl.id)} className="glass-button flex-1 md:flex-none justify-center">Buka</button>
+                    <button onClick={() => navigate('/control?id=' + pl.id)} className="glass-button flex-1 md:flex-none justify-center bg-gradient-to-r from-emerald-400 to-teal-500 text-white border-transparent shadow-lg hover:shadow-emerald-500/40 font-bold flex items-center gap-2">
+                      <Play size={16} className="fill-white"/> Live
                     </button>
                   </div>
                 </div>
@@ -87,10 +97,10 @@ export default function Dashboard() {
           )}
         </section>
         
-        <section className="glass-panel p-6">
-          <h2 className="text-xl font-semibold text-indigo-900 mb-6">Pencarian Cepat</h2>
+        <section className="glass-panel p-6 lg:col-span-4 h-fit">
+          <h2 className="text-xl font-heading font-bold text-slate-800 drop-shadow-sm mb-6">Pencarian Cepat</h2>
           <div className="relative">
-            <Search className="absolute left-3 top-3 text-indigo-900/50" size={20} />
+            <Search className="absolute left-4 top-3 text-slate-500" size={20} />
             <input 
               type="text" 
               value={quickSearch}
@@ -100,9 +110,12 @@ export default function Dashboard() {
                   navigate(`/library?q=${encodeURIComponent(quickSearch.trim())}`);
                 }
               }}
-              placeholder="Cari lagu atau ayat... (Tekan Enter)" 
-              className="glass-input pl-10 w-full" 
+              placeholder="Cari lagu atau ayat... (Enter)" 
+              className="glass-input pl-12" 
             />
+          </div>
+          <div className="mt-6 text-sm text-slate-600 bg-white/20 p-4 rounded-xl border border-white/30">
+            <p><strong>Tips:</strong> Anda juga bisa mencari menggunakan fitur Quick Search langsung di dalam <span className="font-semibold text-indigo-700">Control Panel</span> saat mode Live.</p>
           </div>
         </section>
       </main>

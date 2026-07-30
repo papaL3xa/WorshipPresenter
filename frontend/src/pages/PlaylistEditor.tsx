@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Search, Save, Trash2, ArrowUp, ArrowDown, FileText, Music, BookOpen, Loader2, CheckCircle, Edit3 } from 'lucide-react';
+import { Search, Save, Trash2, ArrowUp, ArrowDown, FileText, Music, BookOpen, Loader2, CheckCircle, Edit3, Settings, CheckSquare } from 'lucide-react';
 import { callApi } from '../api';
+import { SyncButton } from '../components/SyncButton';
 
 interface SearchResult {
   id: string;
   type: string;
   title: string;
   segments: string[];
+  originalSegments?: string[];
+  originalSegmentLabels?: string[];
+  visibleSegments?: number[];
+  refId?: string;
 }
 
 export default function PlaylistEditor() {
@@ -32,8 +37,13 @@ export default function PlaylistEditor() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   
   const [isTextModalOpen, setIsTextModalOpen] = useState(false);
+  const [customTextTitle, setCustomTextTitle] = useState('Pengumuman / Teks Bebas');
   const [customTextValue, setCustomTextValue] = useState('');
   const [editingCustomTextIndex, setEditingCustomTextIndex] = useState<number | null>(null);
+
+  const [isSegmentModalOpen, setIsSegmentModalOpen] = useState(false);
+  const [segmentEditIndex, setSegmentEditIndex] = useState<number | null>(null);
+  const [tempVisibleSegments, setTempVisibleSegments] = useState<number[]>([]);
 
   const [isUploadingSlides, setIsUploadingSlides] = useState(false);
 
@@ -49,6 +59,9 @@ export default function PlaylistEditor() {
                 type: item.type,
                 title: item.title,
                 segments: item.segments,
+                originalSegments: item.originalSegments || item.segments,
+                originalSegmentLabels: item.originalSegmentLabels,
+                visibleSegments: item.visibleSegments,
                 localId: Math.random().toString(36).substr(2, 9)
              }));
              setRundown(loadedItems);
@@ -99,34 +112,42 @@ export default function PlaylistEditor() {
   };
 
   const addToRundown = (item: SearchResult) => {
-    // Generate unique local ID for drag/drop tracking
-    const newItem = { ...item, localId: Math.random().toString(36).substr(2, 9) };
+    const newItem = { 
+      ...item, 
+      localId: Math.random().toString(36).substr(2, 9),
+      originalSegments: item.segments,
+      visibleSegments: item.segments.map((_, i) => i) 
+    };
     setRundown([...rundown, newItem as any]);
   };
 
   const addCustomText = () => {
     setEditingCustomTextIndex(null);
-    setCustomTextValue(''); // reset previous value
+    setCustomTextValue(''); 
+    setCustomTextTitle('Pengumuman / Teks Bebas');
     setIsTextModalOpen(true);
   };
 
   const editCustomText = (index: number) => {
     setEditingCustomTextIndex(index);
     setCustomTextValue(rundown[index].segments[0]);
+    setCustomTextTitle(rundown[index].title || 'Pengumuman / Teks Bebas');
     setIsTextModalOpen(true);
   };
 
   const handleSaveCustomText = () => {
     if (customTextValue.trim()) {
+      const finalTitle = customTextTitle.trim() || 'Pengumuman / Teks Bebas';
       if (editingCustomTextIndex !== null) {
         const newR = [...rundown];
         newR[editingCustomTextIndex].segments = [customTextValue];
+        newR[editingCustomTextIndex].title = finalTitle;
         setRundown(newR);
       } else {
         setRundown([...rundown, {
           id: 'custom-' + Date.now(),
           type: 'announcement',
-          title: 'Pengumuman / Teks Bebas',
+          title: finalTitle,
           segments: [customTextValue],
           localId: Math.random().toString(36).substr(2, 9)
         } as any]);
@@ -151,6 +172,28 @@ export default function PlaylistEditor() {
     setRundown(newR);
   };
 
+  const openSegmentModal = (index: number) => {
+    setSegmentEditIndex(index);
+    setTempVisibleSegments(rundown[index].visibleSegments || []);
+    setIsSegmentModalOpen(true);
+  };
+
+  const toggleSegment = (segIdx: number) => {
+    setTempVisibleSegments(prev => 
+      prev.includes(segIdx) ? prev.filter(i => i !== segIdx) : [...prev, segIdx].sort((a, b) => a - b)
+    );
+  };
+
+  const saveSegmentSelection = () => {
+    if (segmentEditIndex !== null) {
+      const newR = [...rundown];
+      newR[segmentEditIndex].visibleSegments = tempVisibleSegments;
+      setRundown(newR);
+    }
+    setIsSegmentModalOpen(false);
+    setSegmentEditIndex(null);
+  };
+
   const handleSave = async () => {
     if (rundown.length === 0) return alert('Rundown masih kosong!');
     if (!playlistName) return alert('Nama playlist tidak boleh kosong');
@@ -164,9 +207,10 @@ export default function PlaylistEditor() {
         let customText = '';
         if (item.type === 'announcement') customText = item.segments[0];
         if (item.type === 'slideshow') customText = JSON.stringify(item.segments);
+        if (item.type === 'song' || item.type === 'bible') customText = item.visibleSegments ? JSON.stringify(item.visibleSegments) : '';
         return {
           type: item.type,
-          refId: (item.type === 'announcement' || item.type === 'slideshow') ? null : item.id,
+          refId: item.type === 'announcement' ? item.title : (item.type === 'slideshow' ? null : (item.refId || item.id)),
           customText: customText
         };
       })
@@ -219,7 +263,6 @@ export default function PlaylistEditor() {
           const reader = new FileReader();
           reader.onload = (ev) => {
             const base64Full = ev.target?.result as string;
-            // pisahkan "data:image/jpeg;base64," dari aslinya
             const base64Data = base64Full.split(',')[1];
             resolve({
               name: file.name,
@@ -234,7 +277,6 @@ export default function PlaylistEditor() {
       
       const imagesData = await Promise.all(promises);
       
-      // Kirim ke Google Apps Script
       const res = await callApi('uploadImages', {}, { method: 'POST', payload: { images: imagesData } });
       
       if (res.success && res.data && res.data.urls) {
@@ -251,7 +293,6 @@ export default function PlaylistEditor() {
       alert("Terjadi kesalahan: " + err.message);
     } finally {
       setIsUploadingSlides(false);
-      // Reset input file
       e.target.value = '';
     }
   };
@@ -277,7 +318,8 @@ export default function PlaylistEditor() {
             className="glass-input text-indigo-900"
           />
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center">
+          <SyncButton />
           <button onClick={() => navigate('/dashboard')} className="glass-button text-indigo-900">Kembali</button>
           
           {editId && (
@@ -301,7 +343,6 @@ export default function PlaylistEditor() {
       </header>
 
       <main className="flex-1 flex gap-4 min-h-0">
-        {/* KOLOM KIRI: RUNDOWN */}
         <section className="flex-1 glass-panel p-4 flex flex-col">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-indigo-900 flex items-center gap-2">
@@ -338,16 +379,19 @@ export default function PlaylistEditor() {
                     <span className="font-bold text-indigo-900/50 w-6">{idx + 1}.</span>
                     <div>
                       <div className="font-semibold text-indigo-900">{item.title}</div>
-                      <div className="text-xs text-indigo-800/60 uppercase">{item.type} • {item.segments.length} slide</div>
+                      <div className="text-xs text-indigo-800/60 uppercase">{item.type} • {item.visibleSegments ? item.visibleSegments.length : item.segments.length} slide</div>
                     </div>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     {item.type === 'announcement' && (
-                      <button onClick={() => editCustomText(idx)} className="p-2 hover:bg-white/50 rounded-lg text-indigo-900" title="Edit Pengumuman"><Edit3 size={16}/></button>
+                      <button onClick={() => editCustomText(idx)} className="p-2 hover:bg-white/50 rounded-lg text-indigo-900"><Edit3 size={16}/></button>
+                    )}
+                    {(item.type === 'song' || item.type === 'bible') && (
+                      <button onClick={() => openSegmentModal(idx)} className="p-2 hover:bg-white/50 rounded-lg text-indigo-900" title="Atur Slide / Bait"><Settings size={16}/></button>
                     )}
                     <button onClick={() => moveItem(idx, -1)} className="p-2 hover:bg-white/50 rounded-lg text-indigo-900"><ArrowUp size={16}/></button>
                     <button onClick={() => moveItem(idx, 1)} className="p-2 hover:bg-white/50 rounded-lg text-indigo-900"><ArrowDown size={16}/></button>
-                    <button onClick={() => removeRundownItem(idx)} className="p-2 hover:bg-red-500/20 rounded-lg text-red-600 ml-2"><Trash2 size={16}/></button>
+                    <button onClick={() => removeRundownItem(idx)} className="p-2 hover:bg-red-500/20 rounded-lg text-red-600"><Trash2 size={16}/></button>
                   </div>
                 </div>
               ))
@@ -355,7 +399,6 @@ export default function PlaylistEditor() {
           </div>
         </section>
 
-        {/* KOLOM KANAN: PENCARIAN */}
         <section className="w-1/3 glass-panel p-4 flex flex-col">
           <h2 className="text-xl font-bold text-indigo-900 mb-4">Tambah Item</h2>
           
@@ -388,7 +431,7 @@ export default function PlaylistEditor() {
               </div>
             ))}
             {searchResults.length === 0 && !isSearching && searchQuery !== '' && (
-              <div className="text-center text-sm text-indigo-900/60 p-4">Tidak ada hasil ditemukan. Pastikan Sheet Anda sudah memiliki data.</div>
+              <div className="text-center text-sm text-indigo-900/60 p-4">Tidak ada hasil ditemukan.</div>
             )}
           </div>
 
@@ -398,7 +441,6 @@ export default function PlaylistEditor() {
         </section>
       </main>
 
-      {/* SUCCESS MODAL */}
       {isSuccessModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm transition-opacity">
           <div className="bg-white/90 backdrop-blur-xl p-8 rounded-2xl shadow-2xl max-w-sm w-full border border-white/40 transform scale-100 transition-transform text-center flex flex-col items-center">
@@ -419,74 +461,64 @@ export default function PlaylistEditor() {
         </div>
       )}
 
-      {/* CUSTOM TEXT MODAL */}
       {isTextModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm transition-opacity">
-          <div className="bg-white/90 backdrop-blur-xl p-6 rounded-2xl shadow-2xl max-w-lg w-full border border-white/40 transform scale-100 transition-transform">
-            <h2 className="text-xl font-bold text-indigo-900 mb-2">Teks Bebas / Pengumuman</h2>
-            <p className="text-indigo-900/70 mb-4 text-sm">
-              Anda bisa mengetik teks panjang di sini. Tekan <kbd className="bg-gray-200 px-1 rounded">Enter</kbd> untuk membuat paragraf (baris) baru.
-            </p>
-            
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-indigo-900">Rundown Ibadah</h2>
-              <button 
-                onClick={addCustomText}
-                className="glass-button bg-indigo-500/20 text-indigo-900 text-sm py-1.5"
-              >
-                + Tambah Teks Bebas
-              </button>
-            </div>
+          <div className="bg-white/90 backdrop-blur-xl p-6 rounded-2xl shadow-2xl max-w-lg w-full border border-white/40">
+            <h2 className="text-xl font-bold text-indigo-900 mb-4">Teks Bebas / Pengumuman</h2>
+            <input 
+              type="text" 
+              value={customTextTitle}
+              onChange={(e) => setCustomTextTitle(e.target.value)}
+              className="w-full bg-white border border-indigo-200 rounded-xl px-4 py-3 text-indigo-900 mb-4 shadow-inner"
+              placeholder="Judul"
+            />
             <textarea 
               value={customTextValue}
               onChange={(e) => setCustomTextValue(e.target.value)}
-              className="w-full h-48 bg-white border border-indigo-200 rounded-xl p-4 text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-6 resize-none shadow-inner"
-              placeholder="Ketik teks pengumuman di sini..."
+              className="w-full h-40 bg-white border border-indigo-200 rounded-xl p-4 text-indigo-900 mb-6 resize-none shadow-inner"
+              placeholder="Ketik teks di sini..."
               autoFocus
             ></textarea>
-            
             <div className="flex gap-3 justify-end">
-              <button 
-                onClick={() => setIsTextModalOpen(false)}
-                className="px-6 py-2 rounded-xl font-bold text-indigo-900 bg-black/5 hover:bg-black/10 transition"
-              >
-                Batal
-              </button>
-              <button 
-                onClick={handleSaveCustomText}
-                className="px-6 py-2 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/30 transition flex items-center gap-2"
-              >
-                <Save size={18} /> Tambahkan
-              </button>
+              <button onClick={() => setIsTextModalOpen(false)} className="px-6 py-2 rounded-xl font-bold text-indigo-900 bg-black/5">Batal</button>
+              <button onClick={handleSaveCustomText} className="px-6 py-2 rounded-xl font-bold text-white bg-indigo-600">Simpan</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* DELETE MODAL */}
       {isDeleteModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm transition-opacity">
-          <div className="bg-white/90 backdrop-blur-xl p-8 rounded-2xl shadow-2xl max-w-sm w-full border border-white/40 transform scale-100 transition-transform text-center flex flex-col items-center">
-            <div className="w-20 h-20 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-6">
-              <Trash2 size={40} />
-            </div>
-            <h2 className="text-2xl font-bold text-indigo-900 mb-2">Hapus Playlist?</h2>
-            <p className="text-indigo-900/70 mb-8">
-              Apakah Anda yakin ingin menghapus playlist <strong>"{playlistName}"</strong>? Tindakan ini tidak dapat dibatalkan.
-            </p>
+          <div className="bg-white/90 backdrop-blur-xl p-8 rounded-2xl shadow-2xl max-w-sm w-full border border-white/40 text-center">
+            <h2 className="text-2xl font-bold text-indigo-900 mb-4">Hapus Playlist?</h2>
             <div className="flex gap-3 w-full justify-center">
-              <button 
-                onClick={() => setIsDeleteModalOpen(false)}
-                className="px-6 py-3 rounded-xl font-bold text-indigo-900 bg-black/5 hover:bg-black/10 transition flex-1"
-              >
-                Batal
-              </button>
-              <button 
-                onClick={handleConfirmDelete}
-                className="px-6 py-3 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30 transition flex-1"
-              >
-                Hapus
-              </button>
+              <button onClick={() => setIsDeleteModalOpen(false)} className="px-6 py-3 rounded-xl font-bold text-indigo-900 bg-black/5 flex-1">Batal</button>
+              <button onClick={handleConfirmDelete} className="px-6 py-3 rounded-xl font-bold text-white bg-red-500 flex-1">Hapus</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isSegmentModalOpen && segmentEditIndex !== null && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
+          <div className="bg-white/90 backdrop-blur-xl p-8 rounded-2xl shadow-2xl max-w-lg w-full border border-white/40 flex flex-col max-h-[85vh]">
+            <h2 className="text-2xl font-bold text-indigo-900 mb-2 flex items-center gap-2">
+              <CheckSquare size={24} /> Pilih Bait / Ayat
+            </h2>
+            <div className="flex-1 overflow-y-auto space-y-2 border border-indigo-100 rounded-xl p-3 bg-slate-50/50">
+              {(rundown[segmentEditIndex].originalSegments || rundown[segmentEditIndex].segments).map((seg: string, i: number) => {
+                const isChecked = tempVisibleSegments.includes(i);
+                return (
+                  <label key={i} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer ${isChecked ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-200'}`}>
+                    <input type="checkbox" className="mt-1 w-4 h-4" checked={isChecked} onChange={() => toggleSegment(i)} />
+                    <div className="text-sm">{seg}</div>
+                  </label>
+                );
+              })}
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setIsSegmentModalOpen(false)} className="px-6 py-2 rounded-xl font-bold text-indigo-900 bg-black/5">Batal</button>
+              <button onClick={saveSegmentSelection} className="px-6 py-2 rounded-xl font-bold text-white bg-indigo-600">Simpan Pilihan</button>
             </div>
           </div>
         </div>

@@ -191,18 +191,26 @@ function saveSongItem(e) {
     sSongSegments.appendRow([segId, songId, label, segments[i], i+1]);
   }
   
-  // 3. Update segmentOrder di Songs
+  // 3. Update segmentOrder di Songs, atau Insert jika baru
+  let found = false;
   const songData = sSongs.getDataRange().getValues();
   const orderArr = Array.from({length: segments.length}, (_, i) => i);
   for (let i = 1; i < songData.length; i++) {
     if (songData[i][0] === songId) {
+      if (data.title) sSongs.getRange(i + 1, 2).setValue(data.title);
+      if (data.author) sSongs.getRange(i + 1, 3).setValue(data.author);
       sSongs.getRange(i + 1, 5).setValue(JSON.stringify(orderArr));
+      found = true;
       break;
     }
   }
+
+  if (!found) {
+    sSongs.appendRow([songId, data.title || "Lagu Baru", data.author || "-", "Pujian", JSON.stringify(orderArr)]);
+  }
   
   SpreadsheetApp.flush();
-  return { status: "success", message: "Lagu berhasil diperbarui" };
+  return { status: "saved", songId: songId };
 }
 
 function deletePlaylist(e) {
@@ -434,7 +442,7 @@ function getPlaylistItems(e) {
       resultItems.push({
         id: iId,
         type: 'announcement',
-        title: 'Pengumuman',
+        title: refId || 'Pengumuman / Teks Bebas',
         segments: [customText || '']
       });
     } else if (type === 'song') {
@@ -444,19 +452,39 @@ function getPlaylistItems(e) {
         const sortedSegs = segmentsData.filter(sg => sg[1] === refId).sort((a,b) => a[4] - b[4]);
         const segs = sortedSegs.map(sg => sg[3]);
         const labels = sortedSegs.map(sg => sg[2]);
+        
+        let visibleIndices = null;
+        try {
+          if (customText) visibleIndices = JSON.parse(customText);
+        } catch(e) {}
+        
+        let filteredSegs = segs;
+        let filteredLabels = labels;
+        if (visibleIndices && Array.isArray(visibleIndices)) {
+           filteredSegs = segs.filter((_, i) => visibleIndices.includes(i));
+           filteredLabels = labels.filter((_, i) => visibleIndices.includes(i));
+        }
+
         resultItems.push({
           id: iId,
           refId: refId,
           type: 'song',
           title: songRow[1],
-          segments: segs.length > 0 ? segs : ['(Lirik tidak tersedia)'],
-          segmentLabels: labels.length > 0 ? labels : ['Slide 1']
+          segments: filteredSegs.length > 0 ? filteredSegs : ['(Lirik tidak tersedia)'],
+          segmentLabels: filteredLabels.length > 0 ? filteredLabels : ['Slide 1'],
+          originalSegments: segs,
+          originalSegmentLabels: labels,
+          visibleSegments: visibleIndices || null
         });
       } else {
         resultItems.push({ id: iId, refId: refId, type: 'song', title: 'Lagu Tidak Ditemukan', segments: [''] });
       }
     } else if (type === 'bible') {
       const rangeMatch = (refId || "").match(/^(B\d+_C\d+_V\d+)-(\d+)$/);
+      let segs = [];
+      let chapterTotalVerses = 0;
+      let finalTitle = "";
+      
       if (rangeMatch) {
          const baseId = rangeMatch[1]; // B01_C001_V001
          const endVerse = parseInt(rangeMatch[2]);
@@ -468,34 +496,43 @@ function getPlaylistItems(e) {
             const startVerse = firstVerseRow[3];
             
             const verses = bibleData.filter(b => b[1] === book && b[2] === chapter && b[3] >= startVerse && b[3] <= endVerse);
-            const chapterTotalVerses = bibleData.filter(b => b[1] === book && b[2] === chapter).length;
+            chapterTotalVerses = bibleData.filter(b => b[1] === book && b[2] === chapter).length;
             
-            resultItems.push({
-              id: iId,
-              refId: refId,
-              type: 'bible',
-              title: `${book} ${chapter}:${startVerse}-${endVerse}`,
-              segments: verses.map(v => v[4]),
-              chapterTotalVerses: chapterTotalVerses
-            });
-         } else {
-            resultItems.push({ id: iId, refId: refId, type: 'bible', title: 'Rentang Ayat Tidak Ditemukan', segments: [''] });
+            segs = verses.map(v => v[4]);
+            finalTitle = `${book} ${chapter}:${startVerse}-${endVerse}`;
          }
       } else {
         const bRow = bibleData.find(b => b[0] === refId);
         if (bRow) {
-          const chapterTotalVerses = bibleData.filter(b => b[1] === bRow[1] && b[2] === bRow[2]).length;
-          resultItems.push({
-            id: iId,
-            refId: refId,
-            type: 'bible',
-            title: `${bRow[1]} ${bRow[2]}:${bRow[3]}`,
-            segments: [bRow[4]],
-            chapterTotalVerses: chapterTotalVerses
-          });
-        } else {
-          resultItems.push({ id: iId, refId: refId, type: 'bible', title: 'Ayat Tidak Ditemukan', segments: [''] });
+          segs = [bRow[4]];
+          finalTitle = `${bRow[1]} ${bRow[2]}:${bRow[3]}`;
+          chapterTotalVerses = bibleData.filter(b => b[1] === bRow[1] && b[2] === bRow[2]).length;
         }
+      }
+
+      if (segs.length > 0) {
+        let visibleIndices = null;
+        try {
+          if (customText) visibleIndices = JSON.parse(customText);
+        } catch(e) {}
+        
+        let filteredSegs = segs;
+        if (visibleIndices && Array.isArray(visibleIndices)) {
+           filteredSegs = segs.filter((_, i) => visibleIndices.includes(i));
+        }
+
+        resultItems.push({
+          id: iId,
+          refId: refId,
+          type: 'bible',
+          title: finalTitle,
+          segments: filteredSegs.length > 0 ? filteredSegs : ['(Teks tidak tersedia)'],
+          originalSegments: segs,
+          visibleSegments: visibleIndices || null,
+          chapterTotalVerses: chapterTotalVerses
+        });
+      } else {
+        resultItems.push({ id: iId, refId: refId, type: 'bible', title: 'Ayat Tidak Ditemukan', segments: [''] });
       }
     } else if (type === 'slideshow') {
       let urls = [];

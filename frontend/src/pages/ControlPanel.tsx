@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Monitor, Square, Tv, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, Upload, CheckCircle, Type, Plus, Trash2, Edit, Save } from 'lucide-react';
+import { Monitor, Square, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, Upload, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X } from 'lucide-react';
 import { callApi } from '../api';
+import { SyncButton } from '../components/SyncButton';
 import { splitLongSegments } from '../utils/textSplitter';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -28,12 +29,26 @@ export default function ControlPanel() {
   const [isEditingRundown, setIsEditingRundown] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [dragItem, setDragItem] = useState<number | null>(null);
+
+  // Segment Edit State
+  const [isSegmentModalOpen, setIsSegmentModalOpen] = useState(false);
+  const [segmentEditIndex, setSegmentEditIndex] = useState<number | null>(null);
+  const [tempVisibleSegments, setTempVisibleSegments] = useState<number[]>([]);
+  const [hasSelection, setHasSelection] = useState(false);
   
   // Running Text States
   const [runningText, setRunningText] = useState(localStorage.getItem('worship_rt_text') || '');
   const [rtPos, setRtPos] = useState(localStorage.getItem('worship_rt_pos') || 'bottom');
   const [rtSpeed, setRtSpeed] = useState(Number(localStorage.getItem('worship_rt_speed') || 15));
   const [isRtVisible, setIsRtVisible] = useState(false);
+  
+  // Add Item States
+  const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchType, setSearchType] = useState<'song'|'bible'>('song');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isUploadingSlides, setIsUploadingSlides] = useState(false);
   
   // Debounce ref to prevent spamming the API
   const syncTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -103,6 +118,11 @@ export default function ControlPanel() {
     setPlaylist(newPlaylist);
   };
 
+  const removePlaylistItem = (index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    removeRundownItem(index);
+  };
+
   const handleDrop = (e: React.DragEvent, toIdx: number) => {
     e.preventDefault();
     const fromIdx = Number(e.dataTransfer.getData('text/plain'));
@@ -124,6 +144,112 @@ export default function ControlPanel() {
     setDragItem(null);
   };
 
+  const addQuickAnnouncement = () => {
+    const newAnnouncement = {
+      id: 'custom-' + Date.now(),
+      type: 'announcement',
+      title: 'Pengumuman / Teks Bebas',
+      segments: [''],
+    };
+    
+    const newPlaylist = [...playlist, newAnnouncement as any];
+    setPlaylist(newPlaylist);
+    
+    setActiveItem(newPlaylist.length - 1);
+    setActiveSegment(0);
+    setIsEditingRundown(true);
+  };
+
+  const performSearch = async (query: string, type: string) => {
+    if (!query || query.trim().length === 0) {
+      setSearchResults([]);
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const endpoint = type === 'song' ? 'searchSongs' : 'searchBible';
+      const res = await callApi(endpoint, { q: query });
+      if (res.success) {
+        setSearchResults(res.data);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Gagal mencari data');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery.trim().length > 0) {
+        performSearch(searchQuery, searchType);
+      } else {
+        setSearchResults([]);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery, searchType]);
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    performSearch(searchQuery, searchType);
+  };
+
+  const addToRundown = (item: any) => {
+    const newItem = { ...item, localId: Math.random().toString(36).substr(2, 9) };
+    const newPlaylist = [...playlist, newItem];
+    setPlaylist(newPlaylist);
+    setIsAddItemModalOpen(false);
+    setIsEditingRundown(true);
+  };
+
+  const handleSlideUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    setIsUploadingSlides(true);
+    
+    try {
+      const promises = Array.from(files).map(file => {
+        return new Promise<{name: string, mimeType: string, base64: string}>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const base64Full = ev.target?.result as string;
+            const base64Data = base64Full.split(',')[1];
+            resolve({ name: file.name, mimeType: file.type, base64: base64Data });
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      });
+      
+      const imagesData = await Promise.all(promises);
+      const res = await callApi('uploadImages', {}, { method: 'POST', payload: { images: imagesData } });
+      
+      if (res.success && res.data && res.data.urls) {
+        const newItem = {
+          id: 'slideshow-' + Date.now(),
+          type: 'slideshow',
+          title: `Slideshow (${res.data.urls.length} Slide)`,
+          segments: res.data.urls,
+          localId: Math.random().toString(36).substr(2, 9)
+        };
+        const newPlaylist = [...playlist, newItem];
+        setPlaylist(newPlaylist);
+        setIsAddItemModalOpen(false);
+        setIsEditingRundown(true);
+      } else {
+        alert("Gagal mengunggah gambar: " + (res.error?.message || 'Unknown error'));
+      }
+    } catch (err: any) {
+      alert("Terjadi kesalahan: " + err.message);
+    } finally {
+      setIsUploadingSlides(false);
+      e.target.value = '';
+    }
+  };
+
   const saveRundown = async () => {
     setIsSaving(true);
     const payload = {
@@ -133,9 +259,10 @@ export default function ControlPanel() {
         let customText = '';
         if (item.type === 'announcement') customText = item.segments[0];
         if (item.type === 'slideshow') customText = JSON.stringify(item.segments);
+        if (item.type === 'song' || item.type === 'bible') customText = item.visibleSegments ? JSON.stringify(item.visibleSegments) : '';
         return {
           type: item.type,
-          refId: (item.type === 'announcement' || item.type === 'slideshow') ? null : item.id,
+          refId: item.type === 'announcement' ? item.title : (item.type === 'slideshow' ? null : (item.refId || item.id)),
           customText: customText
         };
       })
@@ -150,10 +277,57 @@ export default function ControlPanel() {
     setIsEditingRundown(false);
   };
 
+  const openSegmentModal = (idx: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSegmentEditIndex(idx);
+    setTempVisibleSegments(playlist[idx].visibleSegments || [...Array(playlist[idx].segments.length).keys()]);
+    setIsSegmentModalOpen(true);
+  };
+
+  const toggleSegment = (segIdx: number) => {
+    setTempVisibleSegments(prev => 
+      prev.includes(segIdx) ? prev.filter(i => i !== segIdx) : [...prev, segIdx].sort((a, b) => a - b)
+    );
+  };
+
+  const saveSegmentSelection = () => {
+    if (segmentEditIndex !== null) {
+      const newP = [...playlist];
+      newP[segmentEditIndex].visibleSegments = tempVisibleSegments;
+      setPlaylist(newP);
+    }
+    setIsSegmentModalOpen(false);
+    setSegmentEditIndex(null);
+  };
+
   // Sync saat ada perubahan
   useEffect(() => {
     pushStateToLive(activeItem, activeSegment, mode);
   }, [activeItem, activeSegment, mode, playlist]);
+
+  const wrapText = (colorTag: string) => {
+    const textarea = document.getElementById('editor-textarea') as HTMLTextAreaElement;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    if (start === end) return; 
+
+    const newPlaylist = [...playlist];
+    const currentText = newPlaylist[activeItem].segments[activeSegment] || '';
+    
+    const before = currentText.substring(0, start);
+    const selected = currentText.substring(start, end);
+    const after = currentText.substring(end);
+    
+    newPlaylist[activeItem].segments[activeSegment] = `${before}[${colorTag}]${selected}[/${colorTag}]${after}`;
+    setPlaylist(newPlaylist);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start, start + selected.length + (colorTag.length * 2) + 5);
+    }, 10);
+  };
 
   const openDisplay = () => {
     window.open('#/display', '_blank', 'width=1280,height=720');
@@ -296,44 +470,44 @@ export default function ControlPanel() {
   }
 
   return (
-    <div className="h-screen flex flex-col p-4 gap-4 overflow-hidden">
-      <header className="glass-panel p-4 flex flex-col md:flex-row justify-between items-center shrink-0 gap-4">
+    <div className="h-screen flex flex-col p-4 md:p-6 gap-4 overflow-hidden relative">
+      <div className="absolute inset-0 bg-white/20 pointer-events-none -z-10 backdrop-blur-[2px]"></div>
+      
+      <header className="glass-panel p-5 flex flex-col md:flex-row justify-between items-center shrink-0 gap-4 shadow-lg border-white/50">
         <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
-          <button onClick={() => navigate('/dashboard')} className="glass-button text-indigo-900 flex items-center gap-2">
-            <ArrowLeft size={16}/> Dashboard
+          <button onClick={() => navigate('/dashboard')} className="glass-button text-indigo-900 flex items-center gap-2 font-medium">
+            <ArrowLeft size={18}/> Dashboard
           </button>
-          <h1 className="text-xl font-bold text-indigo-900">Control Panel</h1>
+          <h1 className="text-2xl font-heading font-extrabold text-indigo-900 tracking-tight drop-shadow-sm">Control Panel</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2 md:gap-4 justify-center md:justify-end">
-          {errorMsg && <div className="text-red-600 text-sm">{errorMsg}</div>}
-          <div className="text-sm text-indigo-900/60">
-            {isSyncing ? 'Syncing...' : 'Synced ✅'}
-          </div>
-          <div className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-700 font-bold rounded-lg border border-red-500/30">
-            <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div> LIVE
+          {errorMsg && <div className="text-red-700 bg-red-100/90 px-3 py-1 rounded-lg text-sm border border-red-300 font-medium">{errorMsg}</div>}
+          <SyncButton isParentSyncing={isSyncing} />
+          <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold rounded-xl border border-red-400 shadow-lg shadow-red-500/30">
+            <div className="w-3 h-3 rounded-full bg-white animate-pulse"></div> LIVE
           </div>
           <button 
             onClick={() => setIsRunningTextModalOpen(true)} 
-            className={`glass-button flex items-center gap-2 ${isRtVisible ? 'bg-red-500 text-white hover:bg-red-600 border-red-600' : 'text-indigo-900'}`}
+            className={`glass-button flex items-center gap-2 transition-all ${isRtVisible ? 'bg-red-500 text-white hover:bg-red-600 border-red-500 shadow-red-500/30 shadow-md' : 'text-indigo-900'}`}
           >
-            <Type size={16}/> Running Text
+            <Type size={18}/> Running Text
           </button>
           <button onClick={() => setIsLogoModalOpen(true)} className="glass-button text-indigo-900 flex items-center gap-2">
-            <CheckCircle size={16}/> Ganti Logo
+            <CheckCircle size={18}/> Ganti Logo
           </button>
           <button onClick={() => setIsBgModalOpen(true)} className="glass-button text-indigo-900 flex items-center gap-2">
-            <ImageIcon size={16}/> Ganti BG
+            <ImageIcon size={18}/> Ganti BG
           </button>
-          <button onClick={openDisplay} className="glass-button text-indigo-900 flex items-center gap-2">
-            <Monitor size={16}/> Buka Display
+          <button onClick={openDisplay} className="glass-button bg-indigo-600/10 text-indigo-900 flex items-center gap-2 border-indigo-400/30 font-bold hover:bg-indigo-600/20">
+            <Monitor size={18}/> Buka Display
           </button>
         </div>
       </header>
       
-      <main className="flex-1 flex flex-col md:flex-row gap-4 min-h-0">
-        <aside className="w-full h-1/3 md:h-auto md:w-1/4 glass-panel p-4 flex flex-col overflow-y-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="font-semibold text-indigo-900 uppercase text-sm">Rundown</h2>
+      <main className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
+        <aside className="w-full h-1/3 lg:h-auto lg:w-[28%] glass-panel p-5 flex flex-col overflow-hidden shadow-lg border-white/50">
+          <div className="flex justify-between items-center mb-5 shrink-0">
+            <h2 className="font-heading font-bold text-indigo-950 uppercase tracking-wide">Rundown</h2>
             <button 
               onClick={() => {
                 if (isEditingRundown) {
@@ -342,22 +516,22 @@ export default function ControlPanel() {
                   setIsEditingRundown(true);
                 }
               }}
-              className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg transition ${
+              className={`flex items-center gap-2 text-sm px-4 py-2 rounded-xl transition-all shadow-sm font-semibold ${
                 isEditingRundown 
-                  ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
-                  : 'glass-button text-indigo-900'
+                  ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-600/30 hover:shadow-md' 
+                  : 'glass-button text-indigo-900 hover:bg-white/70'
               }`}
             >
-              {isSaving ? <Loader2 size={14} className="animate-spin" /> : (isEditingRundown ? <Save size={14} /> : <Edit size={14} />)}
-              {isEditingRundown ? 'Simpan' : 'Edit'}
+              {isSaving ? <Loader2 size={16} className="animate-spin" /> : (isEditingRundown ? <Save size={16} /> : <Edit size={16} />)}
+              {isEditingRundown ? 'Simpan' : 'Edit Rundown'}
             </button>
           </div>
           
-          <div className="space-y-2">
+          <div className="space-y-3 overflow-y-auto pr-2 pb-4 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent flex-1">
             {playlist.map((item, idx) => (
               <div 
                 key={item.id || idx} 
-                className={`flex gap-2 transition ${dragItem === idx ? 'opacity-50' : ''}`}
+                className={`flex gap-2 transition-all duration-300 ${dragItem === idx ? 'opacity-40 scale-95' : 'hover:-translate-y-0.5'}`}
                 draggable={isEditingRundown}
                 onDragStart={(e) => {
                   e.dataTransfer.setData('text/plain', idx.toString());
@@ -369,91 +543,232 @@ export default function ControlPanel() {
               >
                 <div 
                   onClick={() => { 
-                    if (!isEditingRundown) {
-                      setActiveItem(idx); 
-                      setActiveSegment(0); 
-                    }
+                    setActiveItem(idx); 
+                    setActiveSegment(0); 
                   }}
-                  className={`flex-1 text-left p-3 rounded-lg border transition ${isEditingRundown ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${
-                    activeItem === idx && !isEditingRundown
-                      ? 'bg-white/60 border-indigo-500/50 shadow-sm' 
-                      : 'bg-white/20 border-white/20 hover:bg-white/40'
+                  className={`flex-1 text-left p-4 rounded-xl border backdrop-blur-sm transition-all ${isEditingRundown ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${
+                    activeItem === idx
+                      ? 'bg-white/80 border-indigo-400 shadow-md transform scale-[1.02]' 
+                      : 'bg-white/30 border-white/40 hover:bg-white/50 shadow-sm'
                   }`}
                 >
-                  <div className="font-medium text-indigo-900 select-none">{idx + 1}. {item.title}</div>
-                  <div className="text-xs text-indigo-800/60 uppercase mt-1 select-none">{item.type}</div>
-                </div>
-                {isEditingRundown && (
-                  <div className="flex flex-col gap-1 w-10 shrink-0">
-                    <button 
-                      onClick={() => removeRundownItem(idx)}
-                      className="flex-1 flex justify-center items-center bg-red-50 text-red-600 rounded-md hover:bg-red-100"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                  <div className="flex justify-between w-full items-center">
+                    <div className={`font-semibold text-lg select-none ${activeItem === idx ? 'text-indigo-900' : 'text-slate-800'}`}>
+                      {idx + 1}. {item.title}
+                    </div>
+                    {isEditingRundown && (
+                      <div className="flex gap-2">
+                        {(item.type === 'song' || item.type === 'bible') && (
+                          <button 
+                            onClick={(e) => openSegmentModal(idx, e)}
+                            className="text-indigo-600 hover:text-indigo-800 bg-indigo-100 p-1.5 rounded-lg transition-colors"
+                            title="Atur Slide / Bait"
+                          >
+                            <Settings size={14} />
+                          </button>
+                        )}
+                        <button 
+                          onClick={(e) => removePlaylistItem(idx, e)}
+                          className="text-red-500 hover:text-red-700 bg-red-100 p-1.5 rounded-lg transition-colors"
+                          title="Hapus"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                )}
+                  <div className="text-xs font-bold text-indigo-600/70 uppercase mt-1 select-none tracking-wider">{item.type}</div>
+                </div>
               </div>
             ))}
           </div>
+          
+          <div className="mt-3 flex gap-2 shrink-0">
+            <button 
+              onClick={() => setIsAddItemModalOpen(true)}
+              className="flex-1 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-2 text-indigo-900 py-2 text-xs font-semibold hover:bg-white/70 transition-all"
+            >
+              <Search size={14} /> Lagu / Ayat
+            </button>
+            <button 
+              onClick={addQuickAnnouncement}
+              className="flex-1 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-2 text-indigo-900 py-2 text-xs font-semibold hover:bg-white/70 transition-all"
+            >
+              <Plus size={14} /> Pengumuman
+            </button>
+          </div>
         </aside>
         
-        <section className="flex-1 flex flex-col gap-4">
-          <div className="glass-panel flex-1 p-6 flex flex-col items-center justify-center relative">
-              <div className="text-center max-w-4xl">
-                <h3 className="text-2xl font-bold text-indigo-900 mb-2">{playlist[activeItem]?.title}</h3>
-                <div className="text-3xl font-semibold text-indigo-800 leading-relaxed whitespace-pre-wrap w-full">
-                  {mode === 'blank' ? '' : (
-                    playlist[activeItem]?.type === 'slideshow' 
-                      ? <img src={playlist[activeItem]?.segments[activeSegment].replace('export=view', 'export=download')} alt="Slide Preview" className="max-h-[50vh] object-contain mx-auto rounded-xl shadow-lg border border-indigo-200" />
-                      : (
-                        (playlist[activeItem]?.type === 'announcement' && isEditingRundown) ? (
-                          <textarea 
-                            className="w-full h-[40vh] bg-white border-2 border-indigo-200 rounded-xl p-6 text-3xl focus:outline-none focus:border-indigo-500 shadow-inner"
-                            value={playlist[activeItem]?.segments[0] || ''}
-                            onChange={(e) => {
-                              const newPlaylist = [...playlist];
-                              newPlaylist[activeItem].segments[0] = e.target.value;
-                              setPlaylist(newPlaylist);
-                            }}
-                            placeholder="Ketik pengumuman di sini..."
-                          />
-                        ) : playlist[activeItem]?.segments[activeSegment]
-                      )
+        <section className="flex-1 flex flex-col gap-6 min-w-0">
+          <div className="glass-panel flex-1 p-8 flex flex-col items-center justify-center relative shadow-lg overflow-hidden border-white/50 bg-gradient-to-br from-white/40 to-white/10">
+              <div className="text-center max-w-5xl w-full flex flex-col items-center">
+                {(playlist[activeItem]?.type === 'announcement' && isEditingRundown) ? (
+                  <input 
+                    className="text-3xl font-heading font-bold text-indigo-950 mb-6 drop-shadow-sm bg-white border-2 border-indigo-300 rounded-full px-6 py-2 shadow-inner text-center w-full max-w-xl focus:outline-none focus:border-indigo-500"
+                    value={playlist[activeItem]?.title || ''}
+                    onChange={(e) => {
+                      const newPlaylist = [...playlist];
+                      newPlaylist[activeItem].title = e.target.value;
+                      setPlaylist(newPlaylist);
+                    }}
+                    placeholder="Judul Pengumuman / Teks Bebas"
+                  />
+                ) : (
+                  <h3 className="text-3xl font-heading font-bold text-indigo-950 mb-4 drop-shadow-sm bg-white/30 inline-block px-6 py-2 rounded-full border border-white/40">{playlist[activeItem]?.title}</h3>
+                )}
+                
+                {playlist[activeItem]?.segments && playlist[activeItem].segments.length > 1 && (
+                  <div className="flex justify-center flex-wrap gap-2 mb-6 z-20">
+                    {playlist[activeItem].segments.map((_: any, idx: number) => (
+                      <button 
+                        key={idx}
+                        onClick={() => { setActiveSegment(idx); setMode('content'); }}
+                        className={`px-4 py-2 font-semibold text-sm md:text-base rounded-xl transition-all duration-200 border shadow-sm hover:-translate-y-0.5 ${
+                          activeSegment === idx && mode === 'content' 
+                            ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-600/30' 
+                            : 'bg-white/70 text-indigo-900 border-white/50 hover:bg-white/90'
+                        }`}
+                      >
+                        {playlist[activeItem]?.segmentLabels ? playlist[activeItem].segmentLabels[idx] : `Slide ${idx + 1}`}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="text-4xl md:text-5xl font-bold text-indigo-900 leading-tight whitespace-pre-wrap w-full p-8 min-h-[30vh] flex items-center justify-center relative z-10 transition-all duration-300 animate-fade-in" key={`${activeItem}-${activeSegment}-${mode}`}>
+                  {mode === 'blank' ? <span className="text-indigo-900/20 italic">Layar Kosong (Blank)</span> : (
+                    <>
+                      {(playlist[activeItem]?.type === 'slideshow') ? (
+                        <div className="flex flex-col items-center">
+                          <ImageIcon size={64} className="text-indigo-900/20 mb-4" />
+                          <span className="text-indigo-900/40 italic text-xl">Slideshow Ditampilkan</span>
+                        </div>
+                      ) : (
+                        (isEditingRundown) ? (
+                          <div className="w-full relative">
+                            {/* Toolbar Warna */}
+                            <div className={`absolute -top-12 left-0 right-0 flex justify-center gap-2 transition-all duration-200 z-30 ${
+                              hasSelection ? 'opacity-100 pointer-events-auto translate-y-0' : 'opacity-0 pointer-events-none translate-y-2'
+                            }`}>
+                              <button onClick={() => wrapText('merah')} className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm shadow-md font-bold hover:bg-red-600 transition">Merah</button>
+                              <button onClick={() => wrapText('kuning')} className="px-3 py-1 bg-yellow-400 text-slate-900 rounded-lg text-sm shadow-md font-bold hover:bg-yellow-500 transition">Kuning</button>
+                              <button onClick={() => wrapText('hijau')} className="px-3 py-1 bg-green-500 text-white rounded-lg text-sm shadow-md font-bold hover:bg-green-600 transition">Hijau</button>
+                              <button onClick={() => wrapText('biru')} className="px-3 py-1 bg-blue-500 text-white rounded-lg text-sm shadow-md font-bold hover:bg-blue-600 transition">Biru</button>
+                            </div>
+                            <textarea 
+                              id="editor-textarea"
+                              className="w-full h-[30vh] bg-white/80 backdrop-blur-md border-2 border-indigo-300 rounded-2xl p-8 text-3xl md:text-4xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 shadow-inner font-medium text-slate-800 transition-all"
+                              value={playlist[activeItem]?.segments[activeSegment] || ''}
+                              onChange={(e) => {
+                                const newPlaylist = [...playlist];
+                                newPlaylist[activeItem].segments[activeSegment] = e.target.value;
+                                setPlaylist(newPlaylist);
+                              }}
+                              onSelect={(e) => {
+                                const target = e.target as HTMLTextAreaElement;
+                                setHasSelection(target.selectionStart !== target.selectionEnd);
+                              }}
+                              onBlur={() => {
+                                // Tunggu sebentar sebelum menyembunyikan agar tombol sempat diklik
+                                setTimeout(() => setHasSelection(false), 150);
+                              }}
+                              placeholder="Ketik teks di sini (blok teks untuk mewarnai)..."
+                            />
+                          </div>
+                        ) : playlist[activeItem]?.segments[activeSegment] ? (
+                          playlist[activeItem].segments[activeSegment]
+                        ) : (
+                          <span className="text-indigo-900/30 italic">Lirik tidak tersedia</span>
+                        )
+                      )}
+                    </>
                   )}
                 </div>
               </div>
-             
-             <div className="absolute bottom-6 left-0 right-0 flex justify-center flex-wrap gap-2 px-6">
-                {playlist[activeItem]?.segments.map((_: any, idx: number) => (
-                  <button 
-                    key={idx}
-                    onClick={() => { setActiveSegment(idx); setMode('content'); }}
-                    className={`px-3 py-1 text-sm rounded-md transition ${
-                      activeSegment === idx && mode === 'content' ? 'bg-indigo-600 text-white' : 'glass-button text-indigo-900'
-                    }`}
-                  >
-                    {playlist[activeItem]?.segmentLabels ? playlist[activeItem].segmentLabels[idx] : idx + 1}
-                  </button>
-                ))}
-             </div>
           </div>
           
-          <div className="glass-panel p-4 shrink-0 flex justify-center gap-4">
-             <button onClick={handlePrev} className="glass-button text-indigo-900 flex items-center gap-2 px-6"><ArrowLeft size={16}/> Prev</button>
-             <button onClick={handleNext} className="glass-button bg-indigo-500/20 text-indigo-900 flex items-center gap-2 px-6">Next <ArrowRight size={16}/></button>
-             <div className="w-px h-8 bg-indigo-900/20 mx-4 self-center"></div>
+          <div className="glass-panel p-5 shrink-0 flex flex-wrap justify-center items-center gap-4 md:gap-6 shadow-lg border-white/50">
+             <button onClick={handlePrev} className="glass-button bg-white/60 text-indigo-950 flex items-center gap-3 px-8 py-4 text-lg hover:bg-white/80 shadow-md rounded-2xl"><ArrowLeft size={24}/> Mundur</button>
+             <button onClick={handleNext} className="glass-button bg-gradient-to-r from-indigo-500 to-indigo-600 text-white border-transparent flex items-center gap-3 px-8 py-4 text-lg hover:shadow-lg hover:shadow-indigo-500/30 rounded-2xl">Lanjut <ArrowRight size={24}/></button>
+             <div className="w-px h-12 bg-indigo-900/20 mx-2 hidden md:block"></div>
              <button 
                 onClick={() => setMode(m => m === 'blank' ? 'content' : 'blank')} 
-                className={`glass-button flex items-center gap-2 px-6 ${mode === 'blank' ? 'bg-indigo-900 text-white' : 'text-indigo-900'}`}
+                className={`glass-button flex items-center gap-3 px-8 py-4 text-lg rounded-2xl transition-all shadow-md ${mode === 'blank' ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700 shadow-slate-900/40' : 'bg-white/60 text-slate-800 hover:bg-white/80'}`}
              >
-               <Square size={16}/> Blank
+               <Square size={20} className={mode === 'blank' ? "fill-white" : ""}/> Blank
              </button>
-             <button className="glass-button text-indigo-900 flex items-center gap-2"><Tv size={16}/> Logo</button>
           </div>
         </section>
       </main>
+      {/* MODAL TAMBAH ITEM (LAGU/AYAT/SLIDE) */}
+      {isAddItemModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
+          <div className="bg-white/90 backdrop-blur-xl p-6 rounded-2xl shadow-2xl max-w-lg w-full border border-white/40 max-h-[80vh] flex flex-col">
+            <h2 className="text-xl font-bold text-indigo-900 mb-4 flex items-center gap-2">
+              <Plus size={20} /> Tambah Item ke Rundown
+            </h2>
+            
+            <div className="flex gap-2 mb-4">
+              <button onClick={() => setSearchType('song')} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition text-sm font-semibold ${searchType === 'song' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-indigo-900 border border-indigo-200'}`}><Music size={14}/> Lagu</button>
+              <button onClick={() => setSearchType('bible')} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition text-sm font-semibold ${searchType === 'bible' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-indigo-900 border border-indigo-200'}`}><BookOpen size={14}/> Ayat</button>
+            </div>
 
+            <form onSubmit={handleSearch} className="flex gap-2 mb-4">
+              <input 
+                type="text" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={`Cari ${searchType === 'song' ? 'Lagu' : 'Ayat'}...`} 
+                className="glass-input flex-1 !bg-white"
+                autoFocus
+              />
+              <button type="submit" disabled={isSearching} className="glass-button bg-indigo-500/20 text-indigo-900 border-indigo-500/30 px-4">
+                {isSearching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16}/>}
+              </button>
+            </form>
+
+            <div className="flex-1 overflow-y-auto space-y-2 mb-4 min-h-[200px] border border-indigo-100 rounded-xl p-2 bg-slate-50/50">
+              {searchResults.map((res) => (
+                <div key={res.id} className="p-3 bg-white border border-indigo-100 rounded-xl hover:bg-indigo-50 transition cursor-pointer flex justify-between items-center" onClick={() => addToRundown(res)}>
+                  <div>
+                    <div className="font-semibold text-indigo-900 text-sm">{res.title}</div>
+                    <div className="text-xs text-indigo-800/60 line-clamp-1">{res.segments[0]}</div>
+                  </div>
+                  <div className="text-lg font-bold text-indigo-900/30"><Plus size={18}/></div>
+                </div>
+              ))}
+              {searchResults.length === 0 && !isSearching && searchQuery !== '' && (
+                <div className="text-center text-sm text-indigo-900/60 p-4">Tidak ada hasil ditemukan.</div>
+              )}
+              {searchResults.length === 0 && !isSearching && searchQuery === '' && (
+                <div className="text-center text-sm text-indigo-900/40 p-4 mt-8">Ketik kata kunci untuk mencari.</div>
+              )}
+            </div>
+
+            <div className="flex justify-between items-center mt-2 border-t pt-4 border-indigo-100">
+              <div className="relative">
+                <input 
+                  type="file" 
+                  multiple 
+                  accept="image/*" 
+                  id="cp-slideshow-upload"
+                  className="hidden"
+                  onChange={handleSlideUpload}
+                />
+                <label 
+                  htmlFor="cp-slideshow-upload"
+                  className={`glass-button text-xs py-2 px-3 cursor-pointer flex items-center gap-2 ${isUploadingSlides ? 'bg-indigo-200 text-indigo-500' : 'bg-indigo-500/20 text-indigo-900'}`}
+                >
+                  {isUploadingSlides ? <Loader2 size={14} className="animate-spin" /> : <><ImageIcon size={14}/> Upload Slide/PPT</>}
+                </label>
+              </div>
+              <button onClick={() => setIsAddItemModalOpen(false)} className="px-5 py-2 rounded-lg font-bold text-indigo-900 bg-black/5 hover:bg-black/10 transition text-sm">
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* MODAL GANTI BACKGROUND */}
       {isBgModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
@@ -653,6 +968,33 @@ export default function ControlPanel() {
           </div>
         </div>
       )}
+
+      {/* SEGMENT SELECTION MODAL */}
+      {isSegmentModalOpen && segmentEditIndex !== null && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
+          <div className="bg-white/90 backdrop-blur-xl p-8 rounded-2xl shadow-2xl max-w-lg w-full border border-white/40 flex flex-col max-h-[85vh]">
+            <h2 className="text-2xl font-bold text-indigo-900 mb-2 flex items-center gap-2">
+              <CheckSquare size={24} /> Pilih Bait / Ayat
+            </h2>
+            <div className="flex-1 overflow-y-auto space-y-2 border border-indigo-100 rounded-xl p-3 bg-slate-50/50">
+              {(playlist[segmentEditIndex].originalSegments || playlist[segmentEditIndex].segments).map((seg: string, i: number) => {
+                const isChecked = tempVisibleSegments.includes(i);
+                return (
+                  <label key={i} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer ${isChecked ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-200'}`}>
+                    <input type="checkbox" className="mt-1 w-4 h-4" checked={isChecked} onChange={() => toggleSegment(i)} />
+                    <div className="text-sm">{seg}</div>
+                  </label>
+                );
+              })}
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setIsSegmentModalOpen(false)} className="px-6 py-2 rounded-xl font-bold text-indigo-900 bg-black/5">Batal</button>
+              <button onClick={saveSegmentSelection} className="px-6 py-2 rounded-xl font-bold text-white bg-indigo-600">Simpan Pilihan</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

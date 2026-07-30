@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Loader2, Music, BookOpen, Edit, Save, Trash2, X, ArrowLeft, ArrowRight, Monitor, Star } from 'lucide-react';
+import { Search, Plus, Loader2, Music, BookOpen, Edit, Save, Trash2, X, ArrowLeft, ArrowRight, Monitor, Star, Copy } from 'lucide-react';
 import { callApi } from '../api';
 import { splitLongSegments } from '../utils/textSplitter';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useFavorites } from '../hooks/useFavorites';
+import { SyncButton } from '../components/SyncButton';
 
 const bibleBooks = [
   "Kejadian", "Keluaran", "Imamat", "Bilangan", "Ulangan",
@@ -273,7 +274,8 @@ export default function Library() {
           </button>
           <h1 className="text-xl font-bold text-indigo-900">Library (Database)</h1>
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center gap-3">
+          <SyncButton />
           <button onClick={() => window.open('#/display', '_blank', 'width=1280,height=720')} className="glass-button text-indigo-900 flex items-center gap-2">
             <Monitor size={16}/> Buka Display
           </button>
@@ -289,14 +291,33 @@ export default function Library() {
             <button onClick={() => {setSearchType('bible'); setResults([]); setSelectedItem(null); setSelectedResultIds([]);}} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'bible' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white/30 text-indigo-900'}`}><BookOpen size={16}/> Alkitab</button>
           </div>
 
-          <div className="flex gap-2 mb-4">
+          {searchType === 'song' && (
+            <button 
+              onClick={() => {
+                setSelectedItem({
+                  id: "song_" + Date.now(),
+                  type: 'song',
+                  title: 'Judul Lagu Baru',
+                  author: 'NN',
+                  segments: ['Lirik baris 1\nLirik baris 2'],
+                  segmentLabels: ['Bait 1']
+                });
+                setIsEditingItem(true);
+                setActiveSegment(0);
+              }}
+              className="w-full mb-3 flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm font-semibold bg-green-500/10 text-green-700 border border-green-500/30 hover:bg-green-500/20"
+            >
+              <Plus size={18} /> Tambah Lagu Baru
+            </button>
+          )}
+
+          <div className="flex gap-3 mb-5">
             <button 
               onClick={() => {
                 const newShowFavs = !showFavorites;
                 setShowFavorites(newShowFavs);
-                // The useEffect will automatically handle fetching or filtering favorites
               }}
-              className={`p-3 rounded-xl flex items-center justify-center transition shadow-sm ${showFavorites ? 'bg-yellow-400 text-yellow-900 shadow-yellow-400/50' : 'bg-white/30 text-indigo-900 hover:bg-white/50'}`}
+              className={`p-3 rounded-xl flex items-center justify-center transition-all shadow-sm border ${showFavorites ? 'bg-yellow-400 border-yellow-500 text-yellow-900 shadow-yellow-400/50 scale-105' : 'bg-white/40 border-white/40 text-indigo-900 hover:bg-white/60'}`}
               title="Tampilkan hanya favorit"
             >
               <Star size={20} className={showFavorites ? 'fill-yellow-900' : ''} />
@@ -433,19 +454,42 @@ export default function Library() {
           {selectedItem ? (
             <div>
               <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-indigo-900 mb-2">{selectedItem.title}</h2>
-                  <div className="flex items-center gap-3">
-                    <div className="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 text-xs font-bold uppercase rounded-full">
-                      {selectedItem.type === 'song' ? 'Lagu Sion' : 'Alkitab (TB)'}
-                    </div>
-                    {selectedItem.author && selectedItem.author !== 'N/A' && (
-                      <div className="text-sm font-semibold text-indigo-900/60 flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-300"></span>
-                        {selectedItem.author}
+                <div className="flex-1 mr-4">
+                  {isEditingItem ? (
+                    <>
+                      <input 
+                        type="text" 
+                        value={selectedItem.title}
+                        onChange={(e) => setSelectedItem({...selectedItem, title: e.target.value})}
+                        className="w-full text-2xl font-bold text-indigo-900 mb-2 bg-white border border-indigo-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="Judul Lagu"
+                      />
+                      {selectedItem.type === 'song' && (
+                        <input 
+                          type="text" 
+                          value={selectedItem.author || ''}
+                          onChange={(e) => setSelectedItem({...selectedItem, author: e.target.value})}
+                          className="w-full text-sm font-semibold text-indigo-900/60 bg-white border border-indigo-200 rounded-md px-2 py-1 mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          placeholder="Pencipta Lagu"
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <h2 className="text-2xl font-bold text-indigo-900 mb-2">{selectedItem.title}</h2>
+                      <div className="flex items-center gap-3">
+                        <div className="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 text-xs font-bold uppercase rounded-full">
+                          {selectedItem.type === 'song' ? 'Lagu Sion' : 'Alkitab (TB)'}
+                        </div>
+                        {selectedItem.author && selectedItem.author !== 'N/A' && (
+                          <div className="text-sm font-semibold text-indigo-900/60 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-300"></span>
+                            {selectedItem.author}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </>
+                  )}
                 </div>
                 <button 
                   onClick={() => {
@@ -507,17 +551,37 @@ export default function Library() {
                       )}
                       
                       {isEditingItem && (
-                        <button 
-                          onClick={() => {
-                            const newItem = { ...selectedItem };
-                            newItem.segments.splice(idx, 1);
-                            if (newItem.segmentLabels) newItem.segmentLabels.splice(idx, 1);
-                            setSelectedItem(newItem);
-                          }}
-                          className="text-red-500 hover:text-red-700 p-1 bg-red-50 rounded"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => {
+                              const newItem = { ...selectedItem };
+                              const segToCopy = newItem.segments[idx];
+                              const labelToCopy = newItem.segmentLabels ? newItem.segmentLabels[idx] : `Slide ${idx + 1}`;
+                              
+                              newItem.segments.splice(idx + 1, 0, segToCopy);
+                              if (newItem.segmentLabels) {
+                                newItem.segmentLabels.splice(idx + 1, 0, labelToCopy);
+                              }
+                              setSelectedItem(newItem);
+                            }}
+                            className="text-blue-500 hover:text-blue-700 p-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-100 shadow-sm"
+                            title="Duplikat bait ini"
+                          >
+                            <Copy size={16} />
+                          </button>
+                          <button 
+                            onClick={() => {
+                              const newItem = { ...selectedItem };
+                              newItem.segments.splice(idx, 1);
+                              if (newItem.segmentLabels) newItem.segmentLabels.splice(idx, 1);
+                              setSelectedItem(newItem);
+                            }}
+                            className="text-red-500 hover:text-red-700 p-2 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-100 shadow-sm"
+                            title="Hapus bait ini"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       )}
                     </div>
 

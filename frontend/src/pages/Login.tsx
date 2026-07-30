@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, ArrowRight, MonitorPlay, Loader2 } from 'lucide-react';
+import { Lock, MonitorPlay, Loader2 } from 'lucide-react';
 import { callApi } from '../api';
 
 export default function Login() {
@@ -38,35 +38,35 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 relative overflow-hidden">
       <div 
-        className="absolute inset-0 z-0 opacity-20 pointer-events-none"
+        className="absolute inset-0 z-0 pointer-events-none"
         style={{
-          backgroundImage: 'radial-gradient(circle at center, #667eea 0%, transparent 50%)',
+          backgroundImage: 'radial-gradient(circle at top right, rgba(99, 102, 241, 0.2) 0%, transparent 40%), radial-gradient(circle at bottom left, rgba(236, 72, 153, 0.2) 0%, transparent 40%)',
           backgroundSize: '100% 100%'
         }}
       ></div>
       
-      <div className={`glass-panel p-8 w-full max-w-md z-10 transition-transform duration-300 ${errorMsg ? 'animate-bounce' : ''}`}>
-        <div className="flex flex-col items-center justify-center mb-8">
-          <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/40 mb-4 text-white">
-            <MonitorPlay size={32} />
+      <div className={`glass-panel bg-white/20 p-8 w-full max-w-md z-10 transition-all duration-300 shadow-2xl border-white/40 ${errorMsg ? 'animate-bounce border-red-400 ring-2 ring-red-400/50' : ''}`}>
+        <div className="flex flex-col items-center justify-center mb-10">
+          <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-3xl flex items-center justify-center shadow-lg shadow-indigo-600/40 mb-6 text-white border-4 border-white/20">
+            <MonitorPlay size={40} className="drop-shadow-md" />
           </div>
-          <h1 className="text-2xl font-bold text-indigo-900">Worship Presenter</h1>
-          <p className="text-indigo-900/60 text-sm mt-1">Masukkan PIN Operator untuk melanjutkan</p>
+          <h1 className="text-3xl font-heading font-extrabold text-indigo-950 tracking-tight drop-shadow-sm text-center">Worship Presenter</h1>
+          <p className="text-slate-700 font-medium text-sm mt-3 text-center bg-white/30 px-4 py-1.5 rounded-full border border-white/40 shadow-sm">Masukkan PIN Operator untuk melanjutkan</p>
         </div>
 
-        <form onSubmit={handleLogin} className="flex flex-col gap-5">
+        <form onSubmit={handleLogin} className="flex flex-col gap-6">
           <div>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-indigo-400" />
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                <Lock className={`h-6 w-6 transition-colors ${errorMsg ? 'text-red-500' : 'text-slate-800'}`} />
               </div>
               <input
                 type="password"
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                className={`glass-input pl-11 py-4 text-center text-2xl tracking-[0.5em] font-bold ${errorMsg ? 'border-red-500 ring-2 ring-red-500/50 focus:ring-red-500 bg-red-50/50' : 'text-indigo-900'}`}
+                className={`w-full bg-white/60 backdrop-blur-sm border-2 rounded-2xl pl-14 py-5 text-center text-3xl tracking-[0.5em] font-bold shadow-inner transition-all duration-300 outline-none placeholder-slate-600 ${errorMsg ? 'border-red-400 text-red-700 bg-red-50/50 focus:ring-4 focus:ring-red-400/20' : 'border-white/60 text-black focus:border-indigo-400 focus:bg-white/90 focus:ring-4 focus:ring-indigo-400/20'}`}
                 placeholder="••••••"
                 maxLength={6}
                 inputMode="numeric"
@@ -75,21 +75,23 @@ export default function Login() {
                 autoFocus
               />
             </div>
-            {errorMsg && <p className="text-red-500 text-sm text-center mt-2 font-semibold">{errorMsg}</p>}
+            {errorMsg && <p className="text-red-600 text-sm text-center mt-3 font-semibold bg-red-100/80 backdrop-blur-sm py-2 rounded-lg border border-red-200">{errorMsg}</p>}
           </div>
 
           <button
             type="submit"
-            disabled={isLoading || !pin}
-            className="w-full py-4 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            disabled={isLoading || pin.length < 4}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl transition-all duration-300 transform active:scale-95 shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {isLoading ? <Loader2 className="animate-spin" size={20} /> : <ArrowRight size={20} />}
-            {isLoading ? 'Memverifikasi...' : 'Masuk'}
+            {isLoading ? <Loader2 className="animate-spin h-5 w-5" /> : null}
+            <span>{isLoading ? 'Memeriksa...' : 'Masuk Sekarang'}</span>
           </button>
         </form>
         
-        <div className="mt-8 text-center text-xs text-indigo-900/40">
-          Kode PIN Default: 123456
+        <div className="mt-8 text-center">
+          <span className="text-xs font-semibold text-slate-600 bg-white/40 px-3 py-1.5 rounded-full border border-white/50 shadow-sm">
+            Kode PIN Default: <strong className="text-indigo-800">123456</strong>
+          </span>
         </div>
       </div>
     </div>

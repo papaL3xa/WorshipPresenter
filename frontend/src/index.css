@@ -4,33 +4,56 @@
 
 @layer base {
   body {
-    /* Gradasi dinamis agar efek glassmorphism menonjol */
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* Dinamic gradient background */
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+    background-size: 200% 200%;
+    animation: gradientMove 15s ease infinite;
     background-attachment: fixed;
-    color: #1a202c;
+    color: #1e293b;
     min-height: 100vh;
   }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 @layer components {
   .glass-panel {
-    @apply bg-white/60 backdrop-blur-md border border-white/20 shadow-xl rounded-2xl;
+    @apply bg-white/40 backdrop-blur-lg border border-white/40 shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] rounded-2xl transition-all duration-300;
   }
   
   .glass-panel-dark {
-    @apply bg-black/60 backdrop-blur-md border border-white/10 shadow-xl rounded-2xl text-white;
+    @apply bg-slate-900/60 backdrop-blur-lg border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] rounded-2xl text-white transition-all duration-300;
   }
 
   .glass-button {
-    @apply bg-white/40 hover:bg-white/60 backdrop-blur-sm border border-white/30 
-           transition-all duration-200 shadow-md rounded-lg px-4 py-2 text-sm font-medium
-           focus:outline-none focus:ring-2 focus:ring-white/50 active:scale-95;
+    @apply bg-white/40 hover:bg-white/60 hover:-translate-y-0.5 backdrop-blur-md border border-white/50 
+           transition-all duration-300 shadow-[0_4px_12px_0_rgba(31,38,135,0.1)] rounded-xl px-5 py-2.5 text-sm font-semibold
+           focus:outline-none focus:ring-2 focus:ring-indigo-400/50 active:scale-95 text-slate-800;
   }
 
   .glass-input {
-    @apply bg-white/50 border border-white/30 rounded-lg px-4 py-2 w-full
-           focus:bg-white/70 focus:outline-none focus:ring-2 focus:ring-indigo-400
-           placeholder-gray-500 transition-all duration-200;
+    @apply bg-white/40 border border-white/40 shadow-inner rounded-xl px-4 py-2.5 w-full
+           focus:bg-white/60 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400
+           placeholder-slate-500 transition-all duration-300 text-slate-800;
   }
 }
 

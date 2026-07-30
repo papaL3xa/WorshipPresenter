@@ -168,14 +168,28 @@ export default function DisplayWindow() {
        label = label.replace('Slide ', 'Bait ');
     }
     title = `${title} - ${label}`;
-    progressText = `bait ${liveState.segmentIndex + 1} dari ${totalSegments}`;
+    
+    const allLabels = liveState.item?.segmentLabels || playlistMap[liveState.currentItemId || '']?.segmentLabels || [];
+    const isBait = (l: string) => l.toLowerCase().includes('bait') || l.toLowerCase().includes('verse') || l.toLowerCase().includes('slide');
+    
+    if (isBait(label)) {
+       const totalBait = allLabels.filter(isBait).length || totalSegments;
+       const currentBaitNum = allLabels.slice(0, liveState.segmentIndex + 1).filter(isBait).length || (liveState.segmentIndex + 1);
+       progressText = `bait ${currentBaitNum} dari ${totalBait}`;
+    } else {
+       progressText = ''; 
+    }
   }
 
   // 3. Jika belum dapat juga, tampilkan loading/not found
-  else if (liveState.currentItemId) {
-    text = 'Memuat Lirik...';
-  } else if (!isSlideshow && !text) {
-    text = 'Selamat Datang';
+  const isItemResolved = (liveState.item && liveState.item.segments) || (liveState.currentItemId && playlistMap[liveState.currentItemId]);
+  
+  if (!isItemResolved) {
+    if (liveState.currentItemId) {
+      text = 'Memuat Lirik...';
+    } else if (!isSlideshow) {
+      text = 'Selamat Datang';
+    }
   }
 
   // Hitung ukuran font dinamis berdasarkan panjang teks
@@ -200,6 +214,18 @@ export default function DisplayWindow() {
   const rtCharCount = rtBlockText.length;
   // rtState.speed (5-40s) adalah patokan waktu untuk melewati ~100 karakter (kira-kira 1 lebar layar)
   const calculatedDuration = (rtCharCount / 100) * rtState.speed;
+
+  const processText = (raw: string) => {
+    if (!raw) return '';
+    let t = raw.replace(/\n/g, '<br/>');
+    t = t.replace(/\[merah\](.*?)\[\/merah\]/gi, '<span class="text-red-500 font-bold">$1</span>');
+    t = t.replace(/\[kuning\](.*?)\[\/kuning\]/gi, '<span class="text-yellow-400 font-bold">$1</span>');
+    t = t.replace(/\[hijau\](.*?)\[\/hijau\]/gi, '<span class="text-green-400 font-bold">$1</span>');
+    t = t.replace(/\[biru\](.*?)\[\/biru\]/gi, '<span class="text-blue-400 font-bold">$1</span>');
+    t = t.replace(/\[ungu\](.*?)\[\/ungu\]/gi, '<span class="text-purple-400 font-bold">$1</span>');
+    t = t.replace(/\[oranye\](.*?)\[\/oranye\]/gi, '<span class="text-orange-400 font-bold">$1</span>');
+    return t;
+  };
 
   return (
     <div 
@@ -228,10 +254,13 @@ export default function DisplayWindow() {
         />
       )}
 
-      {/* Judul Lagu / Ayat */}
-      {title && !isSlideshow && (itemType === 'song' || itemType === 'bible') && (
+      {/* Judul Lagu / Ayat / Pengumuman */}
+      {title && !isSlideshow && (itemType === 'song' || itemType === 'bible' || itemType === 'announcement') && (
         <h2 
-          className="absolute top-48 left-1/2 -translate-x-1/2 w-full px-16 text-center text-3xl md:text-4xl lg:text-5xl font-bold text-yellow-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] opacity-90 tracking-wider z-20"
+          key={`title-${title}-${liveState.segmentIndex}`}
+          className={`absolute left-0 right-0 w-full px-8 md:px-64 text-center text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-yellow-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] opacity-90 tracking-wider z-20 animate-fade-in ${
+            rtState.isVisible && rtState.position === 'top' ? 'top-[100px]' : 'top-16'
+          }`}
           style={{
             textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
           }}
@@ -241,20 +270,22 @@ export default function DisplayWindow() {
       )}
 
       {/* Konten Lirik/Ayat atau Slideshow */}
-      <div className="absolute top-64 bottom-32 left-0 right-0 flex flex-col justify-center items-center px-16 z-10">
+      <div className="absolute top-40 bottom-32 left-0 right-0 flex flex-col justify-center items-center px-16 z-10">
         {isSlideshow ? (
           <img 
+            key={`img-${text}`}
             src={text.replace('export=view', 'export=download')} 
             alt="Slideshow" 
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain animate-fade-in"
           />
         ) : (
           <h1 
-            className={`${fontSizeClass} font-bold text-white text-center leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]`}
+            key={`text-${text}`}
+            className={`${fontSizeClass} font-bold text-white text-center leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] animate-fade-in`}
             style={{
               textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
             }}
-            dangerouslySetInnerHTML={{ __html: text.replace(/\n/g, '<br/>') }}
+            dangerouslySetInnerHTML={{ __html: processText(text) }}
           >
           </h1>
         )}
@@ -263,7 +294,7 @@ export default function DisplayWindow() {
       {/* Progress Slide di Bawah */}
       {progressText && !isSlideshow && (
         <div 
-          className="absolute left-1/2 -translate-x-1/2 text-white/60 text-lg font-medium tracking-wider lowercase z-20"
+          className="absolute left-0 right-0 w-full text-center text-white/60 text-lg font-medium tracking-wider lowercase z-20"
           style={{ 
             bottom: rtState.isVisible && rtState.position === 'bottom' ? '90px' : '40px',
             textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
