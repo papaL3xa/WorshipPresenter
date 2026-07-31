@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Loader2, Music, BookOpen, Edit, Save, Trash2, X, ArrowLeft, ArrowRight, Monitor, Star, Copy, Settings } from 'lucide-react';
 import { callApi } from '../api';
+import { FooterClock } from '../components/FooterClock';
 import { splitLongSegments } from '../utils/textSplitter';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useFavorites } from '../hooks/useFavorites';
 import { SyncButton } from '../components/SyncButton';
-import { initDefaultDatabases, searchLocalSongs, searchLocalBible, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, deleteDatabase, addCustomDatabase } from '../utils/dbStorage';
+import { initDefaultDatabases, searchLocalSongs, searchLocalBible, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, deleteDatabase, addCustomDatabase, syncCustomSongs } from '../utils/dbStorage';
 
 const bibleBooks = [
   "Kejadian", "Keluaran", "Imamat", "Bilangan", "Ulangan",
@@ -274,18 +275,32 @@ export default function Library() {
 
   const handleSaveItem = async () => {
     if (!selectedItem) return;
-    if (selectedItem.type !== 'song') {
+    if (searchType !== 'song' && selectedItem.type !== 'song') {
       alert('Maaf, saat ini hanya data Lagu yang bisa disimpan secara permanen ke database.');
       setIsEditingItem(false);
       return;
     }
+    
+    // Ensure selectedItem has the correct type before saving
+    selectedItem.type = 'song';
     
     setIsSavingItem(true);
     try {
       const res = await callApi('saveSongItem', {}, { method: 'POST', payload: selectedItem });
       if (res.success) {
         setIsEditingItem(false);
-        // Perbarui data di cache jika diperlukan, atau sekadar menampilkan notifikasi
+        await syncCustomSongs(); // Sync local cache with backend
+        
+        // Refresh local views
+        if (searchType === 'song') {
+          const newTitles = await getAllLocalSongTitles(selectedSongVersion);
+          if (Array.isArray(newTitles)) setAllSongTitles(newTitles);
+          
+          if (searchQuery !== '') {
+            const newRes = await searchLocalSongs(searchQuery, selectedSongVersion);
+            setResults(newRes);
+          }
+        }
       } else {
         alert('Gagal menyimpan: ' + (res.error?.message || 'Unknown error'));
       }
@@ -322,9 +337,6 @@ export default function Library() {
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/dashboard')} className="glass-button text-indigo-900 flex items-center gap-2">
             <ArrowLeft size={16}/> Kembali
-          </button>
-          <button onClick={() => setIsDbManagerOpen(true)} className="glass-button text-indigo-900 flex items-center gap-2 bg-indigo-100 hover:bg-indigo-200 border-indigo-300 shadow-sm">
-            Database Manager
           </button>
           <h1 className="text-xl font-bold text-indigo-900 ml-2">Library (Database)</h1>
         </div>
@@ -416,6 +428,13 @@ export default function Library() {
             </button>
           </form>
           </div>
+          
+          {results.length === 0 && !isSearching && searchQuery === '' && searchType === 'song' && (
+            <div className="flex justify-center gap-2 mb-3 shrink-0">
+              <button onClick={() => setViewMode('grid')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-900 border border-indigo-200'}`}>Nomor Saja</button>
+              <button onClick={() => setViewMode('list')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-900 border border-indigo-200'}`}>Nomor & Judul</button>
+            </div>
+          )}
 
           <div className="flex-1 overflow-y-auto space-y-2 pr-2">
             {results.map((res) => (
@@ -480,11 +499,6 @@ export default function Library() {
               <div className="p-1">
                 {searchType === 'song' ? (
                   <>
-                    <div className="flex justify-end gap-2 mb-3">
-                      <button onClick={() => setViewMode('grid')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-900 border border-indigo-200'}`}>Nomor Saja</button>
-                      <button onClick={() => setViewMode('list')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-900 border border-indigo-200'}`}>Nomor & Judul</button>
-                    </div>
-                    
                     {viewMode === 'grid' ? (
                       <div className="grid grid-cols-5 gap-1.5">
                         {Array.from({length: 525}, (_, i) => i + 1).map(num => (
@@ -500,17 +514,17 @@ export default function Library() {
                         ))}
                       </div>
                     ) : (
-                      <div className="flex flex-col gap-1.5 max-h-[60vh] overflow-y-auto pr-2">
+                      <div className="flex flex-col gap-1.5">
                         {allSongTitles ? allSongTitles.map((song: any) => (
                           <button 
                             key={song.id}
                             onClick={() => {
                               handleQuickOpenSong(song.id.toString());
                             }}
-                            className="p-2 text-left text-sm font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm flex items-center gap-3"
+                            className="w-full overflow-hidden p-2 text-left text-sm font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm flex items-center gap-3"
                           >
-                            <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded text-xs min-w-[32px] text-center">{song.id}</span>
-                            <span className="line-clamp-1">{song.title}</span>
+                            <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded text-xs min-w-[32px] text-center shrink-0">{song.id}</span>
+                            <span className="line-clamp-1 break-all">{song.title}</span>
                           </button>
                         )) : (
                           <div className="text-center p-4"><Loader2 size={20} className="animate-spin text-indigo-500 mx-auto"/></div>
@@ -821,6 +835,8 @@ export default function Library() {
           </div>
         </div>
       )}
+      
+      <FooterClock />
     </div>
   );
 }

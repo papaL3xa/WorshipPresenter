@@ -38,6 +38,18 @@ function createWindow() {
   return win;
 }
 
+app.on('browser-window-created', (event, window) => {
+  window.on('resize', () => {
+    const [width] = window.getSize();
+    const baseWidth = 1024;
+    if (width < baseWidth) {
+      window.webContents.setZoomFactor(width / baseWidth);
+    } else {
+      window.webContents.setZoomFactor(1);
+    }
+  });
+});
+
 app.whenReady().then(() => {
   const mainWin = createWindow();
 

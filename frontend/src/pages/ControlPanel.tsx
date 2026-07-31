@@ -4,6 +4,7 @@ import { callApi } from '../api';
 import { SyncButton } from '../components/SyncButton';
 import { BackgroundPickerModal } from '../components/BackgroundPickerModal';
 import { saveLocalVideo } from '../utils/imageStorage';
+import { FooterClock } from '../components/FooterClock';
 import { initDefaultDatabases, searchLocalSongs, searchLocalBible, syncCustomSongs, getDatabaseList, DatabaseVersion, getAllLocalSongTitles } from '../utils/dbStorage';
 
 const bibleBooks = [
@@ -86,6 +87,15 @@ export default function ControlPanel() {
   const [isSearching, setIsSearching] = useState(false);
   const [isUploadingSlides, setIsUploadingSlides] = useState(false);
   
+  const [isAutoSplitEnabled, setIsAutoSplitEnabled] = useState(
+    localStorage.getItem('worship_auto_split') !== 'false'
+  );
+  const toggleAutoSplit = () => {
+    const newVal = !isAutoSplitEnabled;
+    setIsAutoSplitEnabled(newVal);
+    localStorage.setItem('worship_auto_split', String(newVal));
+  };
+
   // Debounce ref to prevent spamming the API
   const syncTimeout = useRef<NodeJS.Timeout | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -135,7 +145,8 @@ export default function ControlPanel() {
       currentItemId: playlist[itemIdx].id,
       segmentIndex: segIdx,
       displayMode: dispMode,
-      item: playlist[itemIdx] // we send this to local broadcast for fast local-sync
+      item: playlist[itemIdx], // we send this to local broadcast for fast local-sync
+      updatedAt: Date.now()
     };
 
     // 1. Broadcast secara lokal (seketika)
@@ -279,6 +290,38 @@ export default function ControlPanel() {
     setIsEditingRundown(true);
   };
 
+  const addCountdown = () => {
+    const timeInput = prompt("Masukkan durasi hitung mundur (dalam menit, misal: 5 atau 5.5):", "5");
+    if (timeInput === null) return;
+    const mins = parseFloat(timeInput);
+    if (isNaN(mins) || mins <= 0) {
+      alert("Durasi tidak valid!");
+      return;
+    }
+    const newCountdown = {
+      id: 'countdown-' + Date.now(),
+      type: 'countdown',
+      title: 'Ibadah Dimulai Dalam',
+      segments: [String(Math.floor(mins * 60))],
+    };
+    
+    let finalPlaylist = [];
+    if (replaceIndex !== null) {
+      finalPlaylist = [...playlist];
+      finalPlaylist[replaceIndex] = newCountdown as any;
+      setPlaylist(finalPlaylist);
+      setActiveItem(replaceIndex);
+      setReplaceIndex(null);
+    } else {
+      finalPlaylist = [...playlist, newCountdown as any];
+      setPlaylist(finalPlaylist);
+      setActiveItem(finalPlaylist.length - 1);
+    }
+    setIsVideoModalOpen(false);
+    setIsAddItemModalOpen(false);
+    setIsEditingRundown(true);
+  };
+
   const performSearch = async (query: string, type: string) => {
     if (!query || query.trim().length === 0) {
       setSearchResults([]);
@@ -333,7 +376,7 @@ export default function ControlPanel() {
     }
     
     // Process segments for long texts
-    const processedItem = splitLongSegments([item])[0];
+    const processedItem = isAutoSplitEnabled ? splitLongSegments([item])[0] : item;
     
     const newItem = { ...processedItem, localId: Math.random().toString(36).substr(2, 9) };
     let finalPlaylist = [];
@@ -357,7 +400,7 @@ export default function ControlPanel() {
       if (res && res.length > 0) {
         // Find exact match just in case
         const exact = res.find((s: any) => s.id == id) || res[0];
-        const processed = splitLongSegments([exact])[0];
+        const processed = isAutoSplitEnabled ? splitLongSegments([exact])[0] : exact;
         
         // Add to rundown
         let newIndex = playlist.length;
@@ -678,7 +721,9 @@ export default function ControlPanel() {
           <button onClick={() => navigate('/dashboard')} className="glass-button text-indigo-900 flex items-center gap-2 font-medium px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base">
             <ArrowLeft size={16}/> Dashboard
           </button>
-          <h1 className="text-xl md:text-2xl font-heading font-extrabold text-indigo-900 tracking-tight drop-shadow-sm">Control Panel</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl md:text-2xl font-heading font-extrabold text-indigo-900 tracking-tight drop-shadow-sm">Control Panel</h1>
+          </div>
         </div>
         <div className="flex flex-nowrap overflow-x-auto w-full md:w-auto items-center gap-2 md:gap-4 justify-start md:justify-end pb-1 scrollbar-hide">
           {errorMsg && <div className="text-red-700 bg-red-100/90 px-3 py-1 rounded-lg text-xs md:text-sm border border-red-300 font-medium whitespace-nowrap">{errorMsg}</div>}
@@ -830,24 +875,30 @@ export default function ControlPanel() {
               <button onClick={() => setReplaceIndex(null)} className="text-red-500 hover:bg-red-500/10 p-1 rounded"><X size={12}/></button>
             </div>
           )}
-          <div className="mt-3 flex flex-wrap gap-2 shrink-0">
+          <div className="mt-3 grid grid-cols-2 gap-2 shrink-0">
             <button 
               onClick={() => setIsAddItemModalOpen(true)}
-              className="flex-1 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-2 text-indigo-900 py-2 text-xs font-semibold hover:bg-white/70 transition-all"
+              className="glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-2 text-indigo-900 py-2 text-xs font-semibold hover:bg-white/70 transition-all"
             >
               <Search size={14} /> Lagu / Ayat
             </button>
             <button 
               onClick={addQuickAnnouncement}
-              className="flex-1 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-2 text-indigo-900 py-2 text-xs font-semibold hover:bg-white/70 transition-all"
+              className="glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-2 text-indigo-900 py-2 text-xs font-semibold hover:bg-white/70 transition-all"
             >
               <Plus size={14} /> Pengumuman
             </button>
             <button 
               onClick={() => openVideoModal(replaceIndex)}
-              className="flex-1 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-2 text-indigo-900 py-2 text-xs font-semibold hover:bg-white/70 transition-all"
+              className="glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-2 text-indigo-900 py-2 text-xs font-semibold hover:bg-white/70 transition-all"
             >
               <Plus size={14} /> Video
+            </button>
+            <button 
+              onClick={addCountdown}
+              className="glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-2 text-indigo-900 py-2 text-xs font-semibold hover:bg-white/70 transition-all"
+            >
+              <Plus size={14} /> Countdown
             </button>
           </div>
         </aside>
@@ -855,7 +906,7 @@ export default function ControlPanel() {
         <section className="flex-1 flex flex-col gap-3 md:gap-6 min-w-0">
           <div className="glass-panel flex-1 p-4 md:p-8 flex flex-col items-center justify-center relative shadow-lg overflow-hidden border-white/50 bg-gradient-to-br from-white/40 to-white/10">
               <div className="text-center max-w-5xl w-full flex flex-col items-center overflow-y-auto max-h-full scrollbar-hide pb-10">
-                {(playlist[activeItem]?.type === 'announcement' && isEditingRundown) ? (
+                {((playlist[activeItem]?.type === 'announcement' || playlist[activeItem]?.type === 'countdown') && isEditingRundown) ? (
                   <input 
                     className="text-xl md:text-3xl font-heading font-bold text-indigo-950 mb-4 md:mb-6 drop-shadow-sm bg-white border-2 border-indigo-300 rounded-full px-4 py-1.5 md:px-6 md:py-2 shadow-inner text-center w-full max-w-xl focus:outline-none focus:border-indigo-500"
                     value={playlist[activeItem]?.title || ''}
@@ -895,6 +946,28 @@ export default function ControlPanel() {
                         <div className="flex flex-col items-center">
                           <Monitor size={48} className="text-indigo-900/40 mb-2 md:mb-4" />
                           <span className="text-indigo-900/60 italic text-sm md:text-xl">Memutar Video</span>
+                        </div>
+                      ) : (playlist[activeItem]?.type === 'countdown') ? (
+                        <div className="flex flex-col items-center w-full">
+                          {isEditingRundown ? (
+                            <>
+                              <input 
+                                type="number"
+                                className="w-full text-center bg-white/80 backdrop-blur-md border-2 border-indigo-300 rounded-2xl p-4 md:p-6 text-4xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 shadow-inner font-medium text-slate-800 transition-all max-w-[200px]"
+                                value={Math.floor(parseInt(playlist[activeItem]?.segments[activeSegment] || '0') / 60)}
+                                onChange={(e) => {
+                                  const newPlaylist = [...playlist];
+                                  newPlaylist[activeItem].segments[activeSegment] = String(Number(e.target.value) * 60);
+                                  setPlaylist(newPlaylist);
+                                }}
+                              />
+                              <span className="text-indigo-900/60 mt-3 text-sm font-bold uppercase tracking-wider">Durasi (Menit)</span>
+                            </>
+                          ) : (
+                            <div className="text-6xl font-mono text-indigo-900 bg-white/50 px-10 py-6 rounded-3xl border border-indigo-200 shadow-inner">
+                              {Math.floor(parseInt(playlist[activeItem]?.segments[0] || '0') / 60)}:00
+                            </div>
+                          )}
                         </div>
                       ) : (playlist[activeItem]?.type === 'slideshow') ? (
                         <div className="flex flex-col items-center">
@@ -969,13 +1042,13 @@ export default function ControlPanel() {
       </main>
       {/* MODAL TAMBAH ITEM (LAGU/AYAT/SLIDE) */}
       {isAddItemModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
-          <div className="bg-white/90 backdrop-blur-xl p-6 rounded-2xl shadow-2xl max-w-lg w-full border border-white/40 max-h-[80vh] flex flex-col">
-            <h2 className="text-xl font-bold text-indigo-900 mb-4 flex items-center gap-2">
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 overflow-hidden">
+          <div className="bg-white/90 backdrop-blur-xl p-6 rounded-2xl shadow-2xl max-w-lg w-full border border-white/40 h-[85vh] max-h-[800px] flex flex-col overflow-hidden">
+            <h2 className="text-xl font-bold text-indigo-900 mb-4 flex items-center gap-2 shrink-0">
               <Plus size={20} /> Tambah Item ke Rundown
             </h2>
             
-            <div className="flex gap-2 mb-4 justify-between items-center">
+            <div className="flex gap-2 mb-4 justify-between items-center shrink-0">
               <div className="flex gap-2 flex-1">
                 <button onClick={() => setSearchType('song')} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition text-sm font-semibold ${searchType === 'song' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-indigo-900 border border-indigo-200'}`}><Music size={14}/> Lagu</button>
                 <button onClick={() => setSearchType('bible')} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition text-sm font-semibold ${searchType === 'bible' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-indigo-900 border border-indigo-200'}`}><BookOpen size={14}/> Ayat</button>
@@ -993,7 +1066,7 @@ export default function ControlPanel() {
               </div>
             </div>
 
-            <form onSubmit={handleSearch} className="flex gap-2 mb-4">
+            <form onSubmit={handleSearch} className="flex gap-2 mb-4 shrink-0">
               <input 
                 type="text" 
                 value={searchQuery}
@@ -1007,7 +1080,14 @@ export default function ControlPanel() {
               </button>
             </form>
 
-            <div className="flex-1 overflow-y-auto space-y-2 mb-4 min-h-[200px] border border-indigo-100 rounded-xl p-2 bg-slate-50/50">
+            {searchResults.length === 0 && !isSearching && searchQuery === '' && searchType === 'song' && (
+              <div className="flex justify-center gap-2 mb-2 shrink-0">
+                <button onClick={() => setViewMode('grid')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-900 border border-indigo-200'}`}>Nomor Saja</button>
+                <button onClick={() => setViewMode('list')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-900 border border-indigo-200'}`}>Nomor & Judul</button>
+              </div>
+            )}
+
+            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 space-y-2 mb-4 border border-indigo-100 rounded-xl p-2 bg-slate-50/50">
               {searchResults.map((res) => (
                 <div key={res.id} className="p-3 bg-white border border-indigo-100 rounded-xl hover:bg-indigo-50 transition cursor-pointer flex justify-between items-center" onClick={() => addToRundown(res)}>
                   <div>
@@ -1024,11 +1104,6 @@ export default function ControlPanel() {
                 <div className="p-1">
                   {searchType === 'song' ? (
                     <>
-                      <div className="flex justify-end gap-2 mb-3">
-                        <button onClick={() => setViewMode('grid')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-900 border border-indigo-200'}`}>Nomor Saja</button>
-                        <button onClick={() => setViewMode('list')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-900 border border-indigo-200'}`}>Nomor & Judul</button>
-                      </div>
-                      
                       {viewMode === 'grid' ? (
                         <div className="grid grid-cols-6 gap-1.5">
                           {Array.from({length: 525}, (_, i) => i + 1).map(num => (
@@ -1047,10 +1122,10 @@ export default function ControlPanel() {
                             <button 
                               key={song.id}
                               onClick={() => handleQuickAddSong(song.id.toString())}
-                              className="p-2 text-left text-sm font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm flex items-center gap-3"
+                              className="w-full overflow-hidden p-2 text-left text-sm font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm flex items-center gap-3"
                             >
-                              <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded text-xs min-w-[32px] text-center">{song.id}</span>
-                              <span className="line-clamp-1">{song.title}</span>
+                              <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded text-xs min-w-[32px] text-center shrink-0">{song.id}</span>
+                              <span className="line-clamp-1 break-all">{song.title}</span>
                             </button>
                           )) : (
                             <div className="text-center p-4"><Loader2 size={20} className="animate-spin text-indigo-500 mx-auto"/></div>
@@ -1078,21 +1153,33 @@ export default function ControlPanel() {
               )}
             </div>
 
-            <div className="flex justify-between items-center mt-2 border-t pt-4 border-indigo-100">
-              <div className="relative">
-                <input 
-                  type="file" 
-                  multiple 
-                  accept="image/*" 
-                  id="cp-slideshow-upload"
-                  className="hidden"
-                  onChange={handleSlideUpload}
-                />
-                <label 
-                  htmlFor="cp-slideshow-upload"
-                  className={`glass-button text-xs py-2 px-3 cursor-pointer flex items-center gap-2 ${isUploadingSlides ? 'bg-indigo-200 text-indigo-500' : 'bg-indigo-500/20 text-indigo-900'}`}
-                >
-                  {isUploadingSlides ? <Loader2 size={14} className="animate-spin" /> : <><ImageIcon size={14}/> Upload Slide/PPT</>}
+            <div className="flex justify-between items-center mt-2 border-t pt-4 border-indigo-100 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept="image/*" 
+                    id="cp-slideshow-upload"
+                    className="hidden"
+                    onChange={handleSlideUpload}
+                  />
+                  <label 
+                    htmlFor="cp-slideshow-upload"
+                    className={`glass-button text-xs py-2 px-3 cursor-pointer flex items-center gap-2 ${isUploadingSlides ? 'bg-indigo-200 text-indigo-500' : 'bg-indigo-500/20 text-indigo-900'}`}
+                  >
+                    {isUploadingSlides ? <Loader2 size={14} className="animate-spin" /> : <><ImageIcon size={14}/> Upload Slide/PPT</>}
+                  </label>
+                </div>
+                
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-indigo-900 bg-white/40 px-3 py-2 rounded-xl border border-white/40 hover:bg-white/60 transition shadow-sm">
+                  <input 
+                    type="checkbox" 
+                    checked={isAutoSplitEnabled}
+                    onChange={toggleAutoSplit}
+                    className="rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
+                  />
+                  Auto-Split Teks
                 </label>
               </div>
               <button onClick={() => setIsAddItemModalOpen(false)} className="px-5 py-2 rounded-lg font-bold text-indigo-900 bg-black/5 hover:bg-black/10 transition text-sm">
@@ -1366,6 +1453,8 @@ export default function ControlPanel() {
           setPlaylist(newPlaylist);
         }}
       />
+      
+      <FooterClock />
     </div>
   );
 }

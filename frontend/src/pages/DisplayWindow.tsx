@@ -54,11 +54,13 @@ export default function DisplayWindow() {
   const [logoPos, setLogoPos] = useState<'top-left'|'top-right'|'bottom-left'|'bottom-right'>( (localStorage.getItem('worship_logo_position') as any) || 'bottom-right');
   const [actualBgUrl, setActualBgUrl] = useState<string | null>(null);
   
+  const [countdownRemaining, setCountdownRemaining] = useState<number | null>(null);
+
   const [rtState, setRtState] = useState({
     text: localStorage.getItem('worship_rt_text') || '',
     position: localStorage.getItem('worship_rt_pos') || 'bottom',
     speed: Number(localStorage.getItem('worship_rt_speed') || 15),
-    isVisible: false
+    isVisible: localStorage.getItem('worship_rt_visible') === 'true'
   });
 
   const [playlistMap, setPlaylistMap] = useState<Record<string, any>>({});
@@ -279,6 +281,27 @@ export default function DisplayWindow() {
     fetchBg();
   }, [itemBg, liveState.bgUrl]);
 
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (itemType === 'countdown') {
+      const durationSec = parseInt(text || '0');
+      const startTimestamp = liveState.updatedAt || Date.now();
+      
+      const tick = () => {
+        const elapsedSec = Math.floor((Date.now() - startTimestamp) / 1000);
+        const remaining = Math.max(0, durationSec - elapsedSec);
+        setCountdownRemaining(remaining);
+      };
+      
+      tick();
+      interval = setInterval(tick, 1000);
+    } else {
+      setCountdownRemaining(null);
+    }
+    
+    return () => clearInterval(interval);
+  }, [itemType, text, liveState.updatedAt]);
+
   return (
     <div 
       className="fixed inset-0 flex flex-col items-center justify-center bg-gray-900 text-white p-12 text-center transition-all duration-300 overflow-hidden cursor-none"
@@ -400,6 +423,27 @@ export default function DisplayWindow() {
             >
             </h1>
           </>
+        ) : itemType === 'countdown' && countdownRemaining !== null ? (
+          <div className="flex flex-col items-center justify-center animate-fade-in">
+            {title && (
+              <div 
+                className="text-white font-bold text-3xl md:text-5xl mb-6 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] tracking-wider"
+                style={{
+                  textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
+                }}
+              >
+                {title}
+              </div>
+            )}
+            <div 
+              className="text-white font-mono font-black text-8xl md:text-[12rem] leading-none drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)] tracking-tighter"
+              style={{
+                textShadow: '4px 4px 0 #000, -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000, 0 8px 30px rgba(0,0,0,0.9)'
+              }}
+            >
+              {String(Math.floor(countdownRemaining / 60)).padStart(2, '0')}:{String(countdownRemaining % 60).padStart(2, '0')}
+            </div>
+          </div>
         ) : liveState.logoUrl ? (
           <img 
             src={liveState.logoUrl} 

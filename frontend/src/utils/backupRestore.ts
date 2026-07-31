@@ -2,13 +2,15 @@ import { callApi } from '../api';
 
 // ─── EXPORT ALL (Lagu Kustom + Playlist dalam 1 file JSON) ─────────────────
 export const exportAllJson = async () => {
-  const [songsRes, playlistsRes] = await Promise.all([
+  const [songsRes, playlistsRes, settingsRes] = await Promise.all([
     callApi('getCustomSongs'),
     callApi('getPlaylists'),
+    callApi('getGlobalSettings'),
   ]);
 
   const songs = songsRes?.data || [];
   const playlists = playlistsRes?.data || [];
+  const settings = settingsRes?.data || null;
 
   // Ambil items untuk tiap playlist
   for (const p of playlists) {
@@ -27,6 +29,7 @@ export const exportAllJson = async () => {
     exportedAt: new Date().toISOString(),
     songs,
     playlists,
+    settings,
   };
 
   const json = JSON.stringify(backup, null, 2);
@@ -92,11 +95,16 @@ export const importBackupTsv = async (file: File): Promise<string> => {
               playlistCount++;
             }
           }
+          if (backup.settings) {
+            await callApi('saveGlobalSettings', {}, { method: 'POST', payload: backup.settings });
+          }
+          
           const parts = [];
           if (songCount) parts.push(`${songCount} Lagu Kustom`);
           if (playlistCount) parts.push(`${playlistCount} Playlist`);
-          if (!parts.length) throw new Error("File JSON tidak mengandung data lagu atau playlist.");
-          resolve(`${parts.join(' dan ')} berhasil diimpor!`);
+          if (backup.settings) parts.push(`Pengaturan Tampilan`);
+          if (!parts.length) throw new Error("File JSON tidak mengandung data lagu, playlist, atau pengaturan.");
+          resolve(`${parts.join(', ')} berhasil diimpor!`);
           return;
         }
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Lock, Loader2, CheckCircle, ShieldAlert, Download, Upload, Database } from 'lucide-react';
 import { callApi } from '../api';
 import { exportCustomSongsJson, exportPlaylistsJson, exportAllJson, importBackupTsv } from '../utils/backupRestore';
+import { FooterClock } from '../components/FooterClock';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -53,10 +54,10 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen p-4 md:p-8 flex justify-center items-center relative overflow-hidden">
+    <div className="min-h-screen p-4 md:p-8 flex flex-col justify-between items-center relative overflow-hidden">
       <div className="absolute inset-0 bg-white/20 pointer-events-none -z-10 backdrop-blur-[2px]"></div>
 
-      <div className="glass-panel max-w-2xl w-full p-6 md:p-10 shadow-2xl border-white/50 relative z-10">
+      <div className="glass-panel max-w-2xl w-full p-6 md:p-10 shadow-2xl border-white/50 relative z-10 my-auto">
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-white/30 pb-6">
           <div className="flex items-center gap-4">
             <button onClick={() => navigate(-1)} className="glass-button text-indigo-900 p-2.5 rounded-full hover:bg-white/70 shadow-sm"><ArrowLeft size={20}/></button>
@@ -239,6 +240,7 @@ export default function Settings() {
         </div>
         )}
       </div>
+      <FooterClock />
     </div>
   );
 }

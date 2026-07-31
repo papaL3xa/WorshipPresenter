@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 
 export function SyncButton({ isParentSyncing = false }: { isParentSyncing?: boolean }) {
+  const isDesktop = typeof window !== 'undefined' && (window as any).electronAPI;
   const [syncing, setSyncing] = useState(false);
+  
+  if (isDesktop) return null;
+
   const activeSync = syncing || isParentSyncing;
 
   const handleSync = () => {

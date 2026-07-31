@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Play, Folder, Search, Settings, Loader2, Trash2 } from 'lucide-react';
 import { SyncButton } from '../components/SyncButton';
 import { callApi } from '../api';
+import { FooterClock } from '../components/FooterClock';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -65,7 +66,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
+    <div className="min-h-screen flex flex-col p-4 md:p-8 overflow-hidden relative">
       <header className="glass-panel p-5 mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
         <h1 className="text-3xl font-heading font-extrabold text-white drop-shadow-md tracking-tight flex items-center gap-3">
           <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm border border-white/30">
@@ -82,7 +83,7 @@ export default function Dashboard() {
         </div>
       </header>
       
-      <main className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 overflow-y-auto mb-6">
         <section className="glass-panel p-6 lg:col-span-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-heading font-bold text-slate-800 drop-shadow-sm">Jadwal Ibadah Mendatang</h2>
@@ -172,9 +173,9 @@ export default function Dashboard() {
               {deleteError && (
                 <p className="text-red-500 text-sm mb-4 bg-red-50 p-3 rounded-xl">{deleteError}</p>
               )}
-              <div className="flex gap-3 w-full mt-4">
+              <div className="flex gap-3">
                 <button 
-                  onClick={cancelDelete} 
+                  onClick={cancelDelete}
                   disabled={isDeleting}
                   className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
@@ -192,6 +193,8 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+      
+      <FooterClock />
     </div>
   );
 }
