@@ -36,6 +36,12 @@ const PRESET_BACKGROUNDS: DriveImage[] = Array.from({ length: 20 }, (_, i) => {
   };
 });
 
+PRESET_BACKGROUNDS.push(
+  { id: 'preset_bg_lagusion_456', name: 'SDAH 456', url: 'https://play.lagusion.org/assets/gambar/SDAH456_result.webp' },
+  { id: 'preset_bg_lagusion_273', name: 'SDAH 273', url: 'https://play.lagusion.org/assets/gambar/SDAH273_result.webp' },
+  { id: 'preset_bg_lagusion_426', name: 'SDAH 426', url: 'https://play.lagusion.org/assets/gambar/SDAH426_result.webp' }
+);
+
 export function BackgroundPickerModal({ isOpen, onClose, onSelect, currentBgUrl }: BackgroundPickerModalProps) {
   const [images, setImages] = useState<DriveImage[]>([]);
   const [isLoading, setIsLoading] = useState(false);

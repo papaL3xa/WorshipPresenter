@@ -274,14 +274,13 @@ function getCustomSongs(e) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sSongs = ss.getSheetByName("Songs");
   const lastRow = sSongs.getLastRow();
-  // We assume rows 2 to 525 are base songs. Row 526+ are custom.
-  if (lastRow < 526) return { success: true, data: [] };
+  if (lastRow <= 1) return { success: true, data: [] };
 
   const sSongSegments = ss.getSheetByName("SongSegments");
   const segData = sSongSegments.getDataRange().getValues();
 
-  // Get custom songs only
-  const customData = sSongs.getRange(526, 1, lastRow - 525, 5).getValues();
+  // Get ALL songs in the database
+  const customData = sSongs.getRange(2, 1, lastRow - 1, 5).getValues();
   
   let results = [];
   for (let i = 0; i < customData.length; i++) {

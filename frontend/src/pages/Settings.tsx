@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Lock, Loader2, CheckCircle, ShieldAlert, Download, Upload, Database } from 'lucide-react';
+import { ArrowLeft, Save, Lock, Loader2, CheckCircle, ShieldAlert, Download, Upload, Database, Monitor } from 'lucide-react';
 import { callApi } from '../api';
 import { exportCustomSongsJson, exportPlaylistsJson, exportAllJson, importBackupTsv } from '../utils/backupRestore';
 import { FooterClock } from '../components/FooterClock';
@@ -10,8 +10,9 @@ export default function Settings() {
   const [currentAdminPin, setCurrentAdminPin] = useState('');
   const [newOperatorPin, setNewOperatorPin] = useState('');
   const [newAdminPin, setNewAdminPin] = useState('');
+  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('worship_dark_mode') !== 'false');
   const isDesktop = typeof window !== 'undefined' && (window as any).electronAPI;
-  const [activeTab, setActiveTab] = useState<'security' | 'backup'>(isDesktop ? 'backup' : 'security');
+  const [activeTab, setActiveTab] = useState<'security' | 'backup' | 'display'>('display');
   
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -54,15 +55,15 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen p-4 md:p-8 flex flex-col justify-between items-center relative overflow-hidden">
+    <div className="min-h-screen p-4 md:p-8 flex flex-col gap-4 relative overflow-hidden">
       <div className="absolute inset-0 bg-white/20 pointer-events-none -z-10 backdrop-blur-[2px]"></div>
 
-      <div className="glass-panel max-w-2xl w-full p-6 md:p-10 shadow-2xl border-white/50 relative z-10 my-auto">
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-white/30 pb-6">
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigate(-1)} className="glass-button text-indigo-900 p-2.5 rounded-full hover:bg-white/70 shadow-sm"><ArrowLeft size={20}/></button>
-            <h1 className="text-3xl font-heading font-extrabold text-indigo-950 drop-shadow-sm tracking-tight">Pengaturan Keamanan</h1>
-          </div>
+      <header className="glass-panel p-5 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate(-1)} className="glass-button text-indigo-900 p-2.5 rounded-full hover:bg-white/70 shadow-sm"><ArrowLeft size={20}/></button>
+          <h1 className="text-3xl font-heading font-extrabold text-indigo-950 drop-shadow-sm tracking-tight">Pengaturan</h1>
+        </div>
+        <div className="flex gap-4">
           {activeTab === 'security' && !isDesktop && (
             <button 
               onClick={handleSave} 
@@ -73,7 +74,12 @@ export default function Settings() {
               Simpan Perubahan
             </button>
           )}
-        </header>
+        </div>
+      </header>
+
+      <FooterClock />
+
+      <main className="glass-panel w-full flex-1 p-6 md:p-10 shadow-lg relative z-10 flex flex-col overflow-y-auto mb-6">
 
         {message && (
           <div className={`p-4 rounded-xl mb-8 flex items-center gap-3 backdrop-blur-md shadow-sm border animate-fade-in ${isError ? 'bg-red-50/80 text-red-700 border-red-200' : 'bg-emerald-50/80 text-emerald-700 border-emerald-200'}`}>
@@ -83,6 +89,12 @@ export default function Settings() {
         )}
         
         <div className="flex gap-4 mb-8">
+          <button 
+            onClick={() => setActiveTab('display')}
+            className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'display' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white/40 text-indigo-900 hover:bg-white/60'}`}
+          >
+            Tampilan
+          </button>
           {!isDesktop && (
             <button 
               onClick={() => setActiveTab('security')}
@@ -98,6 +110,43 @@ export default function Settings() {
             Backup & Restore
           </button>
         </div>
+
+        {activeTab === 'display' && (
+          <div className="space-y-8">
+            <div className="bg-white/40 p-8 rounded-2xl border border-white/60 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:bg-white/50 transition-colors">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none group-hover:bg-indigo-500/20 transition-colors"></div>
+              
+              <h2 className="text-xl font-heading font-bold text-indigo-950 mb-6 flex items-center gap-3 drop-shadow-sm">
+                <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600"><Monitor size={20} /></div>
+                Pengaturan Tema
+              </h2>
+              
+              <div className="flex items-center justify-between bg-white/70 backdrop-blur-sm border-2 border-white/60 rounded-xl p-4 shadow-sm">
+                <div>
+                  <h3 className="font-bold text-indigo-950 text-lg">Mode Gelap (Dark Mode)</h3>
+                  <p className="text-sm font-medium text-slate-500">Ubah tampilan aplikasi menjadi mode gelap untuk mengurangi silau.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    const newMode = !isDarkMode;
+                    setIsDarkMode(newMode);
+                    localStorage.setItem('worship_dark_mode', newMode.toString());
+                    if (newMode) {
+                      document.documentElement.classList.add('dark');
+                    } else {
+                      document.documentElement.classList.remove('dark');
+                    }
+                  }}
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${isDarkMode ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                >
+                  <span
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${isDarkMode ? 'translate-x-7' : 'translate-x-1'}`}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {activeTab === 'security' && (
         <div className="space-y-8">
@@ -239,8 +288,7 @@ export default function Settings() {
           </div>
         </div>
         )}
-      </div>
-      <FooterClock />
+      </main>
     </div>
   );
 }

@@ -66,11 +66,11 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col p-4 md:p-8 overflow-hidden relative">
-      <header className="glass-panel p-5 mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
-        <h1 className="text-3xl font-heading font-extrabold text-white drop-shadow-md tracking-tight flex items-center gap-3">
-          <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm border border-white/30">
-            <Play className="text-white fill-white" size={24}/>
+    <div className="min-h-screen flex flex-col p-4 md:p-8 gap-4 overflow-hidden relative">
+      <header className="glass-panel p-5 flex flex-col md:flex-row justify-between items-center gap-4">
+        <h1 className="text-3xl font-heading font-extrabold text-indigo-950 dark:text-white drop-shadow-md tracking-tight flex items-center gap-3">
+          <div className="bg-indigo-600/10 dark:bg-white/20 p-2 rounded-xl backdrop-blur-sm border border-indigo-600/20 dark:border-white/30">
+            <Play className="text-indigo-600 dark:text-white" size={24} strokeWidth={2.5}/>
           </div>
           WorshipPresenter
         </h1>
@@ -82,6 +82,8 @@ export default function Dashboard() {
           )}
         </div>
       </header>
+      
+      <FooterClock />
       
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 overflow-y-auto mb-6">
         <section className="glass-panel p-6 lg:col-span-8">
@@ -99,7 +101,7 @@ export default function Dashboard() {
           ) : playlists.length === 0 ? (
             <div className="text-slate-700/60 text-center p-8 bg-white/20 rounded-2xl border border-white/30 border-dashed">Tidak ada jadwal ibadah mendatang.</div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {playlists.map((pl) => (
                 <div key={pl.id} className="p-5 rounded-2xl bg-white/30 backdrop-blur-md border border-white/40 shadow-sm hover:shadow-lg hover:bg-white/50 hover:-translate-y-1 transition-all duration-300 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group">
                   <div>
@@ -117,8 +119,8 @@ export default function Dashboard() {
                     >
                       <Trash2 size={16} />
                     </button>
-                    <button onClick={() => navigate('/control?id=' + pl.id)} className="glass-button flex-1 md:flex-none justify-center bg-gradient-to-r from-emerald-400 to-teal-500 text-white border-transparent shadow-lg hover:shadow-emerald-500/40 font-bold flex items-center gap-2">
-                      <Play size={16} className="fill-white"/> Live
+                    <button onClick={() => navigate('/control?id=' + pl.id)} className="glass-button flex-1 md:flex-none justify-center bg-gradient-to-r from-emerald-400 to-emerald-600 text-white border-transparent shadow-lg hover:shadow-emerald-500/40 font-bold flex items-center gap-2">
+                      <Play size={16} strokeWidth={3}/> Live
                     </button>
                   </div>
                 </div>
@@ -193,8 +195,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-      
-      <FooterClock />
     </div>
   );
 }

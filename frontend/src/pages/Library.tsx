@@ -7,6 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useFavorites } from '../hooks/useFavorites';
 import { SyncButton } from '../components/SyncButton';
 import { initDefaultDatabases, searchLocalSongs, searchLocalBible, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, deleteDatabase, addCustomDatabase, syncCustomSongs } from '../utils/dbStorage';
+import { get, set } from 'idb-keyval';
 
 const bibleBooks = [
   "Kejadian", "Keluaran", "Imamat", "Bilangan", "Ulangan",
@@ -288,6 +289,16 @@ export default function Library() {
     try {
       const res = await callApi('saveSongItem', {}, { method: 'POST', payload: selectedItem });
       if (res.success) {
+        // Optimistic local update
+        const currentSync = (await get('dbdata_song_GAS_SYNC')) || [];
+        const existingIdx = currentSync.findIndex((s: any) => s.id === selectedItem.id);
+        if (existingIdx >= 0) {
+           currentSync[existingIdx] = selectedItem;
+        } else {
+           currentSync.push(selectedItem);
+        }
+        await set('dbdata_song_GAS_SYNC', currentSync);
+
         setIsEditingItem(false);
         await syncCustomSongs(); // Sync local cache with backend
         
@@ -348,9 +359,33 @@ export default function Library() {
         </div>
       </header>
       
+      <FooterClock />
+      
       <main className="flex-1 flex flex-col md:flex-row gap-4 min-h-0">
         <section className="w-full h-[45%] md:h-auto md:w-1/3 glass-panel p-4 flex flex-col">
-          <h2 className="text-lg font-bold text-indigo-900 mb-4">Pencarian Data</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-bold text-indigo-900">Pencarian Data</h2>
+            {searchType === 'song' && (
+              <button 
+                onClick={() => {
+                  setSelectedItem({
+                    id: "song_" + Date.now(),
+                    type: 'song',
+                    title: 'Judul Lagu Baru',
+                    author: 'NN',
+                    segments: ['Lirik baris 1\nLirik baris 2'],
+                    segmentLabels: ['Bait 1']
+                  });
+                  setIsEditingItem(true);
+                  setActiveSegment(0);
+                }}
+                className="p-1.5 rounded-lg transition-all shadow-sm font-semibold bg-green-500/10 text-green-700 border border-green-500/30 hover:bg-green-500/20"
+                title="Tambah Lagu Baru"
+              >
+                <Plus size={18} />
+              </button>
+            )}
+          </div>
           
           <div className="flex gap-2 mb-2">
             <button onClick={() => {setSearchType('song'); setResults([]); setSelectedItem(null); setSelectedResultIds([]);}} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'song' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white/30 text-indigo-900'}`}><Music size={16}/> Lagu</button>
@@ -369,25 +404,7 @@ export default function Library() {
             </select>
           </div>
 
-          {searchType === 'song' && (
-            <button 
-              onClick={() => {
-                setSelectedItem({
-                  id: "song_" + Date.now(),
-                  type: 'song',
-                  title: 'Judul Lagu Baru',
-                  author: 'NN',
-                  segments: ['Lirik baris 1\nLirik baris 2'],
-                  segmentLabels: ['Bait 1']
-                });
-                setIsEditingItem(true);
-                setActiveSegment(0);
-              }}
-              className="w-full mb-3 flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm font-semibold bg-green-500/10 text-green-700 border border-green-500/30 hover:bg-green-500/20"
-            >
-              <Plus size={18} /> Tambah Lagu Baru
-            </button>
-          )}
+
 
           <div className="flex gap-3 mb-5">
             <button 
@@ -398,7 +415,7 @@ export default function Library() {
               className={`p-3 rounded-xl flex items-center justify-center transition-all shadow-sm border ${showFavorites ? 'bg-yellow-400 border-yellow-500 text-yellow-900 shadow-yellow-400/50 scale-105' : 'bg-white/40 border-white/40 text-indigo-900 hover:bg-white/60'}`}
               title="Tampilkan hanya favorit"
             >
-              <Star size={20} className={showFavorites ? 'fill-yellow-900' : ''} />
+              <Star size={20} className={showFavorites ? 'text-yellow-600 stroke-[2.5px]' : ''} />
             </button>
             <form onSubmit={handleSearch} className="flex gap-2 flex-1 relative">
             <div className="relative flex-1">
@@ -488,7 +505,7 @@ export default function Library() {
                   className="px-4 border-l border-white/20 flex items-center justify-center transition hover:bg-white/50"
                   title={isFavorite(res.id) ? "Hapus dari Favorit" : "Tambahkan ke Favorit"}
                 >
-                  <Star size={18} className={isFavorite(res.id) ? "text-yellow-500 fill-yellow-500" : "text-indigo-300"} />
+                  <Star size={18} className={isFavorite(res.id) ? "text-yellow-500 stroke-[2.5px]" : "text-indigo-300"} />
                 </button>
               </div>
             ))}
@@ -583,7 +600,7 @@ export default function Library() {
                       <h2 className="text-2xl font-bold text-indigo-900 mb-2">{selectedItem.title}</h2>
                       <div className="flex items-center gap-3">
                         <div className="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 text-xs font-bold uppercase rounded-full">
-                          {selectedItem.type === 'song' ? 'Lagu Sion' : 'Alkitab (TB)'}
+                          {searchType === 'song' ? (dbList.find(db => db.id === selectedSongVersion)?.name || 'Lagu Sion') : 'Alkitab (TB)'}
                         </div>
                         {selectedItem.author && selectedItem.author !== 'N/A' && (
                           <div className="text-sm font-semibold text-indigo-900/60 flex items-center gap-2">
@@ -612,7 +629,9 @@ export default function Library() {
                 </button>
               </div>
               
-              <div className="space-y-4">
+              <div className={`flex flex-col md:flex-row gap-6 mt-4 ${isEditingItem ? 'flex-1 min-h-0' : ''}`}>
+                <div className={`flex flex-col overflow-y-auto pr-2 ${isEditingItem ? 'w-full md:w-1/2' : 'w-full'}`}>
+                  <div className="space-y-4">
                 {selectedItem.segments.map((seg, idx) => (
                   <div 
                     key={idx} 
@@ -692,6 +711,7 @@ export default function Library() {
                     {isEditingItem ? (
                       <textarea 
                         value={seg}
+                        onFocus={() => setActiveSegment(idx)}
                         onChange={(e) => {
                           const newItem = { ...selectedItem };
                           newItem.segments[idx] = e.target.value;
@@ -730,6 +750,23 @@ export default function Library() {
               )}
               
               <div className="h-24 shrink-0"></div> {/* Spacer agar konten bisa di-scroll melewati tombol sticky */}
+            </div>
+            
+            <div className="w-full md:w-1/2 flex flex-col gap-4 border-t md:border-t-0 md:border-l border-white/30 pt-4 md:pt-0 md:pl-6 shrink-0 sticky top-0 self-start z-10">
+              <h3 className="font-bold text-indigo-900 dark:text-slate-200 flex items-center gap-2">
+                <Monitor size={18} /> Live Preview Slide
+              </h3>
+              <div className="w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg flex items-center justify-center p-4 md:p-6 border-[4px] md:border-[6px] border-slate-800">
+                <p className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl text-lg md:text-xl lg:text-2xl" 
+                   style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.8)' }}>
+                  {activeSegment !== null ? selectedItem.segments[activeSegment] : "Pilih slide..."}
+                </p>
+              </div>
+              <div className="bg-indigo-50 dark:bg-slate-800/50 p-4 rounded-xl text-sm text-indigo-900/70 dark:text-slate-400 border border-indigo-100 dark:border-white/10">
+                <p><strong>Tips:</strong> Preview ini menampilkan teks secara proporsional. Pecah baris lirik/ayat jika dirasa terlalu panjang agar jemaat dapat membacanya dengan jelas.</p>
+              </div>
+            </div>
+          </div>
               
               {activeSegment !== null && selectedItem.segments.length > 1 && (
                 <div className="flex justify-center gap-4 sticky bottom-0 py-4 pointer-events-none z-50">
@@ -835,8 +872,6 @@ export default function Library() {
           </div>
         </div>
       )}
-      
-      <FooterClock />
     </div>
   );
 }

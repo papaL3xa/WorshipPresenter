@@ -24,8 +24,8 @@ export function SyncButton({ isParentSyncing = false }: { isParentSyncing?: bool
       disabled={activeSync}
       className={`flex items-center gap-2 px-3 py-1.5 rounded-full font-bold text-sm transition-all shadow-sm border ${
         activeSync 
-          ? 'bg-indigo-100 text-indigo-600 border-indigo-200 cursor-not-allowed' 
-          : 'bg-indigo-50/80 text-indigo-800 border-indigo-200 hover:bg-indigo-100 hover:shadow-md backdrop-blur-sm'
+          ? 'bg-slate-300/50 text-slate-500 border-slate-300/50 cursor-not-allowed dark:bg-slate-700/50 dark:text-slate-400 dark:border-slate-700/50' 
+          : 'glass-button text-indigo-900'
       }`}
       title="Sinkronisasi data dengan Google Sheets"
     >

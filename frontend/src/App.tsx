@@ -22,7 +22,18 @@ const RequireAdmin = ({ children }: { children: JSX.Element }) => {
   return children;
 };
 
+import { useEffect } from 'react';
+
 function App() {
+  useEffect(() => {
+    const isDark = localStorage.getItem('worship_dark_mode');
+    if (isDark === 'false') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+      if (isDark === null) localStorage.setItem('worship_dark_mode', 'true');
+    }
+  }, []);
   return (
     <HashRouter>
       <Routes>

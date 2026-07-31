@@ -1,4 +1,13 @@
-export const splitLongSegments = (items: any[]) => {
+export const splitLongSegments = (rawItems: any[]) => {
+  let items = rawItems;
+  if (!Array.isArray(items)) {
+    if (typeof items === 'string') {
+      try { items = JSON.parse(items); } catch(e) { items = []; }
+    } else if (items && typeof items === 'object' && Array.isArray((items as any).items)) {
+      items = (items as any).items;
+    }
+    if (!Array.isArray(items)) items = [];
+  }
   return items.map(item => {
     if (item.type === 'bible' || item.type === 'song') {
       const newSegments: string[] = [];

@@ -10,14 +10,14 @@ export function FooterClock() {
   }, []);
 
   return (
-    <footer className="w-full shrink-0 glass-panel mt-auto p-2 md:p-3 flex justify-between items-center shadow-sm border-white/50 z-10 relative">
+    <div className="w-full shrink-0 glass-panel p-2 md:p-3 flex justify-between items-center shadow-sm border-white/50 z-10 relative">
       <div className="flex flex-col pl-2">
         <div className="text-indigo-900/70 text-xs font-extrabold tracking-widest">WorshipPresenter</div>
         <div className="text-indigo-900/50 text-[10px] font-bold flex items-center gap-1.5 mt-0.5">
           PISGAH BISDAC Multimedia Team
         </div>
         <div className="text-indigo-900/50 text-[10px] font-bold flex items-center gap-1.5 mt-0.5">
-          <Heart size={10} className="text-red-500 fill-red-500" /> GOD BLESS US
+          <Heart size={10} className="text-red-500" /> GOD BLESS US
         </div>
       </div>
       <div className="flex items-center gap-3 bg-white/60 px-5 py-2 rounded-xl border border-white/60 shadow-sm">
@@ -33,6 +33,6 @@ export function FooterClock() {
           {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
         </div>
       </div>
-    </footer>
+    </div>
   );
 }

@@ -126,7 +126,8 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
       author: payload.author || "-",
       category: "Pujian",
       segmentOrder: Array.from({length: payload.segments.length}, (_, i) => i),
-      segments: payload.segments
+      segments: payload.segments,
+      segmentLabels: payload.segmentLabels || payload.segments.map((_, i) => `Slide ${i + 1}`)
     };
     if (idx >= 0) db.customSongs[idx] = newSong;
     else db.customSongs.push(newSong);
@@ -144,6 +145,7 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
     const newPlaylist = {
       id: payload.id || `pl_${Date.now()}`,
       name: payload.name,
+      date: payload.date || '',
       items: payload.items || []
     };
     if (idx >= 0) db.playlists[idx] = newPlaylist;
@@ -154,7 +156,15 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
   
   if (action === 'getPlaylistItems') {
     const pl = (db.playlists || []).find(p => p.id === params.id);
-    return { success: true, data: pl ? pl.items : [] };
+    return { 
+      success: true, 
+      data: pl ? {
+        playlistId: pl.id,
+        name: pl.name,
+        date: pl.date || '',
+        items: typeof pl.items === 'string' ? JSON.parse(pl.items) : (pl.items || [])
+      } : { items: [] } 
+    };
   }
   
   if (action === 'deletePlaylist') {

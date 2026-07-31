@@ -17,7 +17,7 @@ export const exportAllJson = async () => {
     if (!p.items || p.items.length === 0) {
       try {
         const itemsRes = await callApi('getPlaylistItems', { id: p.id });
-        if (itemsRes?.success) p.items = itemsRes.data || [];
+        if (itemsRes?.success) p.items = itemsRes.data?.items || [];
       } catch {
         // ignore
       }
@@ -59,7 +59,7 @@ export const exportPlaylistsJson = async () => {
     if (!p.items || p.items.length === 0) {
       try {
         const ir = await callApi('getPlaylistItems', { id: p.id });
-        if (ir?.success) p.items = ir.data || [];
+        if (ir?.success) p.items = ir.data?.items || [];
       } catch { /* ignore */ }
     }
   }

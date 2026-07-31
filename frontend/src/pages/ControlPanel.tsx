@@ -7,6 +7,18 @@ import { saveLocalVideo } from '../utils/imageStorage';
 import { FooterClock } from '../components/FooterClock';
 import { initDefaultDatabases, searchLocalSongs, searchLocalBible, syncCustomSongs, getDatabaseList, DatabaseVersion, getAllLocalSongTitles } from '../utils/dbStorage';
 
+const processText = (raw: string) => {
+  if (!raw) return '';
+  let t = raw.replace(/\n/g, '<br/>');
+  t = t.replace(/\[merah\](.*?)\[\/merah\]/gi, '<span class="text-red-500 font-bold">$1</span>');
+  t = t.replace(/\[kuning\](.*?)\[\/kuning\]/gi, '<span class="text-yellow-400 font-bold">$1</span>');
+  t = t.replace(/\[hijau\](.*?)\[\/hijau\]/gi, '<span class="text-green-400 font-bold">$1</span>');
+  t = t.replace(/\[biru\](.*?)\[\/biru\]/gi, '<span class="text-blue-400 font-bold">$1</span>');
+  t = t.replace(/\[ungu\](.*?)\[\/ungu\]/gi, '<span class="text-purple-400 font-bold">$1</span>');
+  t = t.replace(/\[oranye\](.*?)\[\/oranye\]/gi, '<span class="text-orange-400 font-bold">$1</span>');
+  return t;
+};
+
 const bibleBooks = [
   "Kejadian", "Keluaran", "Imamat", "Bilangan", "Ulangan", "Yosua", "Hakim-Hakim", "Rut", 
   "1 Samuel", "2 Samuel", "1 Raja-Raja", "2 Raja-Raja", "1 Tawarikh", "2 Tawarikh", "Ezra", "Nehemia", "Ester", "Ayub", "Mazmur", "Amsal", "Pengkhotbah", "Kidung Agung", "Yesaya", "Yeremia", "Ratapan", "Yehezkiel", "Daniel", "Hosea", "Yoel", "Amos", "Obaja", "Yunus", "Mikha", "Nahum", "Habakuk", "Zefanya", "Hagai", "Zakharia", "Maleakhi",
@@ -50,6 +62,8 @@ export default function ControlPanel() {
   const [dbList, setDbList] = useState<DatabaseVersion[]>([]);
   const [selectedSongVersion, setSelectedSongVersion] = useState('song_LSEB');
   const [selectedBibleVersion, setSelectedBibleVersion] = useState('bible_TB');
+  
+  const [currentBg, setCurrentBg] = useState(localStorage.getItem('custom_bg') || '');
 
   // Initialize DBs on mount
   useEffect(() => {
@@ -554,15 +568,20 @@ export default function ControlPanel() {
     const end = textarea.selectionEnd;
     if (start === end) return; 
 
-    const newPlaylist = [...playlist];
-    const currentText = newPlaylist[activeItem].segments[activeSegment] || '';
-    
+    const currentText = playlist[activeItem]?.segments[activeSegment] || '';
     const before = currentText.substring(0, start);
     const selected = currentText.substring(start, end);
     const after = currentText.substring(end);
-    
-    newPlaylist[activeItem].segments[activeSegment] = `${before}[${colorTag}]${selected}[/${colorTag}]${after}`;
-    setPlaylist(newPlaylist);
+
+    setPlaylist(prev => {
+      const newPlaylist = [...prev];
+      newPlaylist[activeItem] = {
+        ...newPlaylist[activeItem],
+        segments: [...newPlaylist[activeItem].segments]
+      };
+      newPlaylist[activeItem].segments[activeSegment] = `${before}[${colorTag}]${selected}[/${colorTag}]${after}`;
+      return newPlaylist;
+    });
 
     setTimeout(() => {
       textarea.focus();
@@ -578,8 +597,10 @@ export default function ControlPanel() {
     try {
       if (bgUrl === null) {
         localStorage.removeItem('custom_bg');
+        setCurrentBg('');
       } else {
         localStorage.setItem('custom_bg', bgUrl);
+        setCurrentBg(bgUrl);
       }
       
       // Broadcast custom background
@@ -751,6 +772,8 @@ export default function ControlPanel() {
         </div>
       </header>
       
+      <FooterClock />
+
       <main className="flex-1 flex flex-col lg:flex-row gap-3 md:gap-6 min-h-0">
         <aside className="w-full h-[35%] lg:h-auto lg:w-[28%] glass-panel p-3 md:p-5 flex flex-col overflow-hidden shadow-lg border-white/50">
           <div className="flex justify-between items-start mb-3 md:mb-5 shrink-0 gap-2">
@@ -797,7 +820,7 @@ export default function ControlPanel() {
             </button>
           </div>
           
-          <div className="space-y-3 overflow-y-auto pr-2 pb-4 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent flex-1">
+          <div className="space-y-3 overflow-y-auto px-1.5 pt-1 pr-2 pb-4 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent flex-1">
             {playlist.map((item, idx) => (
               <div 
                 id={`rundown-item-${idx}`}
@@ -904,16 +927,18 @@ export default function ControlPanel() {
         </aside>
         
         <section className="flex-1 flex flex-col gap-3 md:gap-6 min-w-0">
-          <div className="glass-panel flex-1 p-4 md:p-8 flex flex-col items-center justify-center relative shadow-lg overflow-hidden border-white/50 bg-gradient-to-br from-white/40 to-white/10">
-              <div className="text-center max-w-5xl w-full flex flex-col items-center overflow-y-auto max-h-full scrollbar-hide pb-10">
+          <div className="glass-panel flex-1 p-4 md:p-6 flex flex-col items-center justify-center relative shadow-lg overflow-hidden border-white/50 bg-gradient-to-br from-white/40 to-white/10">
+              <div className="text-center w-full flex flex-col items-center h-full max-h-full overflow-hidden">
                 {((playlist[activeItem]?.type === 'announcement' || playlist[activeItem]?.type === 'countdown') && isEditingRundown) ? (
                   <input 
                     className="text-xl md:text-3xl font-heading font-bold text-indigo-950 mb-4 md:mb-6 drop-shadow-sm bg-white border-2 border-indigo-300 rounded-full px-4 py-1.5 md:px-6 md:py-2 shadow-inner text-center w-full max-w-xl focus:outline-none focus:border-indigo-500"
                     value={playlist[activeItem]?.title || ''}
                     onChange={(e) => {
-                      const newPlaylist = [...playlist];
-                      newPlaylist[activeItem].title = e.target.value;
-                      setPlaylist(newPlaylist);
+                      setPlaylist(prev => {
+                        const newPlaylist = [...prev];
+                        newPlaylist[activeItem] = { ...newPlaylist[activeItem], title: e.target.value };
+                        return newPlaylist;
+                      });
                     }}
                     placeholder="Judul Pengumuman / Teks Bebas"
                   />
@@ -921,26 +946,10 @@ export default function ControlPanel() {
                   <h3 className="text-xl md:text-3xl font-heading font-bold text-indigo-950 mb-3 md:mb-4 drop-shadow-sm bg-white/30 inline-block px-4 py-1.5 md:px-6 md:py-2 rounded-full border border-white/40">{playlist[activeItem]?.title}</h3>
                 )}
                 
-                {playlist[activeItem]?.segments && playlist[activeItem].segments.length > 1 && (
-                  <div className="flex justify-center flex-wrap gap-1.5 md:gap-2 mb-4 md:mb-6 z-20">
-                    {playlist[activeItem].segments.map((_: any, idx: number) => (
-                      <button 
-                        key={idx}
-                        onClick={() => { setActiveSegment(idx); setMode('content'); }}
-                        className={`px-4 py-2 font-semibold text-sm md:text-base rounded-xl transition-all duration-200 border shadow-sm hover:-translate-y-0.5 ${
-                          activeSegment === idx && mode === 'content' 
-                            ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-600/30' 
-                            : 'bg-white/70 text-indigo-900 border-white/50 hover:bg-white/90'
-                        }`}
-                      >
-                        {playlist[activeItem]?.segmentLabels ? playlist[activeItem].segmentLabels[idx] : `Slide ${idx + 1}`}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {/* Segment buttons moved to bottom bar */}
 
-                <div className="text-2xl md:text-5xl font-bold text-indigo-900 leading-tight whitespace-pre-wrap w-full p-4 md:p-8 min-h-[30vh] flex items-center justify-center relative z-10 transition-all duration-300 animate-fade-in" key={`${activeItem}-${activeSegment}-${mode}`}>
-                  {mode === 'blank' ? <span className="text-indigo-900/20 italic">Layar Kosong (Blank)</span> : (
+                <div className="w-full flex-1 min-h-0 flex items-center justify-center relative z-10 transition-all duration-300 animate-fade-in" key={`${activeItem}-${activeSegment}-${mode}`}>
+                  {mode === 'blank' ? <span className="text-indigo-900/20 dark:text-slate-200/20 text-2xl font-bold italic">Layar Kosong (Blank)</span> : (
                     <>
                       {(playlist[activeItem]?.type === 'video') ? (
                         <div className="flex flex-col items-center">
@@ -956,9 +965,15 @@ export default function ControlPanel() {
                                 className="w-full text-center bg-white/80 backdrop-blur-md border-2 border-indigo-300 rounded-2xl p-4 md:p-6 text-4xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 shadow-inner font-medium text-slate-800 transition-all max-w-[200px]"
                                 value={Math.floor(parseInt(playlist[activeItem]?.segments[activeSegment] || '0') / 60)}
                                 onChange={(e) => {
-                                  const newPlaylist = [...playlist];
-                                  newPlaylist[activeItem].segments[activeSegment] = String(Number(e.target.value) * 60);
-                                  setPlaylist(newPlaylist);
+                                  setPlaylist(prev => {
+                                    const newPlaylist = [...prev];
+                                    newPlaylist[activeItem] = {
+                                      ...newPlaylist[activeItem],
+                                      segments: [...newPlaylist[activeItem].segments]
+                                    };
+                                    newPlaylist[activeItem].segments[activeSegment] = String(Number(e.target.value) * 60);
+                                    return newPlaylist;
+                                  });
                                 }}
                               />
                               <span className="text-indigo-900/60 mt-3 text-sm font-bold uppercase tracking-wider">Durasi (Menit)</span>
@@ -975,51 +990,97 @@ export default function ControlPanel() {
                           <span className="text-indigo-900/60 italic text-sm md:text-xl">Slideshow Ditampilkan</span>
                         </div>
                       ) : (
-                        (isEditingRundown) ? (
-                          <div className="w-full relative">
-                            {/* Toolbar Warna */}
-                            <div className={`absolute -top-12 left-0 right-0 flex justify-center gap-2 transition-all duration-200 z-30 ${
-                              hasSelection ? 'opacity-100 pointer-events-auto translate-y-0' : 'opacity-0 pointer-events-none translate-y-2'
-                            }`}>
-                              <button onClick={() => wrapText('merah')} className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm shadow-md font-bold hover:bg-red-600 transition">Merah</button>
-                              <button onClick={() => wrapText('kuning')} className="px-3 py-1 bg-yellow-400 text-slate-900 rounded-lg text-sm shadow-md font-bold hover:bg-yellow-500 transition">Kuning</button>
-                              <button onClick={() => wrapText('hijau')} className="px-3 py-1 bg-green-500 text-white rounded-lg text-sm shadow-md font-bold hover:bg-green-600 transition">Hijau</button>
-                              <button onClick={() => wrapText('biru')} className="px-3 py-1 bg-blue-500 text-white rounded-lg text-sm shadow-md font-bold hover:bg-blue-600 transition">Biru</button>
-                            </div>
-                            <textarea 
-                              id="editor-textarea"
-                              className="w-full h-[30vh] bg-white/80 backdrop-blur-md border-2 border-indigo-300 rounded-2xl p-4 md:p-8 text-xl md:text-4xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 shadow-inner font-medium text-slate-800 transition-all"
-                              value={playlist[activeItem]?.segments[activeSegment] || ''}
-                              onChange={(e) => {
-                                const newPlaylist = [...playlist];
-                                newPlaylist[activeItem].segments[activeSegment] = e.target.value;
-                                setPlaylist(newPlaylist);
+                        <div className="w-full flex flex-col lg:flex-row gap-4 md:gap-6 relative text-left h-full flex-1 min-h-0">
+                          <div className="w-full lg:w-1/2 relative flex flex-col justify-center h-full min-h-0">
+                            {isEditingRundown ? (
+                              <div className="w-full h-full flex flex-col relative min-h-0">
+                                {/* Toolbar Warna dipindahkan ke bawah */}
+                                <textarea 
+                                  id="editor-textarea"
+                                  className="w-full flex-1 bg-white/80 backdrop-blur-md border border-indigo-200 rounded-xl p-4 text-lg md:text-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 shadow-inner text-indigo-900 whitespace-pre-wrap leading-relaxed transition-all resize-none text-center"
+                                  value={playlist[activeItem]?.segments[activeSegment] || ''}
+                                  onChange={(e) => {
+                                    setPlaylist(prev => {
+                                      const newPlaylist = [...prev];
+                                      newPlaylist[activeItem] = {
+                                        ...newPlaylist[activeItem],
+                                        segments: [...newPlaylist[activeItem].segments]
+                                      };
+                                      newPlaylist[activeItem].segments[activeSegment] = e.target.value;
+                                      return newPlaylist;
+                                    });
+                                  }}
+                                  onSelect={(e) => {
+                                    const target = e.target as HTMLTextAreaElement;
+                                    setHasSelection(target.selectionStart !== target.selectionEnd);
+                                  }}
+                                  onBlur={() => {
+                                    setTimeout(() => setHasSelection(false), 150);
+                                  }}
+                                  placeholder="Ketik teks di sini (blok teks untuk mewarnai)..."
+                                />
+                                <div className="flex justify-between items-center mt-2 gap-2">
+                                  {/* Toolbar Warna */}
+                                  <div className={`flex gap-1.5 transition-all duration-200 ${
+                                    hasSelection ? 'opacity-100 pointer-events-auto' : 'opacity-50 pointer-events-none grayscale'
+                                  }`}>
+                                    <button onClick={() => wrapText('merah')} className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600 transition shadow-sm">Merah</button>
+                                    <button onClick={() => wrapText('kuning')} className="px-3 py-1.5 bg-yellow-400 text-slate-900 rounded-lg text-xs font-bold hover:bg-yellow-500 transition shadow-sm">Kuning</button>
+                                    <button onClick={() => wrapText('hijau')} className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-xs font-bold hover:bg-green-600 transition shadow-sm">Hijau</button>
+                                    <button onClick={() => wrapText('biru')} className="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-xs font-bold hover:bg-blue-600 transition shadow-sm">Biru</button>
+                                  </div>
+
+                                  <button 
+                                    onClick={() => setIsBgPickerOpen(true)}
+                                    className="flex items-center gap-1.5 text-xs md:text-sm font-semibold text-indigo-700 bg-white/50 hover:bg-white/80 px-3 py-1.5 rounded-lg border border-indigo-200 shadow-sm transition shrink-0"
+                                  >
+                                    <ImageIcon size={14} /> 
+                                    {playlist[activeItem]?.segmentBackgrounds?.[activeSegment] ? 'Ubah Background' : 'Set Background'}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : playlist[activeItem]?.segments[activeSegment] ? (
+                              <div className="w-full h-full flex flex-col justify-center overflow-hidden bg-white/50 dark:bg-slate-800/50 rounded-xl p-6 border border-white/40 shadow-sm">
+                                <div 
+                                  className="text-lg md:text-xl whitespace-pre-wrap leading-relaxed text-indigo-900 dark:text-slate-200 text-center w-full"
+                                  dangerouslySetInnerHTML={{ __html: processText(playlist[activeItem]?.segments[activeSegment]) }} 
+                                />
+                              </div>
+                            ) : (
+                              <span className="text-indigo-900/30 italic text-center w-full">Lirik tidak tersedia</span>
+                            )}
+                          </div>
+                          <div className="w-full lg:w-1/2 flex flex-col justify-center items-center h-full min-h-0">
+                            <h4 className="text-sm font-bold text-indigo-900/60 dark:text-slate-400 uppercase mb-2 flex items-center gap-2 shrink-0"><Monitor size={14} /> Live Preview</h4>
+                            <div 
+                              className="w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg flex items-center justify-center p-2 md:p-4 border-[4px] md:border-[6px] border-slate-800 max-h-full shrink-0"
+                              style={{ 
+                                containerType: 'inline-size',
+                                backgroundImage: currentBg ? `url('${currentBg}')` : 'none',
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center'
                               }}
-                              onSelect={(e) => {
-                                const target = e.target as HTMLTextAreaElement;
-                                setHasSelection(target.selectionStart !== target.selectionEnd);
-                              }}
-                              onBlur={() => {
-                                // Tunggu sebentar sebelum menyembunyikan agar tombol sempat diklik
-                                setTimeout(() => setHasSelection(false), 150);
-                              }}
-                              placeholder="Ketik teks di sini (blok teks untuk mewarnai)..."
-                            />
-                            <div className="flex justify-end mt-2">
-                              <button 
-                                onClick={() => setIsBgPickerOpen(true)}
-                                className="flex items-center gap-2 text-sm font-semibold text-indigo-700 bg-white/50 hover:bg-white/80 px-3 py-1.5 rounded-lg border border-indigo-200 shadow-sm transition"
-                              >
-                                <ImageIcon size={16} /> 
-                                {playlist[activeItem]?.segmentBackgrounds?.[activeSegment] ? 'Ubah Background Slide Ini' : 'Set Background Slide Ini'}
-                              </button>
+                            >
+                              <div 
+                                className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl w-full" 
+                                style={{ 
+                                  textShadow: '1px 1px 4px rgba(0,0,0,0.8)', 
+                                  fontSize: (() => {
+                                    const t = playlist[activeItem]?.segments[activeSegment] || '';
+                                    if (t.length > 250) return '2cqw';
+                                    if (t.length > 180) return '2.5cqw';
+                                    if (t.length > 120) return '3cqw';
+                                    if (t.length > 70) return '3.5cqw';
+                                    if (t.length > 40) return '4cqw';
+                                    return '4.5cqw';
+                                  })(),
+                                  lineHeight: '1.4'
+                                }}
+                                dangerouslySetInnerHTML={{ __html: processText(playlist[activeItem]?.segments[activeSegment] || 'Pilih slide...') }}
+                              />
                             </div>
                           </div>
-                        ) : playlist[activeItem]?.segments[activeSegment] ? (
-                          playlist[activeItem].segments[activeSegment]
-                        ) : (
-                          <span className="text-indigo-900/30 italic">Lirik tidak tersedia</span>
-                        )
+                        </div>
                       )}
                     </>
                   )}
@@ -1027,16 +1088,41 @@ export default function ControlPanel() {
               </div>
           </div>
           
-          <div className="glass-panel p-3 md:p-5 shrink-0 flex justify-center items-center gap-2 md:gap-6 shadow-lg border-white/50 overflow-x-auto flex-nowrap scrollbar-hide">
-             <button onClick={handlePrev} className="glass-button bg-white/60 text-indigo-950 flex flex-1 md:flex-none justify-center items-center gap-2 md:gap-3 px-4 py-3 md:px-8 md:py-4 text-sm md:text-lg hover:bg-white/80 shadow-md rounded-2xl shrink-0"><ArrowLeft size={20}/> Mundur</button>
-             <button onClick={handleNext} className="glass-button bg-gradient-to-r from-indigo-500 to-indigo-600 text-white border-transparent flex flex-1 md:flex-none justify-center items-center gap-2 md:gap-3 px-4 py-3 md:px-8 md:py-4 text-sm md:text-lg hover:shadow-lg hover:shadow-indigo-500/30 rounded-2xl shrink-0">Lanjut <ArrowRight size={20}/></button>
-             <div className="w-px h-10 md:h-12 bg-indigo-900/20 mx-1 md:mx-2 shrink-0"></div>
-             <button 
-                onClick={() => setMode(m => m === 'blank' ? 'content' : 'blank')} 
-                className={`glass-button flex items-center gap-2 md:gap-3 px-4 py-3 md:px-8 md:py-4 text-sm md:text-lg rounded-2xl transition-all shadow-md shrink-0 ${mode === 'blank' ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700 shadow-slate-900/40' : 'bg-white/60 text-slate-800 hover:bg-white/80'}`}
-             >
-               <Square size={16} className={mode === 'blank' ? "fill-white" : ""}/> Blank
-             </button>
+          <div className="glass-panel p-3 md:p-5 shrink-0 flex justify-between items-center gap-2 md:gap-6 shadow-lg border-white/50 w-full overflow-hidden">
+             
+             {/* Kumpulan Tombol Bait/Slide */}
+             <div className="flex items-center gap-2 overflow-x-auto shrink-1 pb-1 scrollbar-thin scrollbar-thumb-indigo-200">
+               {playlist[activeItem]?.segments && playlist[activeItem].segments.length > 1 && (
+                 <>
+                   {playlist[activeItem].segments.map((_: any, idx: number) => (
+                     <button 
+                       key={idx}
+                       onClick={() => { setActiveSegment(idx); setMode('content'); }}
+                       className={`px-3 py-1.5 md:px-4 md:py-2 font-semibold text-xs md:text-sm whitespace-nowrap rounded-lg transition-all duration-200 border shadow-sm hover:-translate-y-0.5 shrink-0 ${
+                         activeSegment === idx && mode === 'content' 
+                           ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-600/30' 
+                           : 'bg-white/70 text-indigo-900 border-white/50 hover:bg-white/90'
+                       }`}
+                     >
+                       {playlist[activeItem]?.segmentLabels ? playlist[activeItem].segmentLabels[idx] : `Slide ${idx + 1}`}
+                     </button>
+                   ))}
+                 </>
+               )}
+             </div>
+
+             {/* Tombol Kontrol Navigasi Utama */}
+             <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
+               <button onClick={handlePrev} className="glass-button bg-white/60 text-indigo-950 flex flex-1 md:flex-none justify-center items-center gap-1.5 md:gap-2 px-3 py-2 md:px-5 md:py-3 text-xs md:text-sm hover:bg-white/80 shadow-md rounded-xl shrink-0"><ArrowLeft size={16}/> Mundur</button>
+               <button onClick={handleNext} className="glass-button bg-gradient-to-r from-indigo-500 to-indigo-600 text-white border-transparent flex flex-1 md:flex-none justify-center items-center gap-1.5 md:gap-2 px-3 py-2 md:px-5 md:py-3 text-xs md:text-sm hover:shadow-lg hover:shadow-indigo-500/30 rounded-xl shrink-0">Lanjut <ArrowRight size={16}/></button>
+               <div className="w-px h-8 md:h-10 bg-indigo-900/20 mx-1 md:mx-2 shrink-0"></div>
+               <button 
+                  onClick={() => setMode(m => m === 'blank' ? 'content' : 'blank')} 
+                  className={`glass-button flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-5 md:py-3 text-xs md:text-sm rounded-xl transition-all shadow-md shrink-0 ${mode === 'blank' ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700 shadow-slate-900/40' : 'bg-white/60 text-slate-800 hover:bg-white/80'}`}
+               >
+                 <Square size={14}/> Blank
+               </button>
+             </div>
           </div>
         </section>
       </main>
@@ -1453,8 +1539,6 @@ export default function ControlPanel() {
           setPlaylist(newPlaylist);
         }}
       />
-      
-      <FooterClock />
     </div>
   );
 }

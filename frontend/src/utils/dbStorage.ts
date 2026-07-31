@@ -16,6 +16,7 @@ export interface SongData {
   category: string;
   segmentOrder: number[];
   segments: string[];
+  segmentLabels?: string[];
 }
 
 export interface BibleVerse {
@@ -37,6 +38,15 @@ export const initDefaultDatabases = async () => {
   if (!dbKeys.includes('dbinfo_song_LSEB') || !dataKeys.includes('dbdata_song_LSEB')) {
     console.log("Initializing default song database...");
     await loadDefaultSongDatabase();
+  } else {
+    // Auto-repair if segmentLabels are missing
+    const songData = await get('dbdata_song_LSEB');
+    if (songData && Array.isArray(songData) && songData.length > 0) {
+      if (!songData[0].segmentLabels) {
+        console.log("Song database missing labels, auto-repairing...");
+        await loadDefaultSongDatabase();
+      }
+    }
   }
   
   if (!dbKeys.includes('dbinfo_bible_TB') || !dataKeys.includes('dbdata_bible_TB')) {
@@ -83,9 +93,14 @@ const loadDefaultSongDatabase = async () => {
     
     // Group segments by songId
     const segmentMap: Record<string, string[]> = {};
+    const labelMap: Record<string, string[]> = {};
     parsedSegments.forEach((seg: any) => {
-      if (!segmentMap[seg.songId]) segmentMap[seg.songId] = [];
+      if (!segmentMap[seg.songId]) {
+        segmentMap[seg.songId] = [];
+        labelMap[seg.songId] = [];
+      }
       segmentMap[seg.songId].push(seg.text);
+      labelMap[seg.songId].push(seg.label || `Slide ${segmentMap[seg.songId].length}`);
     });
     
     const finalSongs: SongData[] = parsedSongs.map((s: any) => ({
@@ -94,7 +109,8 @@ const loadDefaultSongDatabase = async () => {
       author: s.author || '',
       category: s.category || '',
       segmentOrder: s.segmentOrder ? JSON.parse(s.segmentOrder) : [],
-      segments: segmentMap[s.songId] || []
+      segments: segmentMap[s.songId] || [],
+      segmentLabels: labelMap[s.songId] || []
     }));
     
     await set('dbinfo_song_LSEB', { id: 'song_LSEB', name: 'Lagu Sion / Buku Ende', type: 'song', isDefault: true } as DatabaseVersion);

@@ -405,7 +405,7 @@ export default function DisplayWindow() {
           <>
             {displayLabel && (
               <div 
-                className="text-yellow-300 font-bold text-2xl md:text-3xl mb-4 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] animate-fade-in tracking-wider uppercase"
+                className="text-yellow-300 font-bold text-[2vw] mb-[1.5vw] drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] animate-fade-in tracking-wider uppercase"
                 style={{
                   textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
                 }}
@@ -427,7 +427,7 @@ export default function DisplayWindow() {
           <div className="flex flex-col items-center justify-center animate-fade-in">
             {title && (
               <div 
-                className="text-white font-bold text-3xl md:text-5xl mb-6 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] tracking-wider"
+                className="text-white font-bold text-[4vw] mb-[2vw] drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] tracking-wider"
                 style={{
                   textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
                 }}
@@ -436,7 +436,7 @@ export default function DisplayWindow() {
               </div>
             )}
             <div 
-              className="text-white font-mono font-black text-8xl md:text-[12rem] leading-none drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)] tracking-tighter"
+              className="text-white font-mono font-black text-[15vw] leading-none drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)] tracking-tighter"
               style={{
                 textShadow: '4px 4px 0 #000, -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000, 0 8px 30px rgba(0,0,0,0.9)'
               }}
@@ -448,7 +448,7 @@ export default function DisplayWindow() {
           <img 
             src={liveState.logoUrl} 
             alt="Logo" 
-            className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 object-contain animate-fade-in opacity-80"
+            className="w-[30vw] h-[30vw] object-contain animate-fade-in opacity-80"
           />
         ) : null}
       </div>
@@ -456,9 +456,9 @@ export default function DisplayWindow() {
       {/* Progress Slide di Bawah */}
       {progressText && !isSlideshow && itemType !== 'video' && (
         <div 
-          className="absolute left-0 right-0 w-full text-center text-white/60 text-lg font-medium tracking-wider lowercase z-20"
+          className="absolute left-0 right-0 w-full text-center text-white/60 text-[1.5vw] font-medium tracking-wider lowercase z-20"
           style={{ 
-            bottom: rtState.isVisible && rtState.position === 'bottom' ? '90px' : '40px',
+            bottom: rtState.isVisible && rtState.position === 'bottom' ? '10vw' : '4vw',
             textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
           }}
         >
@@ -472,16 +472,16 @@ export default function DisplayWindow() {
           className={`absolute left-0 right-0 z-50 bg-black/60 backdrop-blur-md border-y border-white/10 overflow-hidden flex items-center ${
             rtState.position === 'top' ? 'top-0' : 'bottom-0'
           }`}
-          style={{ height: '60px' }}
+          style={{ height: '7vw' }}
         >
           <div 
             className="animate-marquee-seamless"
             style={{ animationDuration: `${calculatedDuration}s` }}
           >
-            <div className="text-white font-bold text-2xl whitespace-nowrap">
+            <div className="text-white font-bold text-[2.5vw] whitespace-nowrap">
               {rtBlockText}
             </div>
-            <div className="text-white font-bold text-2xl whitespace-nowrap">
+            <div className="text-white font-bold text-[2.5vw] whitespace-nowrap">
               {rtBlockText}
             </div>
           </div>
