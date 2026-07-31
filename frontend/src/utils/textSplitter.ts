@@ -8,8 +8,10 @@ export const splitLongSegments = (rawItems: any[]) => {
     }
     if (!Array.isArray(items)) items = [];
   }
+  
   return items.map(item => {
-    if (item.type === 'bible' || item.type === 'song') {
+    if (!Array.isArray(item.segments)) item.segments = [];
+    if ((item.type === 'bible' || item.type === 'song') && Array.isArray(item.segments)) {
       const newSegments: string[] = [];
       const newLabels: string[] = [];
       

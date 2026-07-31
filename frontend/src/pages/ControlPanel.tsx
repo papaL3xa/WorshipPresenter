@@ -508,15 +508,19 @@ export default function ControlPanel() {
       name: playlistName,
       date: playlistDate,
       items: targetPlaylist.map((item) => {
+        // Prepare local copy of the item so we don't lose titles/segments on save
+        let localItem = { ...item };
+        
+        // Convert visible segments for backwards compatibility if needed, though we can just keep it directly on the object.
         let customText = '';
         if (item.type === 'announcement' || item.type === 'video') customText = item.segments[0];
         if (item.type === 'slideshow') customText = JSON.stringify(item.segments);
         if (item.type === 'song' || item.type === 'bible') customText = item.visibleSegments ? JSON.stringify(item.visibleSegments) : '';
-        return {
-          type: item.type,
-          refId: (item.type === 'announcement' || item.type === 'video') ? item.title : (item.type === 'slideshow' ? null : (item.refId || item.id)),
-          customText: customText
-        };
+        
+        localItem.customText = customText;
+        localItem.refId = (item.type === 'announcement' || item.type === 'video') ? item.title : (item.type === 'slideshow' ? null : (item.refId || item.id));
+        
+        return localItem;
       })
     };
     try {
@@ -847,8 +851,8 @@ export default function ControlPanel() {
                   }`}
                 >
                   <div className="flex justify-between w-full items-center">
-                    <div className={`font-semibold text-lg select-none ${activeItem === idx ? 'text-indigo-900' : 'text-slate-800'}`}>
-                      {idx + 1}. {item.title}
+                    <div className={`font-semibold text-lg select-none ${activeItem === idx ? 'text-indigo-900' : 'text-slate-800 dark:text-slate-200'}`}>
+                      {idx + 1}. {item.title || item.name || '(Tanpa Judul)'}
                     </div>
                     {isEditingRundown && (
                       <div className="flex gap-2">

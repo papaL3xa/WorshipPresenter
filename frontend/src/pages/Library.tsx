@@ -571,10 +571,10 @@ export default function Library() {
           </div>
         </section>
 
-        <section className="flex-1 glass-panel p-6 flex flex-col overflow-y-auto">
+        <section className="flex-1 glass-panel p-6 flex flex-col overflow-hidden">
           {selectedItem ? (
-            <div>
-              <div className="flex justify-between items-start mb-6">
+            <div className="flex-1 flex flex-col min-h-0 h-full">
+              <div className="flex justify-between items-start mb-6 shrink-0">
                 <div className="flex-1 mr-4">
                   {isEditingItem ? (
                     <>
@@ -629,7 +629,7 @@ export default function Library() {
                 </button>
               </div>
               
-              <div className={`flex flex-col md:flex-row gap-6 mt-4 ${isEditingItem ? 'flex-1 min-h-0' : ''}`}>
+              <div className={`flex flex-col md:flex-row gap-6 mt-4 flex-1 min-h-0`}>
                 <div className={`flex flex-col overflow-y-auto pr-2 ${isEditingItem ? 'w-full md:w-1/2' : 'w-full'}`}>
                   <div className="space-y-4">
                 {selectedItem.segments.map((seg, idx) => (
@@ -752,11 +752,18 @@ export default function Library() {
               <div className="h-24 shrink-0"></div> {/* Spacer agar konten bisa di-scroll melewati tombol sticky */}
             </div>
             
-            <div className="w-full md:w-1/2 flex flex-col gap-4 border-t md:border-t-0 md:border-l border-white/30 pt-4 md:pt-0 md:pl-6 shrink-0 sticky top-0 self-start z-10">
+            <div className="w-full md:w-1/2 flex flex-col gap-4 border-t md:border-t-0 md:border-l border-indigo-200/50 pt-4 md:pt-0 md:pl-6 shrink-0">
               <h3 className="font-bold text-indigo-900 dark:text-slate-200 flex items-center gap-2">
                 <Monitor size={18} /> Live Preview Slide
               </h3>
-              <div className="w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg flex items-center justify-center p-4 md:p-6 border-[4px] md:border-[6px] border-slate-800">
+              <div 
+                className="w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg flex items-center justify-center p-4 md:p-6 border-[4px] md:border-[6px] border-slate-800"
+                style={{
+                  backgroundImage: localStorage.getItem('custom_bg') ? `url('${localStorage.getItem('custom_bg')}')` : 'none',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                }}
+              >
                 <p className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl text-lg md:text-xl lg:text-2xl" 
                    style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.8)' }}>
                   {activeSegment !== null ? selectedItem.segments[activeSegment] : "Pilih slide..."}
@@ -776,7 +783,7 @@ export default function Library() {
               )}
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-indigo-900/40">
+            <div className="h-full w-full flex flex-col items-center justify-center text-indigo-900/40">
               <BookOpen size={48} className="mb-4 opacity-50" />
               <p className="text-lg font-medium">Pilih item dari panel kiri untuk melihat isi detailnya.</p>
             </div>
