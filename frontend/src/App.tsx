@@ -33,6 +33,31 @@ function App() {
       document.documentElement.classList.add('dark');
       if (isDark === null) localStorage.setItem('worship_dark_mode', 'true');
     }
+
+    // Auto-scale UI so it never overflows when zoomed in browsers
+    const handleResize = () => {
+      const baseWidth = 1536; // Gunakan 1536 untuk menampung seluruh tombol header tanpa terpotong
+      const currentWidth = window.innerWidth;
+      
+      if (currentWidth < baseWidth) {
+        const scale = currentWidth / baseWidth;
+        (document.body as any).style.zoom = scale;
+      } else {
+        (document.body as any).style.zoom = 1;
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    // Observe zoom changes
+    const observer = new ResizeObserver(handleResize);
+    observer.observe(document.documentElement);
+    
+    handleResize();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      observer.disconnect();
+    };
   }, []);
   return (
     <HashRouter>

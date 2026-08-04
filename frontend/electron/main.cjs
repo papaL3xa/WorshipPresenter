@@ -2,6 +2,10 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
+// Memaksa aplikasi agar mengabaikan scaling display OS (misal: 150%)
+app.commandLine.appendSwitch('high-dpi-support', '1');
+app.commandLine.appendSwitch('force-device-scale-factor', '1');
+
 // Path to local spreadsheet/json database
 // We place it in the same directory as the executable, or userData
 const isDev = process.env.NODE_ENV === 'development';
@@ -106,6 +110,10 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
   
   if (action === 'getLiveState') {
     return { success: true, data: inMemoryLiveState };
+  }
+
+  if (action === 'verifyLogin') {
+    return { success: true, data: { role: 'admin' } };
   }
 
   if (action === 'setLiveState') {

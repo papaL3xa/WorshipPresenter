@@ -6,6 +6,13 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
+    screens: {
+      'sm': '0px',
+      'md': '0px',
+      'lg': '0px',
+      'xl': '0px',
+      '2xl': '0px',
+    },
     extend: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],

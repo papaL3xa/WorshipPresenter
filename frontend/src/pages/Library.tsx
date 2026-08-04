@@ -343,7 +343,7 @@ export default function Library() {
   };
 
   return (
-    <div className="h-screen p-4 flex flex-col gap-4">
+    <div className="h-full p-4 flex flex-col gap-4">
       <header className="glass-panel p-4 flex justify-between items-center shrink-0">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/dashboard')} className="glass-button text-indigo-900 flex items-center gap-2">

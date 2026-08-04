@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Monitor, Square, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, Upload, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw } from 'lucide-react';
+import { Monitor, Square, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock } from 'lucide-react';
 import { callApi } from '../api';
 import { SyncButton } from '../components/SyncButton';
 import { BackgroundPickerModal } from '../components/BackgroundPickerModal';
@@ -47,17 +47,38 @@ export default function ControlPanel() {
   const [isBgPickerOpen, setIsBgPickerOpen] = useState(false);
   const [isLogoModalOpen, setIsLogoModalOpen] = useState(false);
   const [isRunningTextModalOpen, setIsRunningTextModalOpen] = useState(false);
+  const [isCountdownModalOpen, setIsCountdownModalOpen] = useState(false);
+  const [countdownInputValue, setCountdownInputValue] = useState('5');
   const [isSyncing, setIsSyncing] = useState(false);
   const [replaceIndex, setReplaceIndex] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
-  const [logoPos, setLogoPos] = useState(localStorage.getItem('worship_logo_position') || 'bottom-right');
-  
-  // Edit Rundown States
+  const [logos, setLogos] = useState<any[]>(() => {
+    const saved = localStorage.getItem('worship_logos_array');
+    if (saved) return JSON.parse(saved);
+    const oldUrl = localStorage.getItem('worship_logo_b64');
+    if (oldUrl) {
+      const oldPos = localStorage.getItem('worship_logo_position') || 'bottom-right';
+      let x = 90, y = 90;
+      if (oldPos === 'top-left') { x = 10; y = 10; }
+      else if (oldPos === 'top-right') { x = 90; y = 10; }
+      else if (oldPos === 'bottom-left') { x = 10; y = 90; }
+      const scale = parseFloat(localStorage.getItem('worship_logo_scale') || '1');
+      return [{ id: 'logo-' + Date.now(), url: oldUrl, x, y, scale }];
+    }
+    return [];
+  });
+
   const [isEditingRundown, setIsEditingRundown] = useState(urlId === 'new');
   const [isSaving, setIsSaving] = useState(false);
   const [dragItem, setDragItem] = useState<number | null>(null);
+  
+  const [activeDragLogo, setActiveDragLogo] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [allSongTitles, setAllSongTitles] = useState<{id: string, title: string}[] | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  
+  const [liveCountdown, setLiveCountdown] = useState<{id: string, start: number, duration: number} | null>(null);
+  const [previewCountdown, setPreviewCountdown] = useState<number | null>(null);
   
   const [dbList, setDbList] = useState<DatabaseVersion[]>([]);
   const [selectedSongVersion, setSelectedSongVersion] = useState('song_LSEB');
@@ -141,6 +162,28 @@ export default function ControlPanel() {
     fetchPlaylist();
   }, [playlistId]);
 
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (liveCountdown && playlist[activeItem]?.id === liveCountdown.id && !isEditingRundown) {
+      const tick = () => {
+        const elapsed = Math.floor((Date.now() - liveCountdown.start) / 1000);
+        const rem = Math.max(0, liveCountdown.duration - elapsed);
+        setPreviewCountdown(rem);
+        if (rem === 0) {
+          if (activeItem < playlist.length - 1) {
+            setActiveItem(activeItem + 1);
+            setActiveSegment(0);
+          }
+        }
+      };
+      tick();
+      interval = setInterval(tick, 1000);
+    } else {
+      setPreviewCountdown(null);
+    }
+    return () => clearInterval(interval);
+  }, [liveCountdown, playlist, activeItem, isEditingRundown]);
+
   // Fungsi untuk push state ke GAS
   const pushStateToLive = async (itemIdx: number, segIdx: number, dispMode: string) => {
     // Jika mode blank/content, selalu broadcast meski playlist kosong
@@ -162,6 +205,16 @@ export default function ControlPanel() {
       item: playlist[itemIdx], // we send this to local broadcast for fast local-sync
       updatedAt: Date.now()
     };
+
+    if (playlist[itemIdx].type === 'countdown') {
+      setLiveCountdown({
+        id: playlist[itemIdx].id,
+        start: stateObj.updatedAt,
+        duration: parseInt(playlist[itemIdx].segments[segIdx] || '0')
+      });
+    } else {
+      setLiveCountdown(null);
+    }
 
     // 1. Broadcast secara lokal (seketika)
     const channel = new BroadcastChannel('worship_live_sync');
@@ -305,18 +358,37 @@ export default function ControlPanel() {
   };
 
   const addCountdown = () => {
-    const timeInput = prompt("Masukkan durasi hitung mundur (dalam menit, misal: 5 atau 5.5):", "5");
-    if (timeInput === null) return;
-    const mins = parseFloat(timeInput);
-    if (isNaN(mins) || mins <= 0) {
+    setCountdownInputValue('5');
+    setIsCountdownModalOpen(true);
+  };
+
+  const handleCountdownSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const timeInput = countdownInputValue;
+    
+    let totalSeconds = 0;
+    const cleanInput = timeInput.toLowerCase().trim();
+    
+    if (cleanInput.includes('m') || cleanInput.includes('s')) {
+      const minMatch = cleanInput.match(/(\d+(?:\.\d+)?)\s*m/);
+      const secMatch = cleanInput.match(/(\d+(?:\.\d+)?)\s*s/);
+      if (minMatch) totalSeconds += parseFloat(minMatch[1]) * 60;
+      if (secMatch) totalSeconds += parseFloat(secMatch[1]);
+    } else {
+      const val = parseFloat(cleanInput);
+      if (!isNaN(val)) totalSeconds = val * 60;
+    }
+
+    if (totalSeconds <= 0 || isNaN(totalSeconds)) {
       alert("Durasi tidak valid!");
       return;
     }
+
     const newCountdown = {
       id: 'countdown-' + Date.now(),
       type: 'countdown',
       title: 'Ibadah Dimulai Dalam',
-      segments: [String(Math.floor(mins * 60))],
+      segments: [String(Math.floor(totalSeconds))],
     };
     
     let finalPlaylist = [];
@@ -331,8 +403,11 @@ export default function ControlPanel() {
       setPlaylist(finalPlaylist);
       setActiveItem(finalPlaylist.length - 1);
     }
+    
+    setActiveSegment(0);
     setIsVideoModalOpen(false);
     setIsAddItemModalOpen(false);
+    setIsCountdownModalOpen(false);
     setIsEditingRundown(true);
   };
 
@@ -414,6 +489,7 @@ export default function ControlPanel() {
       if (res && res.length > 0) {
         // Find exact match just in case
         const exact = res.find((s: any) => s.id == id) || res[0];
+        exact.type = 'song'; // Ensure type is explicitly set
         const processed = isAutoSplitEnabled ? splitLongSegments([exact])[0] : exact;
         
         // Add to rundown
@@ -618,6 +694,13 @@ export default function ControlPanel() {
     }
   };
 
+  const broadcastLogos = (newLogos: any[]) => {
+    localStorage.setItem('worship_logos_array', JSON.stringify(newLogos));
+    const channel = new BroadcastChannel('worship_live_sync');
+    channel.postMessage({ type: 'LOGOS_UPDATE', payload: newLogos });
+    channel.close();
+  };
+
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -628,30 +711,25 @@ export default function ControlPanel() {
       const reader = new FileReader();
       reader.onload = (event) => {
         const base64 = event.target?.result as string;
-        localStorage.setItem('worship_logo_b64', base64);
-        
-        // Broadcast logo update
-        const channel = new BroadcastChannel('worship_live_sync');
-        channel.postMessage({ type: 'LOGO_UPDATE', payload: base64, position: logoPos });
-        channel.close();
-        
-        setIsLogoModalOpen(false);
+        const newLogo = { id: 'logo-' + Date.now(), url: base64, x: 50, y: 50, scale: 1 };
+        const newLogos = [...logos, newLogo];
+        setLogos(newLogos);
+        broadcastLogos(newLogos);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handlePositionChange = (pos: string) => {
-    setLogoPos(pos);
-    localStorage.setItem('worship_logo_position', pos);
-    
-    // Broadcast position update for existing logo
-    const existingLogo = localStorage.getItem('worship_logo_b64');
-    if (existingLogo) {
-      const channel = new BroadcastChannel('worship_live_sync');
-      channel.postMessage({ type: 'LOGO_UPDATE', payload: existingLogo, position: pos });
-      channel.close();
-    }
+  const updateLogo = (id: string, updates: any) => {
+    const newLogos = logos.map(l => l.id === id ? { ...l, ...updates } : l);
+    setLogos(newLogos);
+    broadcastLogos(newLogos);
+  };
+
+  const removeLogo = (id: string) => {
+    const newLogos = logos.filter(l => l.id !== id);
+    setLogos(newLogos);
+    broadcastLogos(newLogos);
   };
 
   const broadcastRunningText = (visible: boolean) => {
@@ -733,12 +811,12 @@ export default function ControlPanel() {
   }, [activeItem]);
 
   if (isLoading) {
-    return <div className="h-screen flex justify-center items-center"><Loader2 className="animate-spin text-indigo-900" size={48} /></div>;
+    return <div className="h-full flex justify-center items-center"><Loader2 className="animate-spin text-indigo-900" size={48} /></div>;
   }
 
 
   return (
-    <div className="h-screen flex flex-col p-4 md:p-6 gap-4 overflow-hidden relative">
+    <div className="h-full flex flex-col p-4 md:p-6 gap-4 overflow-hidden relative">
       <div className="absolute inset-0 bg-white/20 pointer-events-none -z-10 backdrop-blur-[2px]"></div>
       
       <header className="glass-panel p-3 md:p-5 flex flex-col md:flex-row justify-between items-center shrink-0 gap-3 md:gap-4 shadow-lg border-white/50">
@@ -824,7 +902,7 @@ export default function ControlPanel() {
             </button>
           </div>
           
-          <div className="space-y-3 overflow-y-auto px-1.5 pt-1 pr-2 pb-4 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent flex-1">
+          <div className="space-y-1 overflow-y-auto px-1.5 pt-1 pr-2 pb-4 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent flex-1">
             {playlist.map((item, idx) => (
               <div 
                 id={`rundown-item-${idx}`}
@@ -844,14 +922,14 @@ export default function ControlPanel() {
                     setActiveItem(idx); 
                     setActiveSegment(0); 
                   }}
-                  className={`flex-1 text-left p-4 rounded-xl border backdrop-blur-sm transition-all ${isEditingRundown ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${
+                  className={`flex-1 text-left py-2 px-3 rounded-md border backdrop-blur-sm transition-all ${isEditingRundown ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${
                     activeItem === idx
-                      ? 'bg-white/80 border-indigo-400 shadow-md transform scale-[1.02]' 
+                      ? 'bg-white/80 border-indigo-400 shadow-sm transform scale-[1.01]' 
                       : 'bg-white/30 border-white/40 hover:bg-white/50 shadow-sm'
                   }`}
                 >
                   <div className="flex justify-between w-full items-center">
-                    <div className={`font-semibold text-lg select-none ${activeItem === idx ? 'text-indigo-900' : 'text-slate-800 dark:text-slate-200'}`}>
+                    <div className={`font-semibold text-sm select-none truncate ${activeItem === idx ? 'text-indigo-900' : 'text-slate-800 dark:text-slate-200'}`}>
                       {idx + 1}. {item.title || item.name || '(Tanpa Judul)'}
                     </div>
                     {isEditingRundown && (
@@ -863,10 +941,10 @@ export default function ControlPanel() {
                               if (item.type === 'video') openVideoModal(idx);
                               else openSegmentModal(idx, e);
                             }}
-                            className="text-indigo-600 hover:text-indigo-800 bg-indigo-100 p-1.5 rounded-lg transition-colors"
+                            className="text-indigo-600 hover:text-indigo-800 bg-indigo-100 p-1 rounded transition-colors"
                             title={item.type === 'video' ? "Edit Link Video" : "Atur Slide / Bait"}
                           >
-                            <Settings size={14} />
+                            <Settings size={12} />
                           </button>
                         )}
                         <button 
@@ -875,22 +953,22 @@ export default function ControlPanel() {
                             if (replaceIndex === idx) setReplaceIndex(null); 
                             else { setReplaceIndex(idx); setIsAddItemModalOpen(true); } 
                           }}
-                          className={`p-1.5 rounded-lg transition-colors ${replaceIndex === idx ? 'bg-indigo-600 text-white' : 'text-indigo-600 hover:text-indigo-800 bg-indigo-100'}`}
+                          className={`p-1 rounded transition-colors ${replaceIndex === idx ? 'bg-indigo-600 text-white' : 'text-indigo-600 hover:text-indigo-800 bg-indigo-100'}`}
                           title="Ganti Item"
                         >
-                          <RefreshCw size={14} />
+                          <RefreshCw size={12} />
                         </button>
                         <button 
                           onClick={(e) => removePlaylistItem(idx, e)}
-                          className="text-red-500 hover:text-red-700 bg-red-100 p-1.5 rounded-lg transition-colors"
+                          className="text-red-500 hover:text-red-700 bg-red-100 p-1 rounded transition-colors"
                           title="Hapus"
                         >
-                          <X size={14} />
+                          <X size={12} />
                         </button>
                       </div>
                     )}
                   </div>
-                  <div className="text-xs font-bold text-indigo-600/70 uppercase mt-1 select-none tracking-wider">{item.type}</div>
+                  <div className="text-[10px] font-bold text-indigo-600/70 uppercase mt-0.5 select-none tracking-wider">{item.type}</div>
                 </div>
               </div>
             ))}
@@ -963,28 +1041,55 @@ export default function ControlPanel() {
                       ) : (playlist[activeItem]?.type === 'countdown') ? (
                         <div className="flex flex-col items-center w-full">
                           {isEditingRundown ? (
-                            <>
-                              <input 
-                                type="number"
-                                className="w-full text-center bg-white/80 backdrop-blur-md border-2 border-indigo-300 rounded-2xl p-4 md:p-6 text-4xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 shadow-inner font-medium text-slate-800 transition-all max-w-[200px]"
-                                value={Math.floor(parseInt(playlist[activeItem]?.segments[activeSegment] || '0') / 60)}
-                                onChange={(e) => {
-                                  setPlaylist(prev => {
-                                    const newPlaylist = [...prev];
-                                    newPlaylist[activeItem] = {
-                                      ...newPlaylist[activeItem],
-                                      segments: [...newPlaylist[activeItem].segments]
-                                    };
-                                    newPlaylist[activeItem].segments[activeSegment] = String(Number(e.target.value) * 60);
-                                    return newPlaylist;
-                                  });
-                                }}
-                              />
-                              <span className="text-indigo-900/60 mt-3 text-sm font-bold uppercase tracking-wider">Durasi (Menit)</span>
-                            </>
+                            <div className="flex gap-4 items-center justify-center">
+                              <div className="flex flex-col items-center">
+                                <input 
+                                  type="number"
+                                  className="w-full text-center bg-white/80 backdrop-blur-md border-2 border-indigo-300 rounded-2xl p-3 md:p-4 text-3xl md:text-4xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 shadow-inner font-medium text-slate-800 transition-all max-w-[120px]"
+                                  value={Math.floor(parseInt(playlist[activeItem]?.segments[activeSegment] || '0') / 60)}
+                                  onChange={(e) => {
+                                    setPlaylist(prev => {
+                                      const newPlaylist = [...prev];
+                                      newPlaylist[activeItem] = {
+                                        ...newPlaylist[activeItem],
+                                        segments: [...newPlaylist[activeItem].segments]
+                                      };
+                                      const currentSec = parseInt(newPlaylist[activeItem].segments[activeSegment] || '0') % 60;
+                                      newPlaylist[activeItem].segments[activeSegment] = String(Number(e.target.value) * 60 + currentSec);
+                                      return newPlaylist;
+                                    });
+                                  }}
+                                />
+                                <span className="text-indigo-900/60 mt-2 text-xs md:text-sm font-bold uppercase tracking-wider">Menit</span>
+                              </div>
+                              <div className="text-4xl font-bold text-indigo-900/40 pb-6">:</div>
+                              <div className="flex flex-col items-center">
+                                <input 
+                                  type="number"
+                                  className="w-full text-center bg-white/80 backdrop-blur-md border-2 border-indigo-300 rounded-2xl p-3 md:p-4 text-3xl md:text-4xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 shadow-inner font-medium text-slate-800 transition-all max-w-[120px]"
+                                  value={parseInt(playlist[activeItem]?.segments[activeSegment] || '0') % 60}
+                                  onChange={(e) => {
+                                    setPlaylist(prev => {
+                                      const newPlaylist = [...prev];
+                                      newPlaylist[activeItem] = {
+                                        ...newPlaylist[activeItem],
+                                        segments: [...newPlaylist[activeItem].segments]
+                                      };
+                                      const currentMin = Math.floor(parseInt(newPlaylist[activeItem].segments[activeSegment] || '0') / 60);
+                                      newPlaylist[activeItem].segments[activeSegment] = String(currentMin * 60 + Number(e.target.value));
+                                      return newPlaylist;
+                                    });
+                                  }}
+                                />
+                                <span className="text-indigo-900/60 mt-2 text-xs md:text-sm font-bold uppercase tracking-wider">Detik</span>
+                              </div>
+                            </div>
                           ) : (
                             <div className="text-6xl font-mono text-indigo-900 bg-white/50 px-10 py-6 rounded-3xl border border-indigo-200 shadow-inner">
-                              {Math.floor(parseInt(playlist[activeItem]?.segments[0] || '0') / 60)}:00
+                              {(() => {
+                                const displaySecs = previewCountdown !== null ? previewCountdown : parseInt(playlist[activeItem]?.segments[0] || '0');
+                                return `${Math.floor(displaySecs / 60).toString().padStart(2, '0')}:${(displaySecs % 60).toString().padStart(2, '0')}`;
+                              })()}
                             </div>
                           )}
                         </div>
@@ -1337,55 +1442,86 @@ export default function ControlPanel() {
       {/* LOGO MODAL */}
       {isLogoModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm transition-opacity">
-          <div className="bg-white/90 backdrop-blur-xl p-8 rounded-2xl shadow-2xl max-w-sm w-full border border-white/40">
-            <h2 className="text-xl font-bold text-indigo-900 mb-2">Logo & Watermark</h2>
-            <p className="text-sm text-indigo-800/70 mb-6">Pilih gambar logo dan tentukan posisinya di layar penonton.</p>
+          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-6 rounded-2xl shadow-2xl max-w-2xl w-full border border-white/40 dark:border-slate-700 max-h-[90vh] flex flex-col">
             
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-indigo-900 mb-2">Posisi Logo</label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: 'top-left', label: 'Kiri Atas' },
-                  { id: 'top-right', label: 'Kanan Atas' },
-                  { id: 'bottom-left', label: 'Kiri Bawah' },
-                  { id: 'bottom-right', label: 'Kanan Bawah' }
-                ].map((pos) => (
-                  <button
-                    key={pos.id}
-                    onClick={() => handlePositionChange(pos.id)}
-                    className={`p-2 rounded-lg text-sm font-semibold border-2 transition ${
-                      logoPos === pos.id 
-                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700' 
-                        : 'border-indigo-100 bg-white text-indigo-400 hover:border-indigo-300'
-                    }`}
-                  >
-                    {pos.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <input 
-              type="file" 
-              accept="image/*" 
-              ref={logoInputRef}
-              onChange={handleLogoUpload}
-              className="hidden" 
-            />
-            
-            <div className="flex flex-col gap-3">
-              <button 
-                onClick={() => logoInputRef.current?.click()}
-                className="w-full py-3 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/30 flex justify-center items-center gap-2 transition"
-              >
-                <Upload size={18} /> Ganti File Logo
-              </button>
+            <div className="flex-1 overflow-y-auto pr-2">
+              <h2 className="text-xl font-bold text-indigo-900 dark:text-indigo-100 mb-2">Logo & Watermark</h2>
+              <p className="text-sm text-indigo-800/70 dark:text-indigo-200/70 mb-4">Tambahkan logo dan geser (drag) di dalam kotak hitam untuk mengatur posisinya.</p>
               
-              <button 
-                onClick={() => setIsLogoModalOpen(false)}
-                className="w-full py-3 rounded-xl font-bold text-indigo-900 bg-black/5 hover:bg-black/10 transition"
+              <div 
+                ref={containerRef}
+                className="w-full aspect-video bg-slate-900 rounded-xl relative overflow-hidden shadow-inner border-[6px] border-slate-800 dark:border-slate-950 select-none"
               >
-                Tutup
+                {logos.map(logo => (
+                  <div
+                    key={logo.id}
+                    className="absolute cursor-move group"
+                    style={{ 
+                      left: `${logo.x}%`, 
+                      top: `${logo.y}%`, 
+                      width: `${8 * logo.scale}%`,
+                      transform: 'translate(-50%, -50%)',
+                      zIndex: activeDragLogo === logo.id ? 50 : 10
+                    }}
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      setActiveDragLogo(logo.id);
+                      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+                    }}
+                    onPointerMove={(e) => {
+                      if (activeDragLogo !== logo.id || !containerRef.current) return;
+                      const rect = containerRef.current.getBoundingClientRect();
+                      const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+                      const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+                      updateLogo(logo.id, { x, y });
+                    }}
+                    onPointerUp={(e) => {
+                      if (activeDragLogo === logo.id) {
+                        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+                        setActiveDragLogo(null);
+                      }
+                    }}
+                  >
+                    <img src={logo.url} alt="Logo" className="w-full h-auto opacity-80 pointer-events-none group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 border-2 border-indigo-400 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity rounded-sm border-dashed"></div>
+                  </div>
+                ))}
+                {logos.length === 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-sm font-semibold italic">Belum ada logo</div>
+                )}
+              </div>
+
+              <div className="mt-4 space-y-3 pb-4">
+              {logos.map((logo, index) => (
+                <div key={logo.id} className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3 flex flex-col gap-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Logo {index + 1}</span>
+                    <button onClick={() => removeLogo(logo.id)} className="text-red-500 hover:text-red-700 bg-red-100 dark:bg-red-900/30 p-1 rounded transition-colors" title="Hapus"><X size={14}/></button>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-semibold w-16 dark:text-slate-300">Ukuran:</span>
+                    <input 
+                      type="range" 
+                      min="0.1" max="5" step="0.1" 
+                      value={logo.scale} 
+                      onChange={(e) => updateLogo(logo.id, { scale: parseFloat(e.target.value) })}
+                      className="flex-1 accent-indigo-600 h-2 bg-indigo-200 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300 w-8">{Math.round(logo.scale * 100)}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            </div>
+            
+            <input type="file" accept="image/*" ref={logoInputRef} onChange={handleLogoUpload} className="hidden" />
+            
+            <div className="flex gap-3 mt-2 pt-4 border-t border-slate-200 dark:border-slate-700 shrink-0">
+              <button onClick={() => logoInputRef.current?.click()} className="flex-1 py-3 rounded-xl font-bold text-indigo-900 dark:text-indigo-100 bg-indigo-100 dark:bg-indigo-900/30 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 border border-indigo-200 dark:border-indigo-800 flex justify-center items-center gap-2 transition shadow-sm">
+                <Plus size={18} /> Tambah Logo
+              </button>
+              <button onClick={() => setIsLogoModalOpen(false)} className="flex-1 py-3 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition">
+                Selesai & Tutup
               </button>
             </div>
           </div>
@@ -1525,6 +1661,35 @@ export default function ControlPanel() {
               <button onClick={() => setIsSegmentModalOpen(false)} className="px-6 py-2 rounded-xl font-bold text-indigo-900 bg-black/5">Batal</button>
               <button onClick={saveSegmentSelection} className="px-6 py-2 rounded-xl font-bold text-white bg-indigo-600">Simpan Pilihan</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* COUNTDOWN MODAL */}
+      {isCountdownModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
+          <div className="bg-white/90 backdrop-blur-xl p-8 rounded-2xl shadow-2xl max-w-md w-full border border-white/40 flex flex-col">
+            <h2 className="text-2xl font-bold text-indigo-900 mb-2 flex items-center gap-2">
+              <Clock size={24} /> Tambah Hitung Mundur
+            </h2>
+            <form onSubmit={handleCountdownSubmit} className="space-y-4 mt-4">
+              <div>
+                <label className="block text-sm font-bold text-indigo-900/70 mb-2">
+                  Masukkan durasi (misal: 5 untuk 5 menit, 30s untuk 30 detik, 5m 30s)
+                </label>
+                <input 
+                  autoFocus
+                  className="w-full text-lg bg-white border-2 border-indigo-200 rounded-xl p-3 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all font-medium"
+                  value={countdownInputValue}
+                  onChange={(e) => setCountdownInputValue(e.target.value)}
+                  placeholder="5m 30s"
+                />
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button type="button" onClick={() => setIsCountdownModalOpen(false)} className="px-6 py-2 rounded-xl font-bold text-indigo-900 bg-black/5 hover:bg-black/10 transition">Batal</button>
+                <button type="submit" className="px-6 py-2 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition">Tambahkan</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

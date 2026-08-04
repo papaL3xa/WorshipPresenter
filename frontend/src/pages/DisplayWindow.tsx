@@ -51,10 +51,28 @@ export default function DisplayWindow() {
     bgUrl: localStorage.getItem('custom_bg'),
     logoUrl: localStorage.getItem('worship_logo_b64')
   });
-  const [logoPos, setLogoPos] = useState<'top-left'|'top-right'|'bottom-left'|'bottom-right'>( (localStorage.getItem('worship_logo_position') as any) || 'bottom-right');
+  
+  const [logos, setLogos] = useState<any[]>(() => {
+    const saved = localStorage.getItem('worship_logos_array');
+    if (saved) return JSON.parse(saved);
+    const oldUrl = localStorage.getItem('worship_logo_b64');
+    if (oldUrl) {
+      const oldPos = localStorage.getItem('worship_logo_position') || 'bottom-right';
+      let x = 90, y = 90;
+      if (oldPos === 'top-left') { x = 10; y = 10; }
+      else if (oldPos === 'top-right') { x = 90; y = 10; }
+      else if (oldPos === 'bottom-left') { x = 10; y = 90; }
+      const scale = parseFloat(localStorage.getItem('worship_logo_scale') || '1');
+      return [{ id: 'logo-' + Date.now(), url: oldUrl, x, y, scale }];
+    }
+    return [];
+  });
   const [actualBgUrl, setActualBgUrl] = useState<string | null>(null);
   
   const [countdownRemaining, setCountdownRemaining] = useState<number | null>(null);
+  
+  const [isCursorVisible, setIsCursorVisible] = useState(false);
+  const cursorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [rtState, setRtState] = useState({
     text: localStorage.getItem('worship_rt_text') || '',
@@ -90,9 +108,8 @@ export default function DisplayWindow() {
         });
       } else if (msg.data.type === 'BG_UPDATE') {
         setLiveState(prev => ({ ...prev, bgUrl: msg.data.bg }));
-      } else if (msg.data.type === 'LOGO_UPDATE') {
-        setLiveState(prev => ({ ...prev, logoUrl: msg.data.payload }));
-        if (msg.data.position) setLogoPos(msg.data.position);
+      } else if (msg.data.type === 'LOGOS_UPDATE') {
+        setLogos(msg.data.payload);
       } else if (msg.data.type === 'RUNNING_TEXT_UPDATE') {
         setRtState(msg.data.payload);
       }
@@ -302,9 +319,28 @@ export default function DisplayWindow() {
     return () => clearInterval(interval);
   }, [itemType, text, liveState.updatedAt]);
 
+  useEffect(() => {
+    const handleMouseMove = () => {
+      setIsCursorVisible(true);
+      if (cursorTimeoutRef.current) clearTimeout(cursorTimeoutRef.current);
+      cursorTimeoutRef.current = setTimeout(() => {
+        setIsCursorVisible(false);
+      }, 2000);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    // Initial hide
+    cursorTimeoutRef.current = setTimeout(() => setIsCursorVisible(false), 2000);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (cursorTimeoutRef.current) clearTimeout(cursorTimeoutRef.current);
+    };
+  }, []);
+
   return (
     <div 
-      className="fixed inset-0 flex flex-col items-center justify-center bg-gray-900 text-white p-12 text-center transition-all duration-300 overflow-hidden cursor-none"
+      className={`fixed inset-0 flex flex-col items-center justify-center bg-gray-900 text-white p-12 text-center transition-all duration-300 overflow-hidden ${isCursorVisible ? 'cursor-default' : 'cursor-none'}`}
       style={{
         backgroundImage: actualBgUrl ? `url(${actualBgUrl})` : 'none',
         backgroundSize: 'cover',
@@ -314,19 +350,24 @@ export default function DisplayWindow() {
     >
       <div className="absolute inset-0 bg-black/40 z-0"></div>
 
-      {/* Watermark Logo Kanan Bawah (Disembunyikan jika tidak ada konten karena logo sudah besar di tengah) */}
-      {liveState.logoUrl && (text || isSlideshow || itemType === 'video') && (
-        <img 
-          src={liveState.logoUrl} 
-          alt="Logo" 
-          className={`absolute object-contain opacity-90 drop-shadow-2xl z-50 pointer-events-none ${
-            logoPos === 'top-left' ? 'top-12 left-12' :
-            logoPos === 'top-right' ? 'top-12 right-12' :
-            logoPos === 'bottom-left' ? 'bottom-12 left-12' :
-            'bottom-12 right-12' // default bottom-right
-          }`}
-          style={{ maxHeight: '120px', maxWidth: '200px' }}
-        />
+      {/* Multi-Logo Watermarks */}
+      {logos.length > 0 && (text || isSlideshow || itemType === 'video') && (
+        <>
+          {logos.map(logo => (
+            <img 
+              key={logo.id}
+              src={logo.url} 
+              style={{ 
+                width: `${8 * logo.scale}%`,
+                left: `${logo.x}%`,
+                top: `${logo.y}%`,
+                transform: 'translate(-50%, -50%)'
+              }}
+              className="absolute h-auto opacity-70 z-50 pointer-events-none"
+              alt="Logo" 
+            />
+          ))}
+        </>
       )}
 
       {/* Judul Lagu / Ayat / Pengumuman */}
@@ -401,6 +442,27 @@ export default function DisplayWindow() {
             alt="Slideshow" 
             className="w-full h-full object-contain animate-fade-in"
           />
+        ) : itemType === 'countdown' && countdownRemaining !== null ? (
+          <div className="flex flex-col items-center justify-center animate-fade-in">
+            {title && (
+              <div 
+                className="text-white font-bold text-[4vw] mb-[2vw] drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] tracking-wider"
+                style={{
+                  textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
+                }}
+              >
+                {title}
+              </div>
+            )}
+            <div 
+              className="text-white font-mono font-black text-[15vw] leading-none drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)] tracking-tighter"
+              style={{
+                textShadow: '4px 4px 0 #000, -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000, 0 8px 30px rgba(0,0,0,0.9)'
+              }}
+            >
+              {String(Math.floor(countdownRemaining / 60)).padStart(2, '0')}:{String(countdownRemaining % 60).padStart(2, '0')}
+            </div>
+          </div>
         ) : text ? (
           <>
             {displayLabel && (
@@ -423,32 +485,12 @@ export default function DisplayWindow() {
             >
             </h1>
           </>
-        ) : itemType === 'countdown' && countdownRemaining !== null ? (
-          <div className="flex flex-col items-center justify-center animate-fade-in">
-            {title && (
-              <div 
-                className="text-white font-bold text-[4vw] mb-[2vw] drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] tracking-wider"
-                style={{
-                  textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
-                }}
-              >
-                {title}
-              </div>
-            )}
-            <div 
-              className="text-white font-mono font-black text-[15vw] leading-none drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)] tracking-tighter"
-              style={{
-                textShadow: '4px 4px 0 #000, -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000, 0 8px 30px rgba(0,0,0,0.9)'
-              }}
-            >
-              {String(Math.floor(countdownRemaining / 60)).padStart(2, '0')}:{String(countdownRemaining % 60).padStart(2, '0')}
-            </div>
-          </div>
-        ) : liveState.logoUrl ? (
+        ) : logos.length > 0 ? (
           <img 
-            src={liveState.logoUrl} 
+            src={logos[0].url} 
+            style={{ width: `${33 * logos[0].scale}%`, maxWidth: `${400 * logos[0].scale}px` }}
+            className="object-contain animate-fade-in drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]" 
             alt="Logo" 
-            className="w-[30vw] h-[30vw] object-contain animate-fade-in opacity-80"
           />
         ) : null}
       </div>

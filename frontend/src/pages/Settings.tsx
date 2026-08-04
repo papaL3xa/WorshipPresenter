@@ -55,7 +55,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen p-4 md:p-8 flex flex-col gap-4 relative overflow-hidden">
+    <div className="min-h-full p-4 md:p-8 flex flex-col gap-4 relative overflow-hidden">
       <div className="absolute inset-0 bg-white/20 pointer-events-none -z-10 backdrop-blur-[2px]"></div>
 
       <header className="glass-panel p-5 flex flex-col md:flex-row justify-between items-center gap-4">

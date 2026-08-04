@@ -46,7 +46,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 relative overflow-hidden">
+    <div className="min-h-full flex items-center justify-center bg-slate-900 p-4 relative overflow-hidden">
       <div 
         className="absolute inset-0 z-0 pointer-events-none"
         style={{

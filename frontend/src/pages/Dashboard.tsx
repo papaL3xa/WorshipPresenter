@@ -66,7 +66,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col p-4 md:p-8 gap-4 overflow-hidden relative">
+    <div className="min-h-full flex flex-col p-4 md:p-8 gap-4 overflow-hidden relative">
       <header className="glass-panel p-5 flex flex-col md:flex-row justify-between items-center gap-4">
         <h1 className="text-3xl font-heading font-extrabold text-indigo-950 dark:text-white drop-shadow-md tracking-tight flex items-center gap-3">
           <div className="bg-indigo-600/10 dark:bg-white/20 p-2 rounded-xl backdrop-blur-sm border border-indigo-600/20 dark:border-white/30">
