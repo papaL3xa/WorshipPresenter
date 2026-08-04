@@ -90,16 +90,49 @@ app.on('window-all-closed', () => {
 
 // IPC Handlers for Local Database (replacing Google Apps Script)
 function loadDb() {
-  try {
-    if (fs.existsSync(dbPath)) {
+  const bakPath = dbPath + '.bak';
+  
+  if (fs.existsSync(dbPath)) {
+    try {
       return JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+    } catch (e) {
+      console.error('Database corrupted! Attempting to restore from backup...', e);
     }
-  } catch (e) { console.error(e); }
+  }
+  
+  // Jika database rusak atau hilang, coba muat dari backup
+  if (fs.existsSync(bakPath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(bakPath, 'utf8'));
+      fs.copyFileSync(bakPath, dbPath); // Auto-restore
+      console.log('Successfully restored database from backup.');
+      return data;
+    } catch (e) {
+      console.error('Backup database is also corrupted or missing.', e);
+    }
+  }
+  
   return { customSongs: [], playlists: [] };
 }
 
 function saveDb(data) {
-  fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf8');
+  const bakPath = dbPath + '.bak';
+  const tmpPath = dbPath + '.tmp';
+  
+  try {
+    // 1. Tulis ke file temporary dulu agar tidak terpotong jika crash
+    fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf8');
+    
+    // 2. Buat backup dari versi terakhir yang berfungsi (jika ada)
+    if (fs.existsSync(dbPath)) {
+      fs.copyFileSync(dbPath, bakPath);
+    }
+    
+    // 3. Timpa database utama dengan file temporary yang utuh
+    fs.renameSync(tmpPath, dbPath);
+  } catch (e) {
+    console.error('Critical error: Failed to save database!', e);
+  }
 }
 
 // In-memory live state (tidak perlu disimpan ke disk, hanya untuk sesi aktif)
