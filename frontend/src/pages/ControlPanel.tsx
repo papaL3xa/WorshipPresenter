@@ -148,7 +148,17 @@ export default function ControlPanel() {
         const res = await callApi('getPlaylistItems', { id: playlistId });
         if (res && res.success && res.data && res.data.items) {
           setPlaylistName(res.data.name);
-          const processedItems = splitLongSegments(res.data.items);
+          const itemsWithVisibleSegments = res.data.items.map((item: any) => {
+            if ((item.type === 'song' || item.type === 'bible') && item.customText) {
+              try {
+                item.visibleSegments = JSON.parse(item.customText);
+              } catch (e) {
+                // ignore
+              }
+            }
+            return item;
+          });
+          const processedItems = splitLongSegments(itemsWithVisibleSegments);
           setPlaylist(processedItems);
         } else {
           setErrorMsg('Playlist kosong atau tidak ditemukan.');
@@ -945,41 +955,43 @@ export default function ControlPanel() {
                     <div className={`font-semibold text-sm select-none truncate ${activeItem === idx ? 'text-indigo-900' : 'text-slate-800 dark:text-slate-200'}`}>
                       {idx + 1}. {item.title || item.name || '(Tanpa Judul)'}
                     </div>
-                    {isEditingRundown && (
-                      <div className="flex gap-2">
-                        {(item.type === 'song' || item.type === 'bible' || item.type === 'video') && (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (item.type === 'video') openVideoModal(idx);
-                              else openSegmentModal(idx, e);
-                            }}
-                            className="text-indigo-600 hover:text-indigo-800 bg-indigo-100 p-1 rounded transition-colors"
-                            title={item.type === 'video' ? "Edit Link Video" : "Atur Slide / Bait"}
-                          >
-                            <Settings size={12} />
-                          </button>
-                        )}
+                    <div className="flex gap-2">
+                      {(item.type === 'song' || item.type === 'bible' || item.type === 'video') && (
                         <button 
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            if (replaceIndex === idx) setReplaceIndex(null); 
-                            else { setReplaceIndex(idx); setIsAddItemModalOpen(true); } 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (item.type === 'video') openVideoModal(idx);
+                            else openSegmentModal(idx, e);
                           }}
-                          className={`p-1 rounded transition-colors ${replaceIndex === idx ? 'bg-indigo-600 text-white' : 'text-indigo-600 hover:text-indigo-800 bg-indigo-100'}`}
-                          title="Ganti Item"
+                          className="text-indigo-600 hover:text-indigo-800 bg-indigo-100 p-1 rounded transition-colors"
+                          title={item.type === 'video' ? "Edit Link Video" : "Atur Slide / Bait"}
                         >
-                          <RefreshCw size={12} />
+                          <Settings size={12} />
                         </button>
-                        <button 
-                          onClick={(e) => removePlaylistItem(idx, e)}
-                          className="text-red-500 hover:text-red-700 bg-red-100 p-1 rounded transition-colors"
-                          title="Hapus"
-                        >
-                          <X size={12} />
-                        </button>
-                      </div>
-                    )}
+                      )}
+                      {isEditingRundown && (
+                        <>
+                          <button 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              if (replaceIndex === idx) setReplaceIndex(null); 
+                              else { setReplaceIndex(idx); setIsAddItemModalOpen(true); } 
+                            }}
+                            className={`p-1 rounded transition-colors ${replaceIndex === idx ? 'bg-indigo-600 text-white' : 'text-indigo-600 hover:text-indigo-800 bg-indigo-100'}`}
+                            title="Ganti Item"
+                          >
+                            <RefreshCw size={12} />
+                          </button>
+                          <button 
+                            onClick={(e) => removePlaylistItem(idx, e)}
+                            className="text-red-500 hover:text-red-700 bg-red-100 p-1 rounded transition-colors"
+                            title="Hapus"
+                          >
+                            <X size={12} />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                   <div className="text-[10px] font-bold text-indigo-600/70 uppercase mt-0.5 select-none tracking-wider">{item.type}</div>
                 </div>
@@ -1175,7 +1187,7 @@ export default function ControlPanel() {
                           <div className="w-full lg:w-1/2 flex flex-col justify-center items-center h-full min-h-0">
                             <h4 className="text-sm font-bold text-indigo-900/60 dark:text-slate-400 uppercase mb-2 flex items-center gap-2 shrink-0"><Monitor size={14} /> Live Preview</h4>
                             <div 
-                              className="w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg flex items-center justify-center p-2 md:p-4 border-[4px] md:border-[6px] border-slate-800 max-h-full shrink-0"
+                              className="w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg flex flex-col items-center justify-center p-2 md:p-4 border-[4px] md:border-[6px] border-slate-800 max-h-full shrink-0"
                               style={{ 
                                 containerType: 'inline-size',
                                 backgroundImage: currentBg ? `url('${currentBg}')` : 'none',
@@ -1183,24 +1195,89 @@ export default function ControlPanel() {
                                 backgroundPosition: 'center'
                               }}
                             >
-                              <div 
-                                className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl w-full" 
-                                style={{ 
-                                  textShadow: '1px 1px 4px rgba(0,0,0,0.8)', 
-                                  fontSize: (() => {
-                                    const t = playlist[activeItem]?.segments[activeSegment] || '';
-                                    if (t.length > 250) return '2cqw';
-                                    if (t.length > 180) return '2.5cqw';
-                                    if (t.length > 120) return '3cqw';
-                                    if (t.length > 70) return '3.5cqw';
-                                    if (t.length > 40) return '4cqw';
-                                    return '4.5cqw';
-                                  })(),
-                                  lineHeight: '1.4'
-                                }}
-                                dangerouslySetInnerHTML={{ __html: processText(playlist[activeItem]?.segments[activeSegment] || 'Pilih slide...') }}
-                              />
+                              <div className="absolute inset-0 bg-black/40 z-0 pointer-events-none"></div>
+                              
+                              {/* Multi-Logos */}
+                              {logos.length > 0 && playlist[activeItem]?.type !== 'countdown' && (
+                                <>
+                                  {logos.map(logo => (
+                                    <img 
+                                      key={logo.id}
+                                      src={logo.url} 
+                                      style={{ 
+                                        width: `${8 * logo.scale}%`,
+                                        left: `${logo.x}%`,
+                                        top: `${logo.y}%`,
+                                        transform: 'translate(-50%, -50%)'
+                                      }}
+                                      className="absolute h-auto opacity-70 z-10 pointer-events-none"
+                                      alt="Logo" 
+                                    />
+                                  ))}
+                                </>
+                              )}
+
+                              {/* Title */}
+                              {playlist[activeItem]?.title && playlist[activeItem]?.type !== 'slideshow' && playlist[activeItem]?.type !== 'video' && playlist[activeItem]?.type !== 'countdown' && (
+                                <h2 
+                                  className="absolute top-[8%] left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-20"
+                                  style={{
+                                    fontSize: '4.5cqw',
+                                    textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)'
+                                  }}
+                                >
+                                  {playlist[activeItem]?.title}
+                                </h2>
+                              )}
+
+                              {/* Content Container */}
+                              <div className="relative z-10 flex flex-col items-center justify-center w-full mt-[10%] mb-[8%] px-[8%]">
+                                {/* Subtitle (Bait) */}
+                                {playlist[activeItem]?.type !== 'slideshow' && playlist[activeItem]?.type !== 'video' && playlist[activeItem]?.type !== 'countdown' && playlist[activeItem]?.segments[activeSegment] && (
+                                  <div 
+                                    className="text-yellow-300 font-bold mb-[1.5cqw] tracking-wider uppercase"
+                                    style={{
+                                      fontSize: '2cqw',
+                                      textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)'
+                                    }}
+                                  >
+                                    {playlist[activeItem]?.segmentLabels?.[activeSegment] || `BAIT ${activeSegment + 1}`}
+                                  </div>
+                                )}
+                                
+                                <div 
+                                  className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl w-full" 
+                                  style={{ 
+                                    textShadow: '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)', 
+                                    fontSize: (() => {
+                                      const t = playlist[activeItem]?.segments[activeSegment] || '';
+                                      if (t.length > 250) return '2cqw';
+                                      if (t.length > 180) return '2.5cqw';
+                                      if (t.length > 120) return '3cqw';
+                                      if (t.length > 70) return '3.5cqw';
+                                      if (t.length > 40) return '4cqw';
+                                      return '4.5cqw';
+                                    })(),
+                                    lineHeight: '1.4'
+                                  }}
+                                  dangerouslySetInnerHTML={{ __html: processText(playlist[activeItem]?.segments[activeSegment] || 'Pilih slide...') }}
+                                />
+                              </div>
+
+                              {/* Progress Text Footer */}
+                              {playlist[activeItem]?.type !== 'slideshow' && playlist[activeItem]?.type !== 'video' && playlist[activeItem]?.segments[activeSegment] && (
+                                <div 
+                                  className="absolute bottom-[4%] left-0 right-0 w-full text-center text-white/60 font-medium tracking-wider lowercase z-20"
+                                  style={{ 
+                                    fontSize: '1.5cqw',
+                                    textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)'
+                                  }}
+                                >
+                                  {`bait ${(playlist[activeItem]?.visibleSegments || [...Array(playlist[activeItem].segments?.length || 1).keys()]).indexOf(activeSegment) + 1} dari ${(playlist[activeItem]?.visibleSegments || playlist[activeItem]?.segments || []).length}`}
+                                </div>
+                              )}
                             </div>
+
                           </div>
                         </div>
                       )}
