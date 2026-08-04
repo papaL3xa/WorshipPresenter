@@ -749,21 +749,32 @@ export default function ControlPanel() {
   const handleNext = () => {
     if (playlist.length === 0) return;
     const item = playlist[activeItem];
-    if (activeSegment < item.segments.length - 1) {
-      setActiveSegment(s => s + 1);
+    const visible = item.visibleSegments || [...Array(item.segments?.length || 1).keys()];
+    const currentIdx = visible.indexOf(activeSegment);
+
+    if (currentIdx !== -1 && currentIdx < visible.length - 1) {
+      setActiveSegment(visible[currentIdx + 1]);
     } else if (activeItem < playlist.length - 1) {
       setActiveItem(i => i + 1);
-      setActiveSegment(0);
+      const nextItem = playlist[activeItem + 1];
+      const nextVisible = nextItem.visibleSegments || [...Array(nextItem.segments?.length || 1).keys()];
+      setActiveSegment(nextVisible.length > 0 ? nextVisible[0] : 0);
     }
   };
 
   const handlePrev = () => {
     if (playlist.length === 0) return;
-    if (activeSegment > 0) {
-      setActiveSegment(s => s - 1);
+    const item = playlist[activeItem];
+    const visible = item.visibleSegments || [...Array(item.segments?.length || 1).keys()];
+    const currentIdx = visible.indexOf(activeSegment);
+
+    if (currentIdx > 0) {
+      setActiveSegment(visible[currentIdx - 1]);
     } else if (activeItem > 0) {
       setActiveItem(i => i - 1);
-      setActiveSegment(playlist[activeItem - 1].segments.length - 1);
+      const prevItem = playlist[activeItem - 1];
+      const prevVisible = prevItem.visibleSegments || [...Array(prevItem.segments?.length || 1).keys()];
+      setActiveSegment(prevVisible.length > 0 ? prevVisible[prevVisible.length - 1] : 0);
     }
   };
 
@@ -919,8 +930,10 @@ export default function ControlPanel() {
               >
                 <div 
                   onClick={() => { 
-                    setActiveItem(idx); 
-                    setActiveSegment(0); 
+                    setActiveItem(idx);
+                    const item = playlist[idx];
+                    const visible = item.visibleSegments || [...Array(item.segments?.length || 1).keys()];
+                    setActiveSegment(visible.length > 0 ? visible[0] : 0);
                   }}
                   className={`flex-1 text-left py-2 px-3 rounded-md border backdrop-blur-sm transition-all ${isEditingRundown ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${
                     activeItem === idx
@@ -1203,7 +1216,7 @@ export default function ControlPanel() {
              <div className="flex items-center gap-2 overflow-x-auto shrink-1 pb-1 scrollbar-thin scrollbar-thumb-indigo-200">
                {playlist[activeItem]?.segments && playlist[activeItem].segments.length > 1 && (
                  <>
-                   {playlist[activeItem].segments.map((_: any, idx: number) => (
+                   {(playlist[activeItem].visibleSegments || [...Array(playlist[activeItem].segments.length).keys()]).map((idx: number) => (
                      <button 
                        key={idx}
                        onClick={() => { setActiveSegment(idx); setMode('content'); }}
