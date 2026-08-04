@@ -148,7 +148,8 @@ export default function ControlPanel() {
         const res = await callApi('getPlaylistItems', { id: playlistId });
         if (res && res.success && res.data && res.data.items) {
           setPlaylistName(res.data.name);
-          const itemsWithVisibleSegments = res.data.items.map((item: any) => {
+          const rawItems = Array.isArray(res.data.items) ? res.data.items : Object.values(res.data.items);
+          const itemsWithVisibleSegments = rawItems.map((item: any) => {
             if ((item.type === 'song' || item.type === 'bible') && item.customText) {
               try {
                 item.visibleSegments = JSON.parse(item.customText);
