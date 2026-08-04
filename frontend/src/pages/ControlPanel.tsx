@@ -148,7 +148,15 @@ export default function ControlPanel() {
         const res = await callApi('getPlaylistItems', { id: playlistId });
         if (res && res.success && res.data && res.data.items) {
           setPlaylistName(res.data.name);
-          const rawItems = Array.isArray(res.data.items) ? res.data.items : Object.values(res.data.items);
+          let rawItems = res.data.items;
+          if (typeof rawItems === 'string') {
+            try { rawItems = JSON.parse(rawItems); } catch(e) {}
+          }
+          if (rawItems && typeof rawItems === 'object' && !Array.isArray(rawItems)) {
+            rawItems = Array.isArray(rawItems.items) ? rawItems.items : Object.values(rawItems).filter(v => typeof v === 'object' && v !== null);
+          }
+          if (!Array.isArray(rawItems)) rawItems = [];
+          
           const itemsWithVisibleSegments = rawItems.map((item: any) => {
             if ((item.type === 'song' || item.type === 'bible') && item.customText) {
               try {

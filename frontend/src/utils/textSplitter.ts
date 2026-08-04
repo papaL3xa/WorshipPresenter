@@ -10,6 +10,7 @@ export const splitLongSegments = (rawItems: any[]) => {
   }
   
   return items.map(item => {
+    if (typeof item !== 'object' || item === null) return item;
     if (!Array.isArray(item.segments)) item.segments = [];
     if ((item.type === 'bible' || item.type === 'song') && Array.isArray(item.segments)) {
       const newSegments: string[] = [];
