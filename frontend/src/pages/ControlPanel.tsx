@@ -878,32 +878,28 @@ export default function ControlPanel() {
   const renderDisplayBox = (itemIdx: number, segIdx: number, isLiveBox: boolean) => {
     const isEditView = !isLiveBox && isEditingRundown;
     return (
-      <div className={`glass-panel ${isLiveBox ? 'shrink-0 p-2 md:p-3 h-[25vh] md:h-[35vh]' : 'flex-1 p-4 md:p-6'} flex flex-col items-center justify-center relative shadow-lg overflow-hidden border-white/50 ${isLiveBox ? 'bg-gradient-to-br from-red-500/10 to-transparent border-red-500/30' : 'bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/30'}`}>
+      <div className={`glass-panel flex-1 p-4 md:p-6 flex flex-col items-center justify-center relative shadow-lg overflow-hidden border-white/50 ${isLiveBox ? 'bg-gradient-to-br from-red-500/10 to-transparent border-red-500/30' : 'bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/30'}`}>
         {isEditingRundown && (
            <div className={`absolute top-2 left-3 text-white text-xs px-2 py-0.5 rounded font-bold uppercase tracking-wider shadow-sm z-50 ${isLiveBox ? 'bg-red-500' : 'bg-blue-500'}`}>
              {isLiveBox ? '🔴 Live Screen' : '✏️ Preview & Edit'}
            </div>
         )}
               <div className="text-center w-full flex flex-col items-center h-full max-h-full overflow-hidden">
-                {!isLiveBox && (
-                  <>
-                    {((playlist[itemIdx]?.type === 'announcement' || playlist[itemIdx]?.type === 'countdown') && isEditView) ? (
-                      <input 
-                        className="text-xl md:text-3xl font-heading font-bold text-indigo-950 mb-4 md:mb-6 drop-shadow-sm bg-white border-2 border-indigo-300 rounded-full px-4 py-1.5 md:px-6 md:py-2 shadow-inner text-center w-full max-w-xl focus:outline-none focus:border-indigo-500"
-                        value={playlist[itemIdx]?.title || ''}
-                        onChange={(e) => {
-                          setPlaylist(prev => {
-                            const newPlaylist = [...prev];
-                            newPlaylist[itemIdx] = { ...newPlaylist[itemIdx], title: e.target.value };
-                            return newPlaylist;
-                          });
-                        }}
-                        placeholder="Judul Pengumuman / Teks Bebas"
-                      />
-                    ) : (
-                      <h3 className="text-xl md:text-3xl font-heading font-bold text-indigo-950 mb-3 md:mb-4 drop-shadow-sm bg-white/30 inline-block px-4 py-1.5 md:px-6 md:py-2 rounded-full border border-white/40">{playlist[itemIdx]?.title}</h3>
-                    )}
-                  </>
+                {((playlist[itemIdx]?.type === 'announcement' || playlist[itemIdx]?.type === 'countdown') && isEditView) ? (
+                  <input 
+                    className="text-xl md:text-3xl font-heading font-bold text-indigo-950 mb-4 md:mb-6 drop-shadow-sm bg-white border-2 border-indigo-300 rounded-full px-4 py-1.5 md:px-6 md:py-2 shadow-inner text-center w-full max-w-xl focus:outline-none focus:border-indigo-500"
+                    value={playlist[itemIdx]?.title || ''}
+                    onChange={(e) => {
+                      setPlaylist(prev => {
+                        const newPlaylist = [...prev];
+                        newPlaylist[itemIdx] = { ...newPlaylist[itemIdx], title: e.target.value };
+                        return newPlaylist;
+                      });
+                    }}
+                    placeholder="Judul Pengumuman / Teks Bebas"
+                  />
+                ) : (
+                  <h3 className="text-xl md:text-3xl font-heading font-bold text-indigo-950 mb-3 md:mb-4 drop-shadow-sm bg-white/30 inline-block px-4 py-1.5 md:px-6 md:py-2 rounded-full border border-white/40">{playlist[itemIdx]?.title}</h3>
                 )}
                 
                 {/* Segment buttons moved to bottom bar */}
@@ -978,7 +974,7 @@ export default function ControlPanel() {
                         </div>
                       ) : (
                         <div className="w-full flex flex-col lg:flex-row gap-4 md:gap-6 relative text-left h-full flex-1 min-h-0">
-                          <div className={`w-full lg:w-1/2 relative flex flex-col justify-center h-full min-h-0 ${isLiveBox ? 'hidden' : ''}`}>
+                          <div className="w-full lg:w-1/2 relative flex flex-col justify-center h-full min-h-0">
                             {isEditView ? (
                               <div className="w-full h-full flex flex-col relative min-h-0">
                                 {/* Toolbar Warna dipindahkan ke bawah */}
@@ -1037,8 +1033,8 @@ export default function ControlPanel() {
                               <span className="text-indigo-900/30 italic text-center w-full">Lirik tidak tersedia</span>
                             )}
                           </div>
-                          <div className={`w-full ${isLiveBox ? 'max-w-3xl mx-auto' : 'lg:w-1/2'} flex flex-col justify-center items-center h-full min-h-0`}>
-                            {!isLiveBox && <h4 className="text-sm font-bold text-indigo-900/60 dark:text-slate-400 uppercase mb-2 flex items-center gap-2 shrink-0"><Monitor size={14} /> Live Preview</h4>}
+                          <div className="w-full lg:w-1/2 flex flex-col justify-center items-center h-full min-h-0">
+                            <h4 className="text-sm font-bold text-indigo-900/60 dark:text-slate-400 uppercase mb-2 flex items-center gap-2 shrink-0"><Monitor size={14} /> Live Preview</h4>
                             <div 
                               className="w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg flex flex-col items-center justify-center p-2 md:p-4 border-[4px] md:border-[6px] border-slate-800 max-h-full shrink-0"
                               style={{ 
