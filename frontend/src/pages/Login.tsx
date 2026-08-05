@@ -9,14 +9,21 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  const [isChecking] = useState(() => {
+    return (typeof window !== 'undefined' && !!(window as any).electronAPI);
+  });
+
   React.useEffect(() => {
-    // Auto login for Desktop (Electron) version, give Admin rights instantly
-    if (typeof window !== 'undefined' && (window as any).electronAPI) {
+    if (isChecking) {
       localStorage.setItem('worship_is_logged_in', 'true');
       localStorage.setItem('worship_role', 'admin');
       navigate('/dashboard', { replace: true });
     }
-  }, [navigate]);
+  }, [navigate, isChecking]);
+
+  if (isChecking) {
+    return <div className="min-h-full bg-slate-900" />; // Render blank until redirected
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
