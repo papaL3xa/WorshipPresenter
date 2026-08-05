@@ -586,13 +586,23 @@ export default function Library() {
                         placeholder="Judul Lagu"
                       />
                       {selectedItem.type === 'song' && (
-                        <input 
-                          type="text" 
-                          value={selectedItem.author || ''}
-                          onChange={(e) => setSelectedItem({...selectedItem, author: e.target.value})}
-                          className="w-full text-sm font-semibold text-indigo-900/60 bg-white border border-indigo-200 rounded-md px-2 py-1 mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                          placeholder="Pencipta Lagu"
-                        />
+                        <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            value={selectedItem.id}
+                            onChange={(e) => setSelectedItem({...selectedItem, id: e.target.value.replace(/\s+/g, '_')})}
+                            className="w-1/3 text-sm font-semibold text-indigo-900 bg-indigo-50 border border-indigo-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="Nomor/ID Lagu (tanpa spasi)"
+                            title="Nomor atau ID Unik Lagu"
+                          />
+                          <input 
+                            type="text" 
+                            value={selectedItem.author || ''}
+                            onChange={(e) => setSelectedItem({...selectedItem, author: e.target.value})}
+                            className="w-2/3 text-sm font-semibold text-indigo-900/60 bg-white border border-indigo-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="Pencipta Lagu"
+                          />
+                        </div>
                       )}
                     </>
                   ) : (
