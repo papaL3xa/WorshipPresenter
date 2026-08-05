@@ -125,7 +125,7 @@ export default function ControlPanel() {
   const [searchType, setSearchType] = useState<'song'|'bible'>('song');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [isUploadingSlides, setIsUploadingSlides] = useState(false);
+
   
   const [isAutoSplitEnabled, setIsAutoSplitEnabled] = useState(
     localStorage.getItem('worship_auto_split') !== 'false'
