@@ -42,8 +42,6 @@ export default function ControlPanel() {
   
   const [activeItem, setActiveItem] = useState(0);
   const [activeSegment, setActiveSegment] = useState(0);
-  const [liveItem, setLiveItem] = useState(0);
-  const [liveSegment, setLiveSegment] = useState(0);
   const [mode, setMode] = useState<'content' | 'blank' | 'logo'>('content');
   const [isBgModalOpen, setIsBgModalOpen] = useState(false);
   const [isBgPickerOpen, setIsBgPickerOpen] = useState(false);
@@ -217,8 +215,6 @@ export default function ControlPanel() {
     }
 
     setIsSyncing(true);
-    setLiveItem(itemIdx);
-    setLiveSegment(segIdx);
     setErrorMsg('');
     const stateObj = {
       playlistId: playlistId,
@@ -875,273 +871,6 @@ export default function ControlPanel() {
   }
 
 
-  const renderDisplayBox = (itemIdx: number, segIdx: number, isLiveBox: boolean) => {
-    const isEditView = !isLiveBox && isEditingRundown;
-    return (
-      <div className={`glass-panel ${isLiveBox ? 'shrink-0 p-2 md:p-3 h-[25vh] md:h-[35vh]' : 'flex-1 p-4 md:p-6'} flex flex-col items-center justify-center relative shadow-lg overflow-hidden border-white/50 ${isLiveBox ? 'bg-gradient-to-br from-red-500/10 to-transparent border-red-500/30' : 'bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/30'}`}>
-        {isEditingRundown && (
-           <div className={`absolute top-2 left-3 text-white text-xs px-2 py-0.5 rounded font-bold uppercase tracking-wider shadow-sm z-50 ${isLiveBox ? 'bg-red-500' : 'bg-blue-500'}`}>
-             {isLiveBox ? '🔴 Live Screen' : '✏️ Preview & Edit'}
-           </div>
-        )}
-              <div className="text-center w-full flex flex-col items-center h-full max-h-full overflow-hidden">
-                {!isLiveBox && (
-                  <>
-                    {((playlist[itemIdx]?.type === 'announcement' || playlist[itemIdx]?.type === 'countdown') && isEditView) ? (
-                      <input 
-                        className="text-xl md:text-3xl font-heading font-bold text-indigo-950 mb-4 md:mb-6 drop-shadow-sm bg-white border-2 border-indigo-300 rounded-full px-4 py-1.5 md:px-6 md:py-2 shadow-inner text-center w-full max-w-xl focus:outline-none focus:border-indigo-500"
-                        value={playlist[itemIdx]?.title || ''}
-                        onChange={(e) => {
-                          setPlaylist(prev => {
-                            const newPlaylist = [...prev];
-                            newPlaylist[itemIdx] = { ...newPlaylist[itemIdx], title: e.target.value };
-                            return newPlaylist;
-                          });
-                        }}
-                        placeholder="Judul Pengumuman / Teks Bebas"
-                      />
-                    ) : (
-                      <h3 className="text-xl md:text-3xl font-heading font-bold text-indigo-950 mb-3 md:mb-4 drop-shadow-sm bg-white/30 inline-block px-4 py-1.5 md:px-6 md:py-2 rounded-full border border-white/40">{playlist[itemIdx]?.title}</h3>
-                    )}
-                  </>
-                )}
-                
-                {/* Segment buttons moved to bottom bar */}
-
-                <div className="w-full flex-1 min-h-0 flex items-center justify-center relative z-10 transition-all duration-300 animate-fade-in" key={`${itemIdx}-${segIdx}-${mode}`}>
-                  {mode === 'blank' ? <span className="text-indigo-900/20 dark:text-slate-200/20 text-2xl font-bold italic">Layar Kosong (Blank)</span> : (
-                    <>
-                      {(playlist[itemIdx]?.type === 'video') ? (
-                        <div className="flex flex-col items-center">
-                          <Monitor size={48} className="text-indigo-900/40 mb-2 md:mb-4" />
-                          <span className="text-indigo-900/60 italic text-sm md:text-xl">Memutar Video</span>
-                        </div>
-                      ) : (playlist[itemIdx]?.type === 'countdown') ? (
-                        <div className="flex flex-col items-center w-full">
-                          {isEditView ? (
-                            <div className="flex gap-4 items-center justify-center">
-                              <div className="flex flex-col items-center">
-                                <input 
-                                  type="number"
-                                  className="w-full text-center bg-white/80 backdrop-blur-md border-2 border-indigo-300 rounded-2xl p-3 md:p-4 text-3xl md:text-4xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 shadow-inner font-medium text-slate-800 transition-all max-w-[120px]"
-                                  value={Math.floor(parseInt(playlist[itemIdx]?.segments[segIdx] || '0') / 60)}
-                                  onChange={(e) => {
-                                    setPlaylist(prev => {
-                                      const newPlaylist = [...prev];
-                                      newPlaylist[itemIdx] = {
-                                        ...newPlaylist[itemIdx],
-                                        segments: [...newPlaylist[itemIdx].segments]
-                                      };
-                                      const currentSec = parseInt(newPlaylist[itemIdx].segments[segIdx] || '0') % 60;
-                                      newPlaylist[itemIdx].segments[segIdx] = String(Number(e.target.value) * 60 + currentSec);
-                                      return newPlaylist;
-                                    });
-                                  }}
-                                />
-                                <span className="text-indigo-900/60 mt-2 text-xs md:text-sm font-bold uppercase tracking-wider">Menit</span>
-                              </div>
-                              <div className="text-4xl font-bold text-indigo-900/40 pb-6">:</div>
-                              <div className="flex flex-col items-center">
-                                <input 
-                                  type="number"
-                                  className="w-full text-center bg-white/80 backdrop-blur-md border-2 border-indigo-300 rounded-2xl p-3 md:p-4 text-3xl md:text-4xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 shadow-inner font-medium text-slate-800 transition-all max-w-[120px]"
-                                  value={parseInt(playlist[itemIdx]?.segments[segIdx] || '0') % 60}
-                                  onChange={(e) => {
-                                    setPlaylist(prev => {
-                                      const newPlaylist = [...prev];
-                                      newPlaylist[itemIdx] = {
-                                        ...newPlaylist[itemIdx],
-                                        segments: [...newPlaylist[itemIdx].segments]
-                                      };
-                                      const currentMin = Math.floor(parseInt(newPlaylist[itemIdx].segments[segIdx] || '0') / 60);
-                                      newPlaylist[itemIdx].segments[segIdx] = String(currentMin * 60 + Number(e.target.value));
-                                      return newPlaylist;
-                                    });
-                                  }}
-                                />
-                                <span className="text-indigo-900/60 mt-2 text-xs md:text-sm font-bold uppercase tracking-wider">Detik</span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="text-6xl font-mono text-indigo-900 bg-white/50 px-10 py-6 rounded-3xl border border-indigo-200 shadow-inner">
-                              {(() => {
-                                const displaySecs = previewCountdown !== null ? previewCountdown : parseInt(playlist[itemIdx]?.segments[0] || '0');
-                                return `${Math.floor(displaySecs / 60).toString().padStart(2, '0')}:${(displaySecs % 60).toString().padStart(2, '0')}`;
-                              })()}
-                            </div>
-                          )}
-                        </div>
-                      ) : (playlist[itemIdx]?.type === 'slideshow') ? (
-                        <div className="flex flex-col items-center">
-                          <ImageIcon size={48} className="text-indigo-900/40 mb-2 md:mb-4" />
-                          <span className="text-indigo-900/60 italic text-sm md:text-xl">Slideshow Ditampilkan</span>
-                        </div>
-                      ) : (
-                        <div className="w-full flex flex-col lg:flex-row gap-4 md:gap-6 relative text-left h-full flex-1 min-h-0">
-                          <div className={`w-full lg:w-1/2 relative flex flex-col justify-center h-full min-h-0 ${isLiveBox ? 'hidden' : ''}`}>
-                            {isEditView ? (
-                              <div className="w-full h-full flex flex-col relative min-h-0">
-                                {/* Toolbar Warna dipindahkan ke bawah */}
-                                <textarea 
-                                  id="editor-textarea"
-                                  className="w-full flex-1 bg-white/80 backdrop-blur-md border border-indigo-200 rounded-xl p-4 text-lg md:text-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 shadow-inner text-indigo-900 whitespace-pre-wrap leading-relaxed transition-all resize-none text-center"
-                                  value={playlist[itemIdx]?.segments[segIdx] || ''}
-                                  onChange={(e) => {
-                                    setPlaylist(prev => {
-                                      const newPlaylist = [...prev];
-                                      newPlaylist[itemIdx] = {
-                                        ...newPlaylist[itemIdx],
-                                        segments: [...newPlaylist[itemIdx].segments]
-                                      };
-                                      newPlaylist[itemIdx].segments[segIdx] = e.target.value;
-                                      return newPlaylist;
-                                    });
-                                  }}
-                                  onSelect={(e) => {
-                                    const target = e.target as HTMLTextAreaElement;
-                                    setHasSelection(target.selectionStart !== target.selectionEnd);
-                                  }}
-                                  onBlur={() => {
-                                    setTimeout(() => setHasSelection(false), 150);
-                                  }}
-                                  placeholder="Ketik teks di sini (blok teks untuk mewarnai)..."
-                                />
-                                <div className="flex justify-between items-center mt-2 gap-2">
-                                  {/* Toolbar Warna */}
-                                  <div className={`flex gap-1.5 transition-all duration-200 ${
-                                    hasSelection ? 'opacity-100 pointer-events-auto' : 'opacity-50 pointer-events-none grayscale'
-                                  }`}>
-                                    <button onClick={() => wrapText('merah')} className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600 transition shadow-sm">Merah</button>
-                                    <button onClick={() => wrapText('kuning')} className="px-3 py-1.5 bg-yellow-400 text-slate-900 rounded-lg text-xs font-bold hover:bg-yellow-500 transition shadow-sm">Kuning</button>
-                                    <button onClick={() => wrapText('hijau')} className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-xs font-bold hover:bg-green-600 transition shadow-sm">Hijau</button>
-                                    <button onClick={() => wrapText('biru')} className="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-xs font-bold hover:bg-blue-600 transition shadow-sm">Biru</button>
-                                  </div>
-
-                                  <button 
-                                    onClick={() => setIsBgPickerOpen(true)}
-                                    className="flex items-center gap-1.5 text-xs md:text-sm font-semibold text-indigo-700 bg-white/50 hover:bg-white/80 px-3 py-1.5 rounded-lg border border-indigo-200 shadow-sm transition shrink-0"
-                                  >
-                                    <ImageIcon size={14} /> 
-                                    {playlist[itemIdx]?.segmentBackgrounds?.[segIdx] ? 'Ubah Background' : 'Set Background'}
-                                  </button>
-                                </div>
-                              </div>
-                            ) : playlist[itemIdx]?.segments[segIdx] ? (
-                              <div className="w-full h-full flex flex-col justify-center overflow-hidden bg-white/50 dark:bg-slate-800/50 rounded-xl p-6 border border-white/40 shadow-sm">
-                                <div 
-                                  className="text-lg md:text-xl whitespace-pre-wrap leading-relaxed text-indigo-900 dark:text-slate-200 text-center w-full"
-                                  dangerouslySetInnerHTML={{ __html: processText(playlist[itemIdx]?.segments[segIdx]) }} 
-                                />
-                              </div>
-                            ) : (
-                              <span className="text-indigo-900/30 italic text-center w-full">Lirik tidak tersedia</span>
-                            )}
-                          </div>
-                          <div className={`w-full ${isLiveBox ? 'max-w-3xl mx-auto' : 'lg:w-1/2'} flex flex-col justify-center items-center h-full min-h-0`}>
-                            {!isLiveBox && <h4 className="text-sm font-bold text-indigo-900/60 dark:text-slate-400 uppercase mb-2 flex items-center gap-2 shrink-0"><Monitor size={14} /> Live Preview</h4>}
-                            <div 
-                              className="w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg flex flex-col items-center justify-center p-2 md:p-4 border-[4px] md:border-[6px] border-slate-800 max-h-full shrink-0"
-                              style={{ 
-                                containerType: 'inline-size',
-                                backgroundImage: currentBg ? `url('${currentBg}')` : 'none',
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center'
-                              }}
-                            >
-                              <div className="absolute inset-0 bg-black/40 z-0 pointer-events-none"></div>
-                              
-                              {/* Multi-Logos */}
-                              {logos.length > 0 && playlist[itemIdx]?.type !== 'countdown' && (
-                                <>
-                                  {logos.map(logo => (
-                                    <img 
-                                      key={logo.id}
-                                      src={logo.url} 
-                                      style={{ 
-                                        width: `${8 * logo.scale}%`,
-                                        left: `${logo.x}%`,
-                                        top: `${logo.y}%`,
-                                        transform: 'translate(-50%, -50%)'
-                                      }}
-                                      className="absolute h-auto opacity-70 z-10 pointer-events-none"
-                                      alt="Logo" 
-                                    />
-                                  ))}
-                                </>
-                              )}
-
-                              {/* Title */}
-                              {playlist[itemIdx]?.title && playlist[itemIdx]?.type !== 'slideshow' && playlist[itemIdx]?.type !== 'video' && playlist[itemIdx]?.type !== 'countdown' && (
-                                <h2 
-                                  className="absolute top-[8%] left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-20"
-                                  style={{
-                                    fontSize: '4.5cqw',
-                                    textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)'
-                                  }}
-                                >
-                                  {playlist[itemIdx]?.title}
-                                </h2>
-                              )}
-
-                              {/* Content Container */}
-                              <div className="relative z-10 flex flex-col items-center justify-center w-full mt-[10%] mb-[8%] px-[8%]">
-                                {/* Subtitle (Bait) */}
-                                {playlist[itemIdx]?.type !== 'slideshow' && playlist[itemIdx]?.type !== 'video' && playlist[itemIdx]?.type !== 'countdown' && playlist[itemIdx]?.segments[segIdx] && (
-                                  <div 
-                                    className="text-yellow-300 font-bold mb-[1.5cqw] tracking-wider uppercase"
-                                    style={{
-                                      fontSize: '2cqw',
-                                      textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)'
-                                    }}
-                                  >
-                                    {playlist[itemIdx]?.segmentLabels?.[segIdx] || `BAIT ${segIdx + 1}`}
-                                  </div>
-                                )}
-                                
-                                <div 
-                                  className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl w-full" 
-                                  style={{ 
-                                    textShadow: '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)', 
-                                    fontSize: (() => {
-                                      const t = playlist[itemIdx]?.segments[segIdx] || '';
-                                      if (t.length > 250) return '2cqw';
-                                      if (t.length > 180) return '2.5cqw';
-                                      if (t.length > 120) return '3cqw';
-                                      if (t.length > 70) return '3.5cqw';
-                                      if (t.length > 40) return '4cqw';
-                                      return '4.5cqw';
-                                    })(),
-                                    lineHeight: '1.4'
-                                  }}
-                                  dangerouslySetInnerHTML={{ __html: processText(playlist[itemIdx]?.segments[segIdx] || 'Pilih slide...') }}
-                                />
-                              </div>
-
-                              {/* Progress Text Footer */}
-                              {playlist[itemIdx]?.type !== 'slideshow' && playlist[itemIdx]?.type !== 'video' && playlist[itemIdx]?.segments[segIdx] && (
-                                <div 
-                                  className="absolute bottom-[4%] left-0 right-0 w-full text-center text-white/60 font-medium tracking-wider lowercase z-20"
-                                  style={{ 
-                                    fontSize: '1.5cqw',
-                                    textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)'
-                                  }}
-                                >
-                                  {`bait ${(playlist[itemIdx]?.visibleSegments || [...Array(playlist[itemIdx].segments?.length || 1).keys()]).indexOf(segIdx) + 1} dari ${(playlist[itemIdx]?.visibleSegments || playlist[itemIdx]?.segments || []).length}`}
-                                </div>
-                              )}
-                            </div>
-
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-      </div>
-    );
-  };
-
   return (
     <div className="h-full flex flex-col p-4 md:p-6 gap-4 overflow-hidden relative">
       <div className="absolute inset-0 bg-white/20 pointer-events-none -z-10 backdrop-blur-[2px]"></div>
@@ -1340,14 +1069,259 @@ export default function ControlPanel() {
         </aside>
         
         <section className="flex-1 flex flex-col gap-3 md:gap-6 min-w-0">
-          {isEditingRundown ? (
-            <>
-              {renderDisplayBox(liveItem, liveSegment, true)}
-              {renderDisplayBox(activeItem, activeSegment, false)}
-            </>
-          ) : (
-            renderDisplayBox(liveItem, liveSegment, true)
-          )}
+          <div className="glass-panel flex-1 p-4 md:p-6 flex flex-col items-center justify-center relative shadow-lg overflow-hidden border-white/50 bg-gradient-to-br from-white/40 to-white/10">
+              <div className="text-center w-full flex flex-col items-center h-full max-h-full overflow-hidden">
+                {((playlist[activeItem]?.type === 'announcement' || playlist[activeItem]?.type === 'countdown') && isEditingRundown) ? (
+                  <input 
+                    className="text-xl md:text-3xl font-heading font-bold text-indigo-950 mb-4 md:mb-6 drop-shadow-sm bg-white border-2 border-indigo-300 rounded-full px-4 py-1.5 md:px-6 md:py-2 shadow-inner text-center w-full max-w-xl focus:outline-none focus:border-indigo-500"
+                    value={playlist[activeItem]?.title || ''}
+                    onChange={(e) => {
+                      setPlaylist(prev => {
+                        const newPlaylist = [...prev];
+                        newPlaylist[activeItem] = { ...newPlaylist[activeItem], title: e.target.value };
+                        return newPlaylist;
+                      });
+                    }}
+                    placeholder="Judul Pengumuman / Teks Bebas"
+                  />
+                ) : (
+                  <h3 className="text-xl md:text-3xl font-heading font-bold text-indigo-950 mb-3 md:mb-4 drop-shadow-sm bg-white/30 inline-block px-4 py-1.5 md:px-6 md:py-2 rounded-full border border-white/40">{playlist[activeItem]?.title}</h3>
+                )}
+                
+                {/* Segment buttons moved to bottom bar */}
+
+                <div className="w-full flex-1 min-h-0 flex items-center justify-center relative z-10 transition-all duration-300 animate-fade-in" key={`${activeItem}-${activeSegment}-${mode}`}>
+                  {mode === 'blank' ? <span className="text-indigo-900/20 dark:text-slate-200/20 text-2xl font-bold italic">Layar Kosong (Blank)</span> : (
+                    <>
+                      {(playlist[activeItem]?.type === 'video') ? (
+                        <div className="flex flex-col items-center">
+                          <Monitor size={48} className="text-indigo-900/40 mb-2 md:mb-4" />
+                          <span className="text-indigo-900/60 italic text-sm md:text-xl">Memutar Video</span>
+                        </div>
+                      ) : (playlist[activeItem]?.type === 'countdown') ? (
+                        <div className="flex flex-col items-center w-full">
+                          {isEditingRundown ? (
+                            <div className="flex gap-4 items-center justify-center">
+                              <div className="flex flex-col items-center">
+                                <input 
+                                  type="number"
+                                  className="w-full text-center bg-white/80 backdrop-blur-md border-2 border-indigo-300 rounded-2xl p-3 md:p-4 text-3xl md:text-4xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 shadow-inner font-medium text-slate-800 transition-all max-w-[120px]"
+                                  value={Math.floor(parseInt(playlist[activeItem]?.segments[activeSegment] || '0') / 60)}
+                                  onChange={(e) => {
+                                    setPlaylist(prev => {
+                                      const newPlaylist = [...prev];
+                                      newPlaylist[activeItem] = {
+                                        ...newPlaylist[activeItem],
+                                        segments: [...newPlaylist[activeItem].segments]
+                                      };
+                                      const currentSec = parseInt(newPlaylist[activeItem].segments[activeSegment] || '0') % 60;
+                                      newPlaylist[activeItem].segments[activeSegment] = String(Number(e.target.value) * 60 + currentSec);
+                                      return newPlaylist;
+                                    });
+                                  }}
+                                />
+                                <span className="text-indigo-900/60 mt-2 text-xs md:text-sm font-bold uppercase tracking-wider">Menit</span>
+                              </div>
+                              <div className="text-4xl font-bold text-indigo-900/40 pb-6">:</div>
+                              <div className="flex flex-col items-center">
+                                <input 
+                                  type="number"
+                                  className="w-full text-center bg-white/80 backdrop-blur-md border-2 border-indigo-300 rounded-2xl p-3 md:p-4 text-3xl md:text-4xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 shadow-inner font-medium text-slate-800 transition-all max-w-[120px]"
+                                  value={parseInt(playlist[activeItem]?.segments[activeSegment] || '0') % 60}
+                                  onChange={(e) => {
+                                    setPlaylist(prev => {
+                                      const newPlaylist = [...prev];
+                                      newPlaylist[activeItem] = {
+                                        ...newPlaylist[activeItem],
+                                        segments: [...newPlaylist[activeItem].segments]
+                                      };
+                                      const currentMin = Math.floor(parseInt(newPlaylist[activeItem].segments[activeSegment] || '0') / 60);
+                                      newPlaylist[activeItem].segments[activeSegment] = String(currentMin * 60 + Number(e.target.value));
+                                      return newPlaylist;
+                                    });
+                                  }}
+                                />
+                                <span className="text-indigo-900/60 mt-2 text-xs md:text-sm font-bold uppercase tracking-wider">Detik</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-6xl font-mono text-indigo-900 bg-white/50 px-10 py-6 rounded-3xl border border-indigo-200 shadow-inner">
+                              {(() => {
+                                const displaySecs = previewCountdown !== null ? previewCountdown : parseInt(playlist[activeItem]?.segments[0] || '0');
+                                return `${Math.floor(displaySecs / 60).toString().padStart(2, '0')}:${(displaySecs % 60).toString().padStart(2, '0')}`;
+                              })()}
+                            </div>
+                          )}
+                        </div>
+                      ) : (playlist[activeItem]?.type === 'slideshow') ? (
+                        <div className="flex flex-col items-center">
+                          <ImageIcon size={48} className="text-indigo-900/40 mb-2 md:mb-4" />
+                          <span className="text-indigo-900/60 italic text-sm md:text-xl">Slideshow Ditampilkan</span>
+                        </div>
+                      ) : (
+                        <div className="w-full flex flex-col lg:flex-row gap-4 md:gap-6 relative text-left h-full flex-1 min-h-0">
+                          <div className="w-full lg:w-1/2 relative flex flex-col justify-center h-full min-h-0">
+                            {isEditingRundown ? (
+                              <div className="w-full h-full flex flex-col relative min-h-0">
+                                {/* Toolbar Warna dipindahkan ke bawah */}
+                                <textarea 
+                                  id="editor-textarea"
+                                  className="w-full flex-1 bg-white/80 backdrop-blur-md border border-indigo-200 rounded-xl p-4 text-lg md:text-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 shadow-inner text-indigo-900 whitespace-pre-wrap leading-relaxed transition-all resize-none text-center"
+                                  value={playlist[activeItem]?.segments[activeSegment] || ''}
+                                  onChange={(e) => {
+                                    setPlaylist(prev => {
+                                      const newPlaylist = [...prev];
+                                      newPlaylist[activeItem] = {
+                                        ...newPlaylist[activeItem],
+                                        segments: [...newPlaylist[activeItem].segments]
+                                      };
+                                      newPlaylist[activeItem].segments[activeSegment] = e.target.value;
+                                      return newPlaylist;
+                                    });
+                                  }}
+                                  onSelect={(e) => {
+                                    const target = e.target as HTMLTextAreaElement;
+                                    setHasSelection(target.selectionStart !== target.selectionEnd);
+                                  }}
+                                  onBlur={() => {
+                                    setTimeout(() => setHasSelection(false), 150);
+                                  }}
+                                  placeholder="Ketik teks di sini (blok teks untuk mewarnai)..."
+                                />
+                                <div className="flex justify-between items-center mt-2 gap-2">
+                                  {/* Toolbar Warna */}
+                                  <div className={`flex gap-1.5 transition-all duration-200 ${
+                                    hasSelection ? 'opacity-100 pointer-events-auto' : 'opacity-50 pointer-events-none grayscale'
+                                  }`}>
+                                    <button onClick={() => wrapText('merah')} className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600 transition shadow-sm">Merah</button>
+                                    <button onClick={() => wrapText('kuning')} className="px-3 py-1.5 bg-yellow-400 text-slate-900 rounded-lg text-xs font-bold hover:bg-yellow-500 transition shadow-sm">Kuning</button>
+                                    <button onClick={() => wrapText('hijau')} className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-xs font-bold hover:bg-green-600 transition shadow-sm">Hijau</button>
+                                    <button onClick={() => wrapText('biru')} className="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-xs font-bold hover:bg-blue-600 transition shadow-sm">Biru</button>
+                                  </div>
+
+                                  <button 
+                                    onClick={() => setIsBgPickerOpen(true)}
+                                    className="flex items-center gap-1.5 text-xs md:text-sm font-semibold text-indigo-700 bg-white/50 hover:bg-white/80 px-3 py-1.5 rounded-lg border border-indigo-200 shadow-sm transition shrink-0"
+                                  >
+                                    <ImageIcon size={14} /> 
+                                    {playlist[activeItem]?.segmentBackgrounds?.[activeSegment] ? 'Ubah Background' : 'Set Background'}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : playlist[activeItem]?.segments[activeSegment] ? (
+                              <div className="w-full h-full flex flex-col justify-center overflow-hidden bg-white/50 dark:bg-slate-800/50 rounded-xl p-6 border border-white/40 shadow-sm">
+                                <div 
+                                  className="text-lg md:text-xl whitespace-pre-wrap leading-relaxed text-indigo-900 dark:text-slate-200 text-center w-full"
+                                  dangerouslySetInnerHTML={{ __html: processText(playlist[activeItem]?.segments[activeSegment]) }} 
+                                />
+                              </div>
+                            ) : (
+                              <span className="text-indigo-900/30 italic text-center w-full">Lirik tidak tersedia</span>
+                            )}
+                          </div>
+                          <div className="w-full lg:w-1/2 flex flex-col justify-center items-center h-full min-h-0">
+                            <h4 className="text-sm font-bold text-indigo-900/60 dark:text-slate-400 uppercase mb-2 flex items-center gap-2 shrink-0"><Monitor size={14} /> Live Preview</h4>
+                            <div 
+                              className="w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg flex flex-col items-center justify-center p-2 md:p-4 border-[4px] md:border-[6px] border-slate-800 max-h-full shrink-0"
+                              style={{ 
+                                containerType: 'inline-size',
+                                backgroundImage: currentBg ? `url('${currentBg}')` : 'none',
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center'
+                              }}
+                            >
+                              <div className="absolute inset-0 bg-black/40 z-0 pointer-events-none"></div>
+                              
+                              {/* Multi-Logos */}
+                              {logos.length > 0 && playlist[activeItem]?.type !== 'countdown' && (
+                                <>
+                                  {logos.map(logo => (
+                                    <img 
+                                      key={logo.id}
+                                      src={logo.url} 
+                                      style={{ 
+                                        width: `${8 * logo.scale}%`,
+                                        left: `${logo.x}%`,
+                                        top: `${logo.y}%`,
+                                        transform: 'translate(-50%, -50%)'
+                                      }}
+                                      className="absolute h-auto opacity-70 z-10 pointer-events-none"
+                                      alt="Logo" 
+                                    />
+                                  ))}
+                                </>
+                              )}
+
+                              {/* Title */}
+                              {playlist[activeItem]?.title && playlist[activeItem]?.type !== 'slideshow' && playlist[activeItem]?.type !== 'video' && playlist[activeItem]?.type !== 'countdown' && (
+                                <h2 
+                                  className="absolute top-[8%] left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-20"
+                                  style={{
+                                    fontSize: '4.5cqw',
+                                    textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)'
+                                  }}
+                                >
+                                  {playlist[activeItem]?.title}
+                                </h2>
+                              )}
+
+                              {/* Content Container */}
+                              <div className="relative z-10 flex flex-col items-center justify-center w-full mt-[10%] mb-[8%] px-[8%]">
+                                {/* Subtitle (Bait) */}
+                                {playlist[activeItem]?.type !== 'slideshow' && playlist[activeItem]?.type !== 'video' && playlist[activeItem]?.type !== 'countdown' && playlist[activeItem]?.segments[activeSegment] && (
+                                  <div 
+                                    className="text-yellow-300 font-bold mb-[1.5cqw] tracking-wider uppercase"
+                                    style={{
+                                      fontSize: '2cqw',
+                                      textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)'
+                                    }}
+                                  >
+                                    {playlist[activeItem]?.segmentLabels?.[activeSegment] || `BAIT ${activeSegment + 1}`}
+                                  </div>
+                                )}
+                                
+                                <div 
+                                  className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl w-full" 
+                                  style={{ 
+                                    textShadow: '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)', 
+                                    fontSize: (() => {
+                                      const t = playlist[activeItem]?.segments[activeSegment] || '';
+                                      if (t.length > 250) return '2cqw';
+                                      if (t.length > 180) return '2.5cqw';
+                                      if (t.length > 120) return '3cqw';
+                                      if (t.length > 70) return '3.5cqw';
+                                      if (t.length > 40) return '4cqw';
+                                      return '4.5cqw';
+                                    })(),
+                                    lineHeight: '1.4'
+                                  }}
+                                  dangerouslySetInnerHTML={{ __html: processText(playlist[activeItem]?.segments[activeSegment] || 'Pilih slide...') }}
+                                />
+                              </div>
+
+                              {/* Progress Text Footer */}
+                              {playlist[activeItem]?.type !== 'slideshow' && playlist[activeItem]?.type !== 'video' && playlist[activeItem]?.segments[activeSegment] && (
+                                <div 
+                                  className="absolute bottom-[4%] left-0 right-0 w-full text-center text-white/60 font-medium tracking-wider lowercase z-20"
+                                  style={{ 
+                                    fontSize: '1.5cqw',
+                                    textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)'
+                                  }}
+                                >
+                                  {`bait ${(playlist[activeItem]?.visibleSegments || [...Array(playlist[activeItem].segments?.length || 1).keys()]).indexOf(activeSegment) + 1} dari ${(playlist[activeItem]?.visibleSegments || playlist[activeItem]?.segments || []).length}`}
+                                </div>
+                              )}
+                            </div>
+
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+          </div>
+          
           <div className="glass-panel p-3 md:p-5 shrink-0 flex justify-between items-center gap-2 md:gap-6 shadow-lg border-white/50 w-full overflow-hidden">
              
              {/* Kumpulan Tombol Bait/Slide */}

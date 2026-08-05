@@ -36,7 +36,8 @@ function handleRequest(e, method) {
     uploadImages: uploadImagesHandler,
     getDriveImages: getDriveImagesHandler,
     saveSongItem: saveSongItem,
-    deleteSongItem: deleteSongItem
+    deleteSongItem: deleteSongItem,
+    backupFullDatabase: backupFullDatabase
   };
 
   const handler = routes[action];
@@ -257,6 +258,53 @@ function deleteSongItem(e) {
   return { status: "deleted" };
 }
 
+function backupFullDatabase(e) {
+  const payloadStr = e.parameter.payload || (e.postData ? e.postData.contents : "{}");
+  const data = JSON.parse(payloadStr);
+  const songs = data.songs;
+  
+  if (!songs || !Array.isArray(songs)) return { status: "error", message: "Data tidak valid" };
+  
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sSongs = ss.getSheetByName("Songs");
+  const sSongSegments = ss.getSheetByName("SongSegments");
+  
+  // Prepare data
+  const songsData = [];
+  const segmentsData = [];
+  
+  for (let i = 0; i < songs.length; i++) {
+    const s = songs[i];
+    const orderArr = Array.from({length: s.segments.length}, (_, idx) => idx);
+    songsData.push([s.id, s.title || "Untitled", s.author || "-", s.category || "Pujian", JSON.stringify(orderArr)]);
+    
+    for (let j = 0; j < s.segments.length; j++) {
+      const segId = s.id + "_s" + j;
+      const label = (s.segmentLabels && s.segmentLabels[j]) ? s.segmentLabels[j] : ("Slide " + (j+1));
+      segmentsData.push([segId, s.id, label, s.segments[j], j+1]);
+    }
+  }
+  
+  // Clear existing content (keep headers)
+  if (sSongs.getLastRow() > 1) {
+    sSongs.getRange(2, 1, sSongs.getLastRow() - 1, 5).clearContent();
+  }
+  if (sSongSegments.getLastRow() > 1) {
+    sSongSegments.getRange(2, 1, sSongSegments.getLastRow() - 1, 5).clearContent();
+  }
+  
+  // Bulk insert
+  if (songsData.length > 0) {
+    sSongs.getRange(2, 1, songsData.length, 5).setValues(songsData);
+  }
+  if (segmentsData.length > 0) {
+    sSongSegments.getRange(2, 1, segmentsData.length, 5).setValues(segmentsData);
+  }
+  
+  SpreadsheetApp.flush();
+  return { status: "success", message: "Seluruh database berhasil dibackup" };
+}
+
 function deletePlaylist(e) {
   const payloadStr = e.parameter.payload || (e.postData ? e.postData.contents : "{}");
   const data = JSON.parse(payloadStr);
@@ -322,6 +370,7 @@ function getCustomSongs(e) {
     for (let j = 1; j < segData.length; j++) {
       if (segData[j][1] === songId) {
         segmentsObj.push({
+          label: segData[j][2],
           text: segData[j][3],
           order: segData[j][4]
         });
@@ -335,6 +384,7 @@ function getCustomSongs(e) {
       author: row[2],
       category: row[3],
       segmentOrder: row[4] ? JSON.parse(row[4]) : [],
+      segmentLabels: segmentsObj.map(s => s.label),
       segments: segmentsObj.map(s => s.text)
     });
   }
