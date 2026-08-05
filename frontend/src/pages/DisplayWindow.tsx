@@ -172,7 +172,7 @@ export default function DisplayWindow() {
   let text = '';
   let title = '';
   let itemType = '';
-  let isSlideshow = false;
+
   let segmentLabel = '';
   let displayLabel = '';
   let totalSegments = 1;
@@ -186,7 +186,7 @@ export default function DisplayWindow() {
       segmentLabel = liveState.item.segmentLabels[liveState.segmentIndex];
     }
     totalSegments = liveState.item.segments.length;
-    if (liveState.item.type === 'slideshow') isSlideshow = true;
+
   } 
   // 2. Jika tidak ada, ambil dari dictionary hasil download server (playlistMap)
   else if (liveState.currentItemId && playlistMap[liveState.currentItemId]) {
@@ -199,7 +199,7 @@ export default function DisplayWindow() {
         segmentLabel = pItem.segmentLabels[liveState.segmentIndex];
       }
       totalSegments = pItem.segments.length;
-      if (pItem.type === 'slideshow') isSlideshow = true;
+
     }
   }
 
@@ -241,7 +241,7 @@ export default function DisplayWindow() {
   if (!isItemResolved) {
     if (liveState.currentItemId) {
       text = 'Memuat Lirik...';
-    } else if (!isSlideshow) {
+    } else {
       text = 'Selamat Datang';
     }
   }
@@ -350,7 +350,7 @@ export default function DisplayWindow() {
       <div className="absolute inset-0 bg-black/40 z-0"></div>
 
       {/* Multi-Logo Watermarks */}
-      {logos.length > 0 && (text || isSlideshow || itemType === 'video') && (
+      {logos.length > 0 && (text || itemType === 'video') && (
         <>
           {logos.map(logo => (
             <img 
@@ -370,7 +370,7 @@ export default function DisplayWindow() {
       )}
 
       {/* Judul Lagu / Ayat / Pengumuman */}
-      {title && !isSlideshow && itemType !== 'video' && (itemType === 'song' || itemType === 'bible' || itemType === 'announcement') && (
+      {title && itemType !== 'video' && (itemType === 'song' || itemType === 'bible' || itemType === 'announcement') && (
         <h2 
           key={`title-${title}-${liveState.segmentIndex}`}
           className={`absolute left-0 right-0 w-full px-8 md:px-64 text-center text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-yellow-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] opacity-90 tracking-wider z-20 animate-fade-in ${
@@ -436,13 +436,6 @@ export default function DisplayWindow() {
               />
             );
           })()
-        ) : isSlideshow ? (
-          <img 
-            key={`img-${text}`}
-            src={text.replace('export=view', 'export=download')} 
-            alt="Slideshow" 
-            className="w-full h-full object-contain animate-fade-in"
-          />
         ) : itemType === 'countdown' && countdownRemaining !== null ? (
           <div className="flex flex-col items-center justify-center animate-fade-in">
             {title && (
@@ -497,7 +490,7 @@ export default function DisplayWindow() {
       </div>
 
       {/* Progress Slide di Bawah */}
-      {progressText && !isSlideshow && itemType !== 'video' && (
+      {progressText && itemType !== 'video' && (
         <div 
           className="absolute left-0 right-0 w-full text-center text-white/60 text-[1.5vw] font-medium tracking-wider lowercase z-20"
           style={{ 

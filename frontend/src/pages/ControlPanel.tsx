@@ -566,67 +566,7 @@ export default function ControlPanel() {
     }
   };
 
-  const handleSlideUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    
-    setIsUploadingSlides(true);
-    
-    try {
-      const promises = Array.from(files).map(file => {
-        return new Promise<{name: string, mimeType: string, base64: string}>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            const base64Full = ev.target?.result as string;
-            const base64Data = base64Full.split(',')[1];
-            resolve({ name: file.name, mimeType: file.type, base64: base64Data });
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-      });
-      
-      const imagesData = await Promise.all(promises);
-      const res = await callApi('uploadImages', {}, { method: 'POST', payload: { images: imagesData } });
-      
-      if (res.success && res.data && res.data.urls) {
-        const newItem = {
-          id: 'slideshow-' + Date.now(),
-          type: 'slideshow',
-          title: `Slideshow (${res.data.urls.length} Slide)`,
-          segments: res.data.urls,
-          localId: Math.random().toString(36).substr(2, 9)
-        };
-        let finalPlaylist = [...playlist];
-        let newIndex = finalPlaylist.length;
-        
-        if (replaceIndex !== null) {
-          finalPlaylist[replaceIndex] = newItem as any;
-          newIndex = replaceIndex;
-          setReplaceIndex(null);
-        } else {
-          if (activeItem !== null && activeItem >= 0 && activeItem < finalPlaylist.length) {
-            newIndex = activeItem + 1;
-            finalPlaylist.splice(newIndex, 0, newItem as any);
-          } else {
-            finalPlaylist.push(newItem as any);
-          }
-        }
-        setPlaylist(finalPlaylist);
-        setActiveItem(newIndex);
-        setActiveSegment(0);
-        setIsAddItemModalOpen(false);
-        setIsEditingRundown(true);
-      } else {
-        alert("Gagal mengunggah gambar: " + (res.error?.message || 'Unknown error'));
-      }
-    } catch (err: any) {
-      alert("Terjadi kesalahan: " + err.message);
-    } finally {
-      setIsUploadingSlides(false);
-      e.target.value = '';
-    }
-  };
+
 
   const saveRundown = async (overridePlaylist?: any[]) => {
     setIsSaving(true);
@@ -641,12 +581,12 @@ export default function ControlPanel() {
         
         // Convert visible segments for backwards compatibility if needed, though we can just keep it directly on the object.
         let customText = '';
-        if (item.type === 'announcement' || item.type === 'video') customText = item.segments[0];
-        if (item.type === 'slideshow') customText = JSON.stringify(item.segments);
+        if (item.type === 'announcement') customText = item.segments.join('\n\n---\n\n');
+        if (item.type === 'video') customText = item.segments[0];
         if (item.type === 'song' || item.type === 'bible') customText = item.visibleSegments ? JSON.stringify(item.visibleSegments) : '';
         
         localItem.customText = customText;
-        localItem.refId = (item.type === 'announcement' || item.type === 'video') ? item.title : (item.type === 'slideshow' ? null : (item.refId || item.id));
+        localItem.refId = (item.type === 'announcement' || item.type === 'video') ? item.title : (item.refId || item.id);
         
         return localItem;
       })
@@ -942,7 +882,7 @@ export default function ControlPanel() {
                                         ...newPlaylist[itemIdx],
                                         segments: [...newPlaylist[itemIdx].segments]
                                       };
-                                      const currentMin = Math.floor(parseInt(newPlaylist[itemIdx].segments[segIdx] || '0') / 60);
+                                      const currentMin = Math.floor(parseInt(playlist[itemIdx].segments[segIdx] || '0') / 60);
                                       newPlaylist[itemIdx].segments[segIdx] = String(currentMin * 60 + Number(e.target.value));
                                       return newPlaylist;
                                     });
@@ -959,11 +899,6 @@ export default function ControlPanel() {
                               })()}
                             </div>
                           )}
-                        </div>
-                      ) : (playlist[itemIdx]?.type === 'slideshow') ? (
-                        <div className="flex flex-col items-center">
-                          <ImageIcon size={48} className="text-indigo-900/40 mb-2 md:mb-4" />
-                          <span className="text-indigo-900/60 italic text-sm md:text-xl">Slideshow Ditampilkan</span>
                         </div>
                       ) : (
                         <div className="w-full flex flex-col lg:flex-row gap-4 md:gap-6 relative text-left h-full flex-1 min-h-0">
@@ -1059,7 +994,7 @@ export default function ControlPanel() {
                               )}
 
                               {/* Title */}
-                              {playlist[itemIdx]?.title && playlist[itemIdx]?.type !== 'slideshow' && playlist[itemIdx]?.type !== 'video' && playlist[itemIdx]?.type !== 'countdown' && (
+                              {playlist[itemIdx]?.title && playlist[itemIdx]?.type !== 'video' && playlist[itemIdx]?.type !== 'countdown' && (
                                 <h2 
                                   className="absolute top-[8%] left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-20"
                                   style={{
@@ -1074,7 +1009,7 @@ export default function ControlPanel() {
                               {/* Content Container */}
                               <div className="relative z-10 flex flex-col items-center justify-center w-full mt-[10%] mb-[8%] px-[8%]">
                                 {/* Subtitle (Bait) */}
-                                {playlist[itemIdx]?.type !== 'slideshow' && playlist[itemIdx]?.type !== 'video' && playlist[itemIdx]?.type !== 'countdown' && playlist[itemIdx]?.segments[segIdx] && (
+                                {playlist[itemIdx]?.type !== 'video' && playlist[itemIdx]?.type !== 'countdown' && playlist[itemIdx]?.segments[segIdx] && (
                                   <div 
                                     className="text-yellow-300 font-bold mb-[1.5cqw] tracking-wider uppercase"
                                     style={{
@@ -1106,7 +1041,7 @@ export default function ControlPanel() {
                               </div>
 
                               {/* Progress Text Footer */}
-                              {playlist[itemIdx]?.type !== 'slideshow' && playlist[itemIdx]?.type !== 'video' && playlist[itemIdx]?.segments[segIdx] && (
+                              {playlist[itemIdx]?.type !== 'video' && playlist[itemIdx]?.segments[segIdx] && (
                                 <div 
                                   className="absolute bottom-[4%] left-0 right-0 w-full text-center text-white/60 font-medium tracking-wider lowercase z-20"
                                   style={{ 
@@ -1486,23 +1421,7 @@ export default function ControlPanel() {
 
             <div className="flex justify-between items-center mt-2 border-t pt-4 border-indigo-100 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="relative">
-                  <input 
-                    type="file" 
-                    multiple 
-                    accept="image/*" 
-                    id="cp-slideshow-upload"
-                    className="hidden"
-                    onChange={handleSlideUpload}
-                  />
-                  <label 
-                    htmlFor="cp-slideshow-upload"
-                    className={`glass-button text-xs py-2 px-3 cursor-pointer flex items-center gap-2 ${isUploadingSlides ? 'bg-indigo-200 text-indigo-500' : 'bg-indigo-500/20 text-indigo-900'}`}
-                  >
-                    {isUploadingSlides ? <Loader2 size={14} className="animate-spin" /> : <><ImageIcon size={14}/> Upload Slide/PPT</>}
-                  </label>
-                </div>
-                
+
                 <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-indigo-900 bg-white/40 px-3 py-2 rounded-xl border border-white/40 hover:bg-white/60 transition shadow-sm">
                   <input 
                     type="checkbox" 
