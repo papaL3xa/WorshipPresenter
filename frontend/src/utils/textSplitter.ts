@@ -28,15 +28,13 @@ export const splitLongSegments = (rawItems: any[]) => {
           let partIndex = 0;
           
           const originalLabel = item.segmentLabels ? item.segmentLabels[idx] : (item.type === 'bible' ? `Ayat ${idx+1}` : `Bait ${idx+1}`);
-          const labelPrefix = originalLabel.replace(/[a-z]$/, ''); 
-          const alphabet = 'abcdefghijklmnopqrstuvwxyz';
           
           while (remaining.length > 0) {
             if (remaining.length <= MAX_LEN) {
               const newIdx = newSegments.length;
               newSegments.push(remaining.trim());
               if (wasVisible) newVisibleSegments.push(newIdx);
-              newLabels.push(`${labelPrefix}${alphabet[Math.min(partIndex, 25)]}`);
+              newLabels.push(originalLabel);
               break;
             }
             
@@ -65,7 +63,7 @@ export const splitLongSegments = (rawItems: any[]) => {
             const newIdx = newSegments.length;
             newSegments.push(part);
             if (wasVisible) newVisibleSegments.push(newIdx);
-            newLabels.push(`${labelPrefix}${alphabet[Math.min(partIndex, 25)]}`);
+            newLabels.push(originalLabel);
             partIndex++;
           }
         } else {
