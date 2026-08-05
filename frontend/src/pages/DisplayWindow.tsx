@@ -30,7 +30,6 @@ const LocalVideoPlayer = ({ id }: { id: string }) => {
       className="w-full h-full object-contain animate-fade-in" 
       src={url} 
       controls 
-      autoPlay
     />
   );
 };
@@ -399,16 +398,16 @@ export default function DisplayWindow() {
                   videoId = url.split('v=')[1].split('&')[0];
                 }
                 embedUrl = videoId 
-                  ? `https://www.youtube-nocookie.com/embed/${videoId}?list=${listId}&autoplay=1&mute=0`
-                  : `https://www.youtube-nocookie.com/embed/videoseries?list=${listId}&autoplay=1&mute=0`;
+                  ? `https://www.youtube-nocookie.com/embed/${videoId}?list=${listId}&autoplay=0&mute=0`
+                  : `https://www.youtube-nocookie.com/embed/videoseries?list=${listId}&autoplay=0&mute=0`;
               } else if (url.includes('youtube.com/watch?v=')) {
                 const videoId = url.split('v=')[1].split('&')[0];
-                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0`;
+                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&mute=0`;
               } else if (url.includes('youtu.be/')) {
                 const videoId = url.split('youtu.be/')[1].split('?')[0];
-                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0`;
+                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&mute=0`;
               } else if (url.includes('youtube.com/embed/') || url.includes('youtube-nocookie.com/embed/')) {
-                embedUrl = url.includes('?') ? url.replace('autoplay=0', 'autoplay=1') : `${url}?autoplay=1`;
+                embedUrl = url.includes('?') ? url.replace('autoplay=1', 'autoplay=0') : `${url}?autoplay=0`;
                 embedUrl = embedUrl.replace('youtube.com', 'youtube-nocookie.com');
               } else {
                 embedUrl = url; // Fallback
@@ -432,8 +431,8 @@ export default function DisplayWindow() {
               <video 
                 key={url}
                 className="w-full h-full object-contain animate-fade-in" 
+                controls
                 src={url} 
-                controls 
               />
             );
           })()
