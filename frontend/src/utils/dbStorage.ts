@@ -34,10 +34,14 @@ export const initDefaultDatabases = async () => {
   const dbKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbinfo_')) as string[];
   const dataKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbdata_')) as string[];
 
-  // Cek info DAN data, jika salah satu hilang → re-init
-  if (!dbKeys.includes('dbinfo_song_LSEB') || !dataKeys.includes('dbdata_song_LSEB')) {
-    console.log("Initializing default song database...");
+  const currentDbVersion = '1.1'; // Update this when default TSVs change
+  const savedDbVersion = localStorage.getItem('worship_db_version');
+
+  // Cek info DAN data, jika salah satu hilang atau versi usang → re-init
+  if (savedDbVersion !== currentDbVersion || !dbKeys.includes('dbinfo_song_LSEB') || !dataKeys.includes('dbdata_song_LSEB')) {
+    console.log("Initializing/Updating default song database...");
     await loadDefaultSongDatabase();
+    localStorage.setItem('worship_db_version', currentDbVersion);
   } else {
     // Auto-repair if segmentLabels are missing
     const songData = await get('dbdata_song_LSEB');
