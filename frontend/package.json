@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "npm run build && npx electron-packager . WorshipPresenter --platform=win32 --arch=x64 --icon=icon.ico --out=release --overwrite --ignore=\"^/(src|public|node_modules|release|scripts|\\.git)\""
+    "electron:build": "npm run build && npx electron-packager . WorshipPresenter --platform=win32 --arch=x64 --icon=icon.ico --out=release --overwrite --ignore=\"^/(src|public|node_modules|release|scripts|\\.git)\"",
+    "electron:installer": "npm run build && electron-builder --win --x64"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -34,6 +35,7 @@
     "concurrently": "^8.2.2",
     "cross-env": "^10.1.0",
     "electron": "^43.2.0",
+    "electron-builder": "^26.15.3",
     "electron-packager": "^17.1.2",
     "eslint": "^9.13.0",
     "eslint-plugin-react-hooks": "^5.0.0",
@@ -48,5 +50,42 @@
     "typescript-eslint": "^8.11.0",
     "vite": "^5.4.10",
     "wait-on": "^9.1.0"
+  },
+  "build": {
+    "appId": "com.pisgahbisdac.worshippresenter",
+    "productName": "Worship Presenter",
+    "copyright": "© 2025 Pisgah Bisdac Multimedia Team",
+    "directories": {
+      "output": "release-installer"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "icon.ico",
+      "icon.png",
+      "package.json"
+    ],
+    "extraResources": [],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Worship Presenter",
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico",
+      "installerHeader": "icon.png",
+      "license": null,
+      "deleteAppDataOnUninstall": false
+    }
   }
 }
