@@ -487,15 +487,23 @@ export default function ControlPanel() {
     const processedItem = isAutoSplitEnabled ? splitLongSegments([item])[0] : item;
     
     const newItem = { ...processedItem, localId: Math.random().toString(36).substr(2, 9) };
-    let finalPlaylist = [];
     if (replaceIndex !== null) {
-      finalPlaylist = [...playlist];
+      const finalPlaylist = [...playlist];
       finalPlaylist[replaceIndex] = newItem;
       setPlaylist(finalPlaylist);
       setReplaceIndex(null);
     } else {
-      finalPlaylist = [...playlist, newItem];
+      const finalPlaylist = [...playlist];
+      let newIndex = finalPlaylist.length;
+      if (activeItem !== null && activeItem >= 0 && activeItem < finalPlaylist.length) {
+        newIndex = activeItem + 1;
+        finalPlaylist.splice(newIndex, 0, newItem);
+      } else {
+        finalPlaylist.push(newItem);
+      }
       setPlaylist(finalPlaylist);
+      setActiveItem(newIndex);
+      setActiveSegment(0);
     }
     setIsAddItemModalOpen(false);
     setIsEditingRundown(true);
@@ -513,13 +521,22 @@ export default function ControlPanel() {
         
         // Add to rundown
         let newIndex = playlist.length;
+        if (replaceIndex !== null) {
+          newIndex = replaceIndex;
+        } else if (activeItem !== null && activeItem >= 0 && activeItem < playlist.length) {
+          newIndex = activeItem + 1;
+        }
+
         setPlaylist(prev => {
           let newPlaylist = [...prev];
           if (replaceIndex !== null) {
             newPlaylist[replaceIndex] = processed;
-            newIndex = replaceIndex;
           } else {
-            newPlaylist.push(processed);
+            if (activeItem !== null && activeItem >= 0 && activeItem < newPlaylist.length) {
+              newPlaylist.splice(newIndex, 0, processed);
+            } else {
+              newPlaylist.push(processed);
+            }
           }
           return newPlaylist;
         });
@@ -573,15 +590,24 @@ export default function ControlPanel() {
           segments: res.data.urls,
           localId: Math.random().toString(36).substr(2, 9)
         };
-        let finalPlaylist = [];
+        let finalPlaylist = [...playlist];
+        let newIndex = finalPlaylist.length;
+        
         if (replaceIndex !== null) {
-          finalPlaylist = [...playlist];
           finalPlaylist[replaceIndex] = newItem as any;
+          newIndex = replaceIndex;
           setReplaceIndex(null);
         } else {
-          finalPlaylist = [...playlist, newItem as any];
+          if (activeItem !== null && activeItem >= 0 && activeItem < finalPlaylist.length) {
+            newIndex = activeItem + 1;
+            finalPlaylist.splice(newIndex, 0, newItem as any);
+          } else {
+            finalPlaylist.push(newItem as any);
+          }
         }
         setPlaylist(finalPlaylist);
+        setActiveItem(newIndex);
+        setActiveSegment(0);
         setIsAddItemModalOpen(false);
         setIsEditingRundown(true);
       } else {
