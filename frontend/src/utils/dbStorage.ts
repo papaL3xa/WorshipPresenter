@@ -34,7 +34,7 @@ export const initDefaultDatabases = async () => {
   const dbKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbinfo_')) as string[];
   const dataKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbdata_')) as string[];
 
-  const currentDbVersion = '1.5'; // Update this when default TSVs change
+  const currentDbVersion = '1.6'; // Update this when default TSVs change
   const savedDbVersion = localStorage.getItem('worship_db_version');
 
   const isOutdated = savedDbVersion !== currentDbVersion;
@@ -381,6 +381,19 @@ export const getAllLocalSongTitles = async (versionId: string) => {
 // ------------------------------------------------------------------
 // BIBLE METADATA HELPERS
 // ------------------------------------------------------------------
+export const getBibleBooksList = async (versionId: string): Promise<string[]> => {
+  const verses: BibleVerse[] = (await get(`dbdata_${versionId}`)) || [];
+  const booksMap = new Set<string>();
+  
+  for (const v of verses) {
+    if (v.book) {
+      booksMap.add(v.book);
+    }
+  }
+  
+  return Array.from(booksMap);
+};
+
 export const getBibleBookMetadata = async (versionId: string, bookName: string): Promise<number> => {
   const verses: BibleVerse[] = (await get(`dbdata_${versionId}`)) || [];
   let maxChapter = 0;

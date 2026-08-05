@@ -6,25 +6,10 @@ import { splitLongSegments } from '../utils/textSplitter';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useFavorites } from '../hooks/useFavorites';
 import { SyncButton } from '../components/SyncButton';
-import { initDefaultDatabases, searchLocalSongs, searchLocalBible, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, deleteDatabase, addCustomDatabase, syncCustomSongs, exportDatabaseToTsv, getBibleBookMetadata, getBibleChapterMetadata } from '../utils/dbStorage';
+import { initDefaultDatabases, searchLocalSongs, searchLocalBible, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, deleteDatabase, addCustomDatabase, syncCustomSongs, exportDatabaseToTsv, getBibleBookMetadata, getBibleChapterMetadata, getBibleBooksList } from '../utils/dbStorage';
 import { get, set } from 'idb-keyval';
 
-const bibleBooks = [
-  "Kejadian", "Keluaran", "Imamat", "Bilangan", "Ulangan",
-  "Yosua", "Hakim-hakim", "Rut", "1 Samuel", "2 Samuel",
-  "1 Raja-raja", "2 Raja-raja", "1 Tawarikh", "2 Tawarikh", "Ezra",
-  "Nehemia", "Ester", "Ayub", "Mazmur", "Amsal",
-  "Pengkhotbah", "Kidung Agung", "Yesaya", "Yeremia", "Ratapan",
-  "Yehezkiel", "Daniel", "Hosea", "Yoel", "Amos",
-  "Obaja", "Yunus", "Mikha", "Nahum", "Habakuk",
-  "Zefanya", "Hagai", "Zakharia", "Maleakhi",
-  "Matius", "Markus", "Lukas", "Yohanes", "Kisah Para Rasul",
-  "Roma", "1 Korintus", "2 Korintus", "Galatia", "Efesus",
-  "Filipi", "Kolose", "1 Tesalonika", "2 Tesalonika", "1 Timotius",
-  "2 Timotius", "Titus", "Filemon", "Ibrani", "Yakobus",
-  "1 Petrus", "2 Petrus", "1 Yohanes", "2 Yohanes", "3 Yohanes",
-  "Yudas", "Wahyu"
-];
+// bibleBooks array removed, fetched dynamically from database instead
 
 export interface SearchResult {
   id: string;
@@ -62,6 +47,7 @@ export default function Library() {
   const [isDbManagerOpen, setIsDbManagerOpen] = useState(false);
 
   // Bible Progressive Navigation State
+  const [currentBibleBooks, setCurrentBibleBooks] = useState<string[]>([]);
   const [selectedBibleBook, setSelectedBibleBook] = useState<string | null>(null);
   const [selectedBibleChapter, setSelectedBibleChapter] = useState<number | null>(null);
   const [bibleChaptersCount, setBibleChaptersCount] = useState<number>(0);
@@ -81,6 +67,14 @@ export default function Library() {
       }).catch(err => console.error("Gagal memuat judul lagu", err));
     }
   }, [searchType, selectedSongVersion]);
+
+  useEffect(() => {
+    if (searchType === 'bible') {
+      getBibleBooksList(selectedBibleVersion).then(res => {
+        if (Array.isArray(res)) setCurrentBibleBooks(res);
+      }).catch(err => console.error("Gagal memuat daftar kitab", err));
+    }
+  }, [searchType, selectedBibleVersion]);
   
   const lastSearchedRef = useRef({ query: '', type: '', songVersion: '', bibleVersion: '' });
   
@@ -620,7 +614,7 @@ export default function Library() {
                   <div className="flex flex-col h-full">
                     {!selectedBibleBook ? (
                       <div className="grid grid-cols-2 gap-1.5">
-                        {bibleBooks.map(book => (
+                        {currentBibleBooks.length > 0 ? currentBibleBooks.map(book => (
                           <button 
                             key={book}
                             onClick={async () => {
@@ -634,7 +628,9 @@ export default function Library() {
                           >
                             {book}
                           </button>
-                        ))}
+                        )) : (
+                          <div className="col-span-2 text-center p-4"><Loader2 size={24} className="animate-spin text-indigo-500 mx-auto"/></div>
+                        )}
                       </div>
                     ) : !selectedBibleChapter ? (
                       <div className="flex flex-col">
