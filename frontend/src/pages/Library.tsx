@@ -431,9 +431,9 @@ export default function Library() {
             <button onClick={() => {setSearchType('bible'); setResults([]); setSelectedItem(null); setSelectedResultIds([]);}} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'bible' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white/30 text-indigo-900'}`}><BookOpen size={16}/> Alkitab</button>
           </div>
           
-          <div className="mb-4">
+          <div className="mb-4 flex gap-2">
             <select 
-              className="w-full bg-white/50 border border-indigo-200 rounded-lg px-2 py-2 text-sm text-indigo-900 font-semibold focus:outline-none focus:border-indigo-500 transition"
+              className="flex-1 bg-white/50 border border-indigo-200 rounded-lg px-2 py-2 text-sm text-indigo-900 font-semibold focus:outline-none focus:border-indigo-500 transition"
               value={searchType === 'song' ? selectedSongVersion : selectedBibleVersion}
               onChange={(e) => searchType === 'song' ? setSelectedSongVersion(e.target.value) : setSelectedBibleVersion(e.target.value)}
             >
@@ -441,6 +441,13 @@ export default function Library() {
                 <option key={db.id} value={db.id}>{db.name}</option>
               ))}
             </select>
+            <button 
+              onClick={() => setIsDbManagerOpen(true)}
+              className="p-2 bg-indigo-50 text-indigo-900 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition shadow-sm flex items-center justify-center"
+              title="Kelola Database (Tambah Versi)"
+            >
+              <Settings size={18} />
+            </button>
           </div>
 
 
