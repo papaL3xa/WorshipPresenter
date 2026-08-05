@@ -105,16 +105,26 @@ export const exportDatabaseToTsv = async (id: string) => {
 
   return { name: info.name, type: info.type, content: tsvString };
 };
+const fetchText = async (relativePath: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any;
+  if (w.electronAPI) {
+    const res = await w.electronAPI.callApi('read-local-file', {}, { path: relativePath });
+    if (res.success) return res.data;
+    throw new Error(res.message);
+  }
+  const baseUrl = import.meta.env.BASE_URL;
+  const response = await fetch(`${baseUrl}${relativePath}`);
+  return await response.text();
+};
 
 const loadDefaultSongDatabase = async () => {
   try {
-    const baseUrl = import.meta.env.BASE_URL;
-    const [songsRes, segmentsRes] = await Promise.all([
-      fetch(`${baseUrl}data/Songs.tsv`),
-      fetch(`${baseUrl}data/SongSegments.tsv`)
+    const [songsText, segmentsText] = await Promise.all([
+      fetchText('data/Songs.tsv'),
+      fetchText('data/SongSegments.tsv')
     ]);
-    const songsText = await songsRes.text();
-    const segmentsText = await segmentsRes.text();
+    
     
     const parsedSongs = parseTsv(songsText);
     const parsedSegments = parseTsv(segmentsText);
@@ -150,12 +160,10 @@ const loadDefaultSongDatabase = async () => {
 
 const loadDefaultBibleDatabase = async () => {
   try {
-    const baseUrl = import.meta.env.BASE_URL;
-    const res = await fetch(`${baseUrl}data/BibleVerses.tsv`);
-    const text = await res.text();
+    const text = await fetchText('data/BibleVerses.tsv');
+    const parsedBible = parseTsv(text);
     
-    const parsed = parseTsv(text);
-    const finalVerses: BibleVerse[] = parsed.map((v: any) => ({
+    const finalVerses: BibleVerse[] = parsedBible.map((v: any) => ({
       book: v.book,
       chapter: parseInt(v.chapter, 10),
       verse: parseInt(v.verse, 10),

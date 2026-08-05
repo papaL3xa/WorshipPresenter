@@ -9,12 +9,8 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 // Path to local spreadsheet/json database
 // We place it in the same directory as the executable, or userData
-const isDev = process.env.NODE_ENV === 'development';
 let dbPath = path.join(app.getPath('userData'), 'database.json');
-if (!isDev) {
-  // In production, save next to the .exe for easy copy-paste access
-  dbPath = path.join(process.resourcesPath, '..', 'database.json');
-}
+// Selalu gunakan userData (AppData/Roaming) agar data tidak hilang saat install ulang / update
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -153,6 +149,18 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
   
   if (action === 'getLiveState') {
     return { success: true, data: inMemoryLiveState };
+  }
+
+  if (action === 'read-local-file') {
+    try {
+      const fullPath = path.join(__dirname, '..', 'dist', payload.path);
+      if (fs.existsSync(fullPath)) {
+        return { success: true, data: fs.readFileSync(fullPath, 'utf8') };
+      }
+      return { success: false, message: 'File not found: ' + fullPath };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
   }
 
   if (action === 'verifyLogin') {
