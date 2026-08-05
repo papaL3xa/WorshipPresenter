@@ -171,7 +171,7 @@ export default function Library() {
       let resultsData: any[] = [];
       if (type === 'song') {
         const res = await searchLocalSongs(query, selectedSongVersion);
-        resultsData = res.slice(0, 100);
+        resultsData = res.slice(0, 100).map((item: any) => ({ ...item, type: 'song' }));
       } else {
         const res = await searchLocalBible(query, selectedBibleVersion);
         resultsData = res.map((item: any, idx: number) => ({
@@ -231,7 +231,7 @@ export default function Library() {
       const res = await searchLocalSongs(id, selectedSongVersion);
       if (res && res.length > 0) {
         const exact = res.find((s: any) => s.id == id) || res[0];
-        const processed = splitLongSegments([exact])[0];
+        const processed = splitLongSegments([{...exact, type: 'song'}])[0];
         setSelectedItem(JSON.parse(JSON.stringify(processed)));
         setSelectedResultIds([processed.id]);
       }
