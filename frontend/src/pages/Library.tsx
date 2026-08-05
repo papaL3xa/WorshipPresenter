@@ -6,7 +6,7 @@ import { splitLongSegments } from '../utils/textSplitter';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useFavorites } from '../hooks/useFavorites';
 import { SyncButton } from '../components/SyncButton';
-import { initDefaultDatabases, searchLocalSongs, searchLocalBible, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, deleteDatabase, addCustomDatabase, syncCustomSongs, exportDatabaseToTsv, getBibleBookMetadata, getBibleChapterMetadata, getBibleBooksList } from '../utils/dbStorage';
+import { initDefaultDatabases, searchLocalSongs, searchLocalBible, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, deleteDatabase, addCustomDatabase, syncCustomSongs, exportDatabaseToTsv, getBibleBookMetadata, getBibleChapterMetadata, getBibleBooksList, getLocalSongCategories } from '../utils/dbStorage';
 import { get, set } from 'idb-keyval';
 
 // bibleBooks array removed, fetched dynamically from database instead
@@ -45,6 +45,8 @@ export default function Library() {
   const [selectedSongVersion, setSelectedSongVersion] = useState('song_LSEB');
   const [selectedBibleVersion, setSelectedBibleVersion] = useState('bible_TB');
   const [isDbManagerOpen, setIsDbManagerOpen] = useState(false);
+  const [selectedSongCategory, setSelectedSongCategory] = useState<string>('Semua');
+  const [songCategories, setSongCategories] = useState<string[]>(['Semua']);
 
   // Bible Progressive Navigation State
   const [currentBibleBooks, setCurrentBibleBooks] = useState<string[]>([]);
@@ -65,6 +67,10 @@ export default function Library() {
       getAllLocalSongTitles(selectedSongVersion).then(res => {
         if (Array.isArray(res)) setAllSongTitles(res);
       }).catch(err => console.error("Gagal memuat judul lagu", err));
+      
+      getLocalSongCategories(selectedSongVersion).then(res => {
+        if (Array.isArray(res)) setSongCategories(['Semua', ...res]);
+      }).catch(err => console.error("Gagal memuat kategori", err));
     }
   }, [searchType, selectedSongVersion]);
 
@@ -76,7 +82,7 @@ export default function Library() {
     }
   }, [searchType, selectedBibleVersion]);
   
-  const lastSearchedRef = useRef({ query: '', type: '', songVersion: '', bibleVersion: '' });
+  const lastSearchedRef = useRef({ query: '', type: '', songVersion: '', bibleVersion: '', songCategory: '' });
   
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
 
@@ -159,11 +165,12 @@ export default function Library() {
         lastSearchedRef.current.type === type && 
         lastSearchedRef.current.songVersion === selectedSongVersion && 
         lastSearchedRef.current.bibleVersion === selectedBibleVersion && 
+        lastSearchedRef.current.songCategory === selectedSongCategory && 
         !autoSelectFirst) {
       return;
     }
     
-    lastSearchedRef.current = { query, type, songVersion: selectedSongVersion, bibleVersion: selectedBibleVersion };
+    lastSearchedRef.current = { query, type, songVersion: selectedSongVersion, bibleVersion: selectedBibleVersion, songCategory: selectedSongCategory };
     setIsSearching(true);
     
     if (!autoSelectFirst) {
@@ -176,7 +183,7 @@ export default function Library() {
     try {
       let resultsData: any[] = [];
       if (type === 'song') {
-        const res = await searchLocalSongs(query, selectedSongVersion);
+        const res = await searchLocalSongs(query, selectedSongVersion, selectedSongCategory);
         resultsData = res.slice(0, 100).map((item: any) => ({ ...item, type: 'song' }));
       } else {
         const res = await searchLocalBible(query, selectedBibleVersion);
@@ -225,7 +232,7 @@ export default function Library() {
       }
     }, 500); // 500ms debounce
     return () => clearTimeout(timer);
-  }, [searchQuery, searchType, showFavorites, favorites, selectedSongVersion, selectedBibleVersion]);
+  }, [searchQuery, searchType, showFavorites, favorites, selectedSongVersion, selectedBibleVersion, selectedSongCategory]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -461,8 +468,20 @@ export default function Library() {
               <Settings size={18} />
             </button>
           </div>
-
-
+          
+          {searchType === 'song' && (
+            <div className="mb-4">
+              <select 
+                className="w-full bg-white/50 border border-indigo-200 rounded-lg px-2 py-2 text-sm text-indigo-900 font-semibold focus:outline-none focus:border-indigo-500 transition"
+                value={selectedSongCategory}
+                onChange={(e) => setSelectedSongCategory(e.target.value)}
+              >
+                {songCategories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="flex gap-3 mb-5">
             <button 

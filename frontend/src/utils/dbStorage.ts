@@ -297,7 +297,7 @@ export const syncCustomSongs = async () => {
 // ------------------------------------------------------------------
 // SEARCH & RETRIEVE
 // ------------------------------------------------------------------
-export const searchLocalSongs = async (query: string, versionId: string): Promise<any[]> => {
+export const searchLocalSongs = async (query: string, versionId: string, category: string = 'Semua'): Promise<any[]> => {
   // 1. Get base version
   const baseSongs: SongData[] = (await get(`dbdata_${versionId}`)) || [];
   
@@ -313,8 +313,18 @@ export const searchLocalSongs = async (query: string, versionId: string): Promis
   baseSongs.forEach(s => mergedMap.set(s.id, s));
   gasSongs.forEach(s => mergedMap.set(s.id, s));
   
-  const allSongs = Array.from(mergedMap.values());
+  let allSongs = Array.from(mergedMap.values());
   
+  // Filter by category if not "Semua"
+  if (category && category !== 'Semua') {
+    allSongs = allSongs.filter(s => s.category === category);
+  }
+
+  // Exact ID search (Quick Open from recent history/favorites)
+  if (query.match(/^[a-z0-9_]+$/i)) {
+    const exactMatch = allSongs.find(s => s.id === query);
+    if (exactMatch) return [exactMatch];
+  }
   if (!query) {
     return allSongs; // Return all for the Grid/List view
   }
@@ -399,6 +409,31 @@ export const searchLocalBible = async (query: string, versionId: string): Promis
 export const getAllLocalSongTitles = async (versionId: string) => {
   const songs = await searchLocalSongs('', versionId);
   return songs.map(s => ({ id: s.id, title: s.title }));
+};
+
+export const getLocalSongCategories = async (versionId: string): Promise<string[]> => {
+  // 1. Get base version
+  const baseSongs: SongData[] = (await get(`dbdata_${versionId}`)) || [];
+  
+  // 2. Get synced GAS songs
+  let gasSongs: SongData[] = [];
+  if (versionId === 'song_LSEB') {
+    const rawGas = await get('dbdata_song_GAS_SYNC');
+    gasSongs = Array.isArray(rawGas) ? rawGas : [];
+  }
+  
+  const mergedMap = new Map<string, SongData>();
+  baseSongs.forEach(s => mergedMap.set(s.id, s));
+  gasSongs.forEach(s => mergedMap.set(s.id, s));
+  
+  const allSongs = Array.from(mergedMap.values());
+  const categories = new Set<string>();
+  
+  allSongs.forEach(s => {
+    if (s.category) categories.add(s.category);
+  });
+  
+  return Array.from(categories).sort();
 };
 // ------------------------------------------------------------------
 // BIBLE METADATA HELPERS
