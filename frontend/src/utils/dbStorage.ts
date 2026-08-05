@@ -62,20 +62,48 @@ export const initDefaultDatabases = async () => {
   }
 };
 
+import Papa from 'papaparse';
+
 const parseTsv = (tsvContent: string) => {
-  const lines = tsvContent.split('\n');
-  const headers = lines[0].split('\t').map(h => h.trim());
-  const results = [];
-  for (let i = 1; i < lines.length; i++) {
-    if (!lines[i].trim()) continue;
-    const values = lines[i].split('\t');
-    const obj: any = {};
-    headers.forEach((h, idx) => {
-      obj[h] = values[idx] !== undefined ? values[idx].trim() : '';
+  // Pre-process: if user had \n literally typed as strings in TSV, we replace them with actual newlines temporarily
+  // but PapaParse natively handles actual newlines inside quotes!
+  const result = Papa.parse(tsvContent.trim(), {
+    delimiter: '\t',
+    header: true,
+    skipEmptyLines: true,
+  });
+  // PapaParse returns an array of objects
+  return result.data as any[];
+};
+
+export const exportDatabaseToTsv = async (id: string) => {
+  const info = await get(`dbinfo_${id}`) as DatabaseVersion;
+  const data = await get(`dbdata_${id}`);
+  if (!info || !data || !Array.isArray(data)) throw new Error("Database tidak valid");
+
+  let tsvString = '';
+
+  if (info.type === 'bible') {
+    tsvString = Papa.unparse(data, { delimiter: '\t', quotes: true });
+  } else {
+    // For songs, flatten segments into segment1, segment2, etc.
+    const flatData = data.map((song: SongData) => {
+      const row: any = {
+        songId: song.id,
+        title: song.title,
+        author: song.author,
+        category: song.category
+      };
+      song.segments.forEach((seg, idx) => {
+        // Here we ensure real newlines are kept. PapaParse will automatically quote them.
+        row[`segment${idx + 1}`] = seg.replace(/\\n/g, '\n');
+      });
+      return row;
     });
-    results.push(obj);
+    tsvString = Papa.unparse(flatData, { delimiter: '\t', quotes: true });
   }
-  return results;
+
+  return { name: info.name, type: info.type, content: tsvString };
 };
 
 const loadDefaultSongDatabase = async () => {

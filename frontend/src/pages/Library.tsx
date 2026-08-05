@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Loader2, Music, BookOpen, Edit, Save, Trash2, X, ArrowLeft, ArrowRight, Monitor, Star, Copy, Settings } from 'lucide-react';
+import { Search, Plus, Loader2, Music, BookOpen, Edit, Save, Trash2, X, ArrowLeft, ArrowRight, Monitor, Star, Copy, Settings, Download } from 'lucide-react';
 import { callApi } from '../api';
 import { FooterClock } from '../components/FooterClock';
 import { splitLongSegments } from '../utils/textSplitter';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useFavorites } from '../hooks/useFavorites';
 import { SyncButton } from '../components/SyncButton';
-import { initDefaultDatabases, searchLocalSongs, searchLocalBible, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, deleteDatabase, addCustomDatabase, syncCustomSongs } from '../utils/dbStorage';
+import { initDefaultDatabases, searchLocalSongs, searchLocalBible, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, deleteDatabase, addCustomDatabase, syncCustomSongs, exportDatabaseToTsv } from '../utils/dbStorage';
 import { get, set } from 'idb-keyval';
 
 const bibleBooks = [
@@ -927,20 +927,43 @@ export default function Library() {
                         <div className="font-semibold text-indigo-900">{db.name}</div>
                         <div className="text-xs text-indigo-500 uppercase tracking-wider">{db.type} • {db.isDefault ? 'Bawaan' : 'Kustom'}</div>
                       </div>
-                      {!db.isDefault && (
+                      <div className="flex gap-2">
                         <button 
                           onClick={async () => {
-                            if (confirm(`Hapus database ${db.name}?`)) {
-                              await deleteDatabase(db.id);
-                              const list = await getDatabaseList();
-                              setDbList(list);
+                            try {
+                              const result = await exportDatabaseToTsv(db.id);
+                              const blob = new Blob([result.content], { type: 'text/tab-separated-values' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `${result.name}_Exported.tsv`;
+                              a.click();
+                              URL.revokeObjectURL(url);
+                            } catch (err: any) {
+                              alert("Gagal mengexport: " + err.message);
                             }
                           }}
-                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                          className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition"
+                          title="Export ke TSV"
                         >
-                          <Trash2 size={16} />
+                          <Download size={16} />
                         </button>
-                      )}
+                        {!db.isDefault && (
+                          <button 
+                            onClick={async () => {
+                              if (confirm(`Hapus database ${db.name}?`)) {
+                                await deleteDatabase(db.id);
+                                const list = await getDatabaseList();
+                                setDbList(list);
+                              }
+                            }}
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                            title="Hapus Database"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
