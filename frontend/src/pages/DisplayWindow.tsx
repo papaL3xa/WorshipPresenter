@@ -351,7 +351,13 @@ export default function DisplayWindow() {
 
       {/* Multi-Logo Watermarks */}
       {logos.length > 0 && (text || itemType === 'video') && (
-        <>
+        <div 
+          className="absolute left-0 right-0 transition-all duration-500 pointer-events-none z-40"
+          style={{
+            top: rtState.isVisible && rtState.position === 'top' ? '7vw' : '0',
+            bottom: rtState.isVisible && rtState.position === 'bottom' ? '7vw' : '0'
+          }}
+        >
           {logos.map(logo => (
             <img 
               key={logo.id}
@@ -362,26 +368,39 @@ export default function DisplayWindow() {
                 top: `${logo.y}%`,
                 transform: 'translate(-50%, -50%)'
               }}
-              className="absolute h-auto opacity-70 z-50 pointer-events-none"
+              className="absolute h-auto opacity-70 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]"
               alt="Logo" 
             />
           ))}
-        </>
+        </div>
       )}
 
-      {/* Judul Lagu / Ayat / Pengumuman */}
-      {title && itemType !== 'video' && (itemType === 'song' || itemType === 'bible' || itemType === 'announcement') && (
-        <h2 
-          key={`title-${title}-${liveState.segmentIndex}`}
-          className={`absolute left-0 right-0 w-full px-8 md:px-64 text-center text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-yellow-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] opacity-90 tracking-wider z-20 animate-fade-in ${
-            rtState.isVisible && rtState.position === 'top' ? 'top-[100px]' : 'top-16'
+      {/* Judul dan Progress Slide (Header) */}
+      {itemType !== 'video' && (
+        <div 
+          className={`absolute left-0 right-0 w-full flex flex-col items-center z-20 animate-fade-in transition-all duration-500 ${
+            rtState.isVisible && rtState.position === 'top' ? 'top-32' : 'top-12'
           }`}
-          style={{
-            textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
-          }}
         >
-          {title}
-        </h2>
+          {title && (itemType === 'song' || itemType === 'bible' || itemType === 'announcement') && (
+            <h2 
+              key={`title-${title}-${liveState.segmentIndex}`}
+              className="px-8 md:px-64 text-center text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-yellow-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] opacity-90 tracking-wider mb-2"
+              style={{ textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)' }}
+            >
+              {title}
+            </h2>
+          )}
+          {progressText && (
+            <div 
+              key={`progress-${progressText}`}
+              className="text-white/80 text-[1.5vw] font-medium tracking-wider lowercase"
+              style={{ textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)' }}
+            >
+              {progressText}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Konten Lirik/Ayat atau Slideshow atau Video */}
@@ -489,18 +508,7 @@ export default function DisplayWindow() {
         ) : null}
       </div>
 
-      {/* Progress Slide di Bawah */}
-      {progressText && itemType !== 'video' && (
-        <div 
-          className="absolute left-0 right-0 w-full text-center text-white/60 text-[1.5vw] font-medium tracking-wider lowercase z-20"
-          style={{ 
-            bottom: rtState.isVisible && rtState.position === 'bottom' ? '10vw' : '4vw',
-            textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
-          }}
-        >
-          {progressText}
-        </div>
-      )}
+
 
       {/* Running Text */}
       {rtState.isVisible && rtState.text && (
