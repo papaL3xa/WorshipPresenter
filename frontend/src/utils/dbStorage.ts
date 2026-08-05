@@ -34,7 +34,7 @@ export const initDefaultDatabases = async () => {
   const dbKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbinfo_')) as string[];
   const dataKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbdata_')) as string[];
 
-  const currentDbVersion = '1.6'; // Update this when default TSVs change
+  const currentDbVersion = '1.7'; // Update this when default TSVs change
   const savedDbVersion = localStorage.getItem('worship_db_version');
 
   const isOutdated = savedDbVersion !== currentDbVersion;
@@ -68,6 +68,12 @@ export const initDefaultDatabases = async () => {
   if (isOutdated || !dbKeys.includes('dbinfo_bible_KJV') || !dataKeys.includes('dbdata_bible_KJV')) {
     console.log("Initializing KJV bible database...");
     await loadDefaultBibleDatabase('KJV', 'King James Version (KJV)', 'data/BibleVerses_KJV.tsv');
+  }
+
+  // Init NET
+  if (isOutdated || !dbKeys.includes('dbinfo_bible_NET') || !dataKeys.includes('dbdata_bible_NET')) {
+    console.log("Initializing NET bible database...");
+    await loadDefaultBibleDatabase('NET', 'New English Translation (NET)', 'data/BibleVerses_NET.tsv');
   }
 
   if (isOutdated) {
