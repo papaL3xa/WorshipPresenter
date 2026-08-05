@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Play, Folder, Search, Settings, Loader2, Trash2 } from 'lucide-react';
+import { Plus, Play, Folder, Search, Settings, Loader2, Trash2, HelpCircle, X } from 'lucide-react';
 import { SyncButton } from '../components/SyncButton';
 import { callApi } from '../api';
 import { FooterClock } from '../components/FooterClock';
@@ -14,6 +14,7 @@ export default function Dashboard() {
   const [playlistToDelete, setPlaylistToDelete] = useState<{id: string, name: string} | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   const fetchPlaylists = async () => {
     setIsLoading(true);
@@ -76,6 +77,7 @@ export default function Dashboard() {
         </h1>
         <div className="flex flex-wrap justify-center items-center gap-2 md:gap-4">
           <SyncButton />
+          <button onClick={() => setIsGuideOpen(true)} className="glass-button flex items-center gap-2 bg-indigo-100 text-indigo-900 border border-indigo-300 hover:bg-indigo-200"><HelpCircle size={18}/> Cara Penggunaan</button>
           <button onClick={() => navigate('/library')} className="glass-button flex items-center gap-2"><Folder size={18}/> Library</button>
           {localStorage.getItem('worship_role') === 'admin' && (
             <button onClick={() => navigate('/settings')} className="glass-button flex items-center gap-2"><Settings size={18}/> Settings</button>
@@ -191,6 +193,32 @@ export default function Dashboard() {
                   {isDeleting ? <><Loader2 size={16} className="animate-spin" /> Menghapus...</> : 'Ya, Hapus'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isGuideOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-4 border-b border-slate-200 bg-slate-50">
+              <h2 className="text-xl font-bold text-indigo-900 flex items-center gap-2">
+                <HelpCircle size={24} className="text-indigo-600" /> 
+                Buku Panduan Pengguna
+              </h2>
+              <button 
+                onClick={() => setIsGuideOpen(false)} 
+                className="p-2 text-slate-400 hover:text-slate-700 bg-slate-200 hover:bg-slate-300 rounded-full transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex-1 bg-slate-100 overflow-hidden relative">
+              <iframe 
+                src="Panduan_Pengguna.html" 
+                className="w-full h-full border-none absolute inset-0 bg-white" 
+                title="Panduan Pengguna"
+              />
             </div>
           </div>
         </div>
