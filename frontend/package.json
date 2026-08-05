@@ -9,8 +9,6 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist",
     "electron:dev": "concurrently -k \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:build": "npm run build && npx electron-packager . WorshipPresenter --platform=win32 --arch=x64 --icon=icon.ico --out=release --overwrite --ignore=\"^/(src|public|node_modules|release|scripts|\\.git)\""
   },
