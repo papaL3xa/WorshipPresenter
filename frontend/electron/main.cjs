@@ -9,6 +9,7 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 // Path to local spreadsheet/json database
 // We place it in the same directory as the executable, or userData
+const isDev = process.env.NODE_ENV === 'development';
 let dbPath = path.join(app.getPath('userData'), 'database.json');
 // Selalu gunakan userData (AppData/Roaming) agar data tidak hilang saat install ulang / update
 
