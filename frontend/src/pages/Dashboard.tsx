@@ -246,20 +246,31 @@ export default function Dashboard() {
               <h2 className="text-2xl font-black text-indigo-950 mb-1 tracking-tight">Worship Presenter</h2>
               <p className="text-indigo-600 font-bold mb-6 tracking-widest text-xs">VERSI 1.0.0</p>
               
-              <div className="bg-indigo-50 text-indigo-900 p-5 rounded-2xl mb-6 text-sm leading-relaxed border border-indigo-100 text-left">
+              <div className="bg-indigo-50 text-indigo-900 p-5 rounded-2xl mb-4 text-sm leading-relaxed border border-indigo-100 text-left">
                 <strong>Tentang Aplikasi Ini:</strong><br/>
                 Aplikasi manajemen tata ibadah ini adalah perangkat lunak <em>full free</em> yang didekasikan khusus untuk mendukung pelayanan ibadah multimedia.<br/><br/>
-                Dibuat dengan segenap hati <Heart className="inline text-rose-500 mb-1" size={16}/> oleh departemen <strong>MultiMedia Jemaat PISGAH BISDAC (Batam International Seventh-day Adventist Church)</strong>. Pengembangannya secara langsung dipimpin oleh <strong>Herbert JS Sagala</strong>.
+                Dibuat dengan segenap hati <Heart className="inline text-rose-500 mb-1" size={16}/> oleh departemen <strong>MultiMedia Jemaat PISGAH BISDAC (Batam International Seventh-day Adventist Church)</strong>. Pengembangannya secara langsung dipimpin oleh <strong>Herbert JS Sagala</strong>.<br/><br/>
+                Jika Anda tergerak untuk mendukung pelayanan ini, Anda dapat menyalurkan persembahan/donasi melalui tautan di bawah ini.
               </div>
               
-              <a 
-                href="https://pisgahbisdac.app/" 
-                target="_blank" 
-                rel="noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-0.5 transition-all"
-              >
-                <Globe size={18} /> Kunjungi pisgahbisdac.app
-              </a>
+              <div className="flex flex-col w-full gap-2">
+                <a 
+                  href="https://pisgahbisdac.app/" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-0.5 transition-all"
+                >
+                  <Globe size={18} /> Website Resmi
+                </a>
+                <a 
+                  href="https://pisgahbisdac.app/index.html#persembahan" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-rose-50 text-rose-600 border border-rose-200 font-bold rounded-xl hover:bg-rose-100 hover:shadow-sm hover:-translate-y-0.5 transition-all"
+                >
+                  <Heart size={18} /> Dukung Pelayanan Kami
+                </a>
+              </div>
             </div>
           </div>
         </div>
