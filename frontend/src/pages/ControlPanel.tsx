@@ -699,6 +699,8 @@ export default function ControlPanel() {
     if (colorTag === 'biru') hex = '#3b82f6';
     if (colorTag === 'ungu') hex = '#c084fc';
     if (colorTag === 'oranye') hex = '#fb923c';
+    if (colorTag === 'putih') hex = '#ffffff';
+    if (colorTag === 'hitam') hex = '#000000';
 
     if (editorRef.current) {
       editorRef.current.applyColor(colorTag, hex);
@@ -817,8 +819,12 @@ export default function ControlPanel() {
   // Keyboard / Presentation Pointer support
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is typing in an input or textarea
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      // Ignore if user is typing in an input, textarea, or contentEditable div
+      if (
+        e.target instanceof HTMLInputElement || 
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement).isContentEditable
+      ) {
         return;
       }
 
@@ -985,7 +991,7 @@ export default function ControlPanel() {
                                 />
                                 <div className="flex justify-between items-center mt-2 gap-2">
                                   {/* Toolbar Warna */}
-                                  <div className={`flex gap-1.5 transition-all duration-200 ${
+                                  <div className={`flex flex-wrap gap-1.5 transition-all duration-200 ${
                                     hasSelection ? 'opacity-100 pointer-events-auto' : 'opacity-50 pointer-events-none grayscale'
                                   }`}>
                                     <button onClick={() => wrapText('merah')} className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600 transition shadow-sm">Merah</button>
@@ -994,6 +1000,9 @@ export default function ControlPanel() {
                                     <button onClick={() => wrapText('biru')} className="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-xs font-bold hover:bg-blue-600 transition shadow-sm">Biru</button>
                                     <button onClick={() => wrapText('ungu')} className="px-3 py-1.5 bg-purple-500 text-white rounded-lg text-xs font-bold hover:bg-purple-600 transition shadow-sm">Ungu</button>
                                     <button onClick={() => wrapText('oranye')} className="px-3 py-1.5 bg-orange-400 text-white rounded-lg text-xs font-bold hover:bg-orange-500 transition shadow-sm">Oranye</button>
+                                    <button onClick={() => wrapText('putih')} className="px-3 py-1.5 bg-white text-slate-900 border border-slate-300 rounded-lg text-xs font-bold hover:bg-slate-100 transition shadow-sm">Putih</button>
+                                    <button onClick={() => wrapText('hitam')} className="px-3 py-1.5 bg-black text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition shadow-sm">Hitam</button>
+                                    <button onClick={() => { if (editorRef.current) editorRef.current.removeFormat(); }} className="px-3 py-1.5 bg-slate-200 text-slate-800 rounded-lg text-xs font-bold hover:bg-slate-300 transition shadow-sm" title="Kembalikan ke warna asli">Default</button>
                                   </div>
 
                                   <button 

@@ -2,6 +2,7 @@ import { useRef, useEffect, useImperativeHandle, forwardRef, useCallback } from 
 
 export interface RichEditorRef {
   applyColor: (colorTag: string, colorHex: string) => void;
+  removeFormat: () => void;
   focus: () => void;
 }
 
@@ -19,7 +20,9 @@ const colors: Record<string, string> = {
   hijau: '#22c55e',
   biru: '#3b82f6',
   ungu: '#c084fc',
-  oranye: '#fb923c'
+  oranye: '#fb923c',
+  putih: '#ffffff',
+  hitam: '#000000'
 };
 
 const hexToTag: Record<string, string> = {
@@ -28,7 +31,9 @@ const hexToTag: Record<string, string> = {
   '#22c55e': 'hijau', 'rgb(34,197,94)': 'hijau',
   '#3b82f6': 'biru', 'rgb(59,130,246)': 'biru',
   '#c084fc': 'ungu', 'rgb(192,132,252)': 'ungu',
-  '#fb923c': 'oranye', 'rgb(251,146,60)': 'oranye'
+  '#fb923c': 'oranye', 'rgb(251,146,60)': 'oranye',
+  '#ffffff': 'putih', 'rgb(255,255,255)': 'putih',
+  '#000000': 'hitam', 'rgb(0,0,0)': 'hitam'
 };
 
 const toHtml = (raw: string) => {
@@ -136,6 +141,12 @@ export const RichEditor = forwardRef<RichEditorRef, RichEditorProps>(({ value, o
       
       // Post-process the DOM to add data-color attribute for consistency (optional but helps parsing robustness)
       handleInput(); 
+    },
+    removeFormat: () => {
+      if (!editorRef.current) return;
+      editorRef.current.focus();
+      document.execCommand('removeFormat', false);
+      handleInput();
     },
     focus: () => {
       editorRef.current?.focus();
