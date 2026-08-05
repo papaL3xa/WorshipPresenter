@@ -9,17 +9,17 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const [isChecking] = useState(() => {
-    return (typeof window !== 'undefined' && !!(window as any).electronAPI);
-  });
+  const [isChecking, setIsChecking] = useState(true);
 
   React.useEffect(() => {
-    if (isChecking) {
+    if (typeof window !== 'undefined' && (window as any).electronAPI) {
       localStorage.setItem('worship_is_logged_in', 'true');
       localStorage.setItem('worship_role', 'admin');
       navigate('/dashboard', { replace: true });
+    } else {
+      setIsChecking(false);
     }
-  }, [navigate, isChecking]);
+  }, [navigate]);
 
   if (isChecking) {
     return <div className="min-h-full bg-slate-900" />; // Render blank until redirected
