@@ -64,6 +64,12 @@ export const initDefaultDatabases = async () => {
     console.log("Bible data empty, re-initializing...");
     await loadDefaultBibleDatabase();
   }
+
+  // Init KJV
+  if (!dbKeys.includes('dbinfo_bible_KJV') || !dataKeys.includes('dbdata_bible_KJV')) {
+    console.log("Initializing KJV bible database...");
+    await loadDefaultBibleDatabaseKJV();
+  }
 };
 
 import Papa from 'papaparse';
@@ -182,6 +188,25 @@ const loadDefaultBibleDatabase = async () => {
     await set('dbdata_bible_TB', finalVerses);
   } catch (error) {
     console.error("Failed to load default bible db", error);
+  }
+};
+
+const loadDefaultBibleDatabaseKJV = async () => {
+  try {
+    const text = await fetchText('data/BibleVerses_KJV.tsv');
+    const parsedBible = parseTsv(text);
+    
+    const finalVerses: BibleVerse[] = parsedBible.map((v: any) => ({
+      book: v.book,
+      chapter: parseInt(v.chapter, 10),
+      verse: parseInt(v.verse, 10),
+      text: v.text
+    }));
+    
+    await set('dbinfo_bible_KJV', { id: 'bible_KJV', name: 'King James Version (KJV)', type: 'bible', isDefault: true } as DatabaseVersion);
+    await set('dbdata_bible_KJV', finalVerses);
+  } catch (error) {
+    console.error("Failed to load KJV bible db", error);
   }
 };
 
