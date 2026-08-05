@@ -378,3 +378,31 @@ export const getAllLocalSongTitles = async (versionId: string) => {
   const songs = await searchLocalSongs('', versionId);
   return songs.map(s => ({ id: s.id, title: s.title }));
 };
+// ------------------------------------------------------------------
+// BIBLE METADATA HELPERS
+// ------------------------------------------------------------------
+export const getBibleBookMetadata = async (versionId: string, bookName: string): Promise<number> => {
+  const verses: BibleVerse[] = (await get(`dbdata_${versionId}`)) || [];
+  let maxChapter = 0;
+  
+  const b = bookName.toLowerCase();
+  for (const v of verses) {
+    if (v.book.toLowerCase() === b) {
+      if (v.chapter > maxChapter) maxChapter = v.chapter;
+    }
+  }
+  return maxChapter;
+};
+
+export const getBibleChapterMetadata = async (versionId: string, bookName: string, chapter: number): Promise<number> => {
+  const verses: BibleVerse[] = (await get(`dbdata_${versionId}`)) || [];
+  let maxVerse = 0;
+  
+  const b = bookName.toLowerCase();
+  for (const v of verses) {
+    if (v.book.toLowerCase() === b && v.chapter === chapter) {
+      if (v.verse > maxVerse) maxVerse = v.verse;
+    }
+  }
+  return maxVerse;
+};
