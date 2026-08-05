@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Monitor, Square, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock } from 'lucide-react';
 import { callApi } from '../api';
-import { SyncButton } from '../components/SyncButton';
+import { callApi } from '../api';
 import { BackgroundPickerModal } from '../components/BackgroundPickerModal';
 import { saveLocalVideo } from '../utils/imageStorage';
 import { FooterClock } from '../components/FooterClock';
@@ -886,9 +886,6 @@ export default function ControlPanel() {
         </div>
         <div className="flex flex-nowrap overflow-x-auto w-full md:w-auto items-center gap-2 md:gap-4 justify-start md:justify-end pb-1 scrollbar-hide">
           {errorMsg && <div className="text-red-700 bg-red-100/90 px-3 py-1 rounded-lg text-xs md:text-sm border border-red-300 font-medium whitespace-nowrap">{errorMsg}</div>}
-          <div className="shrink-0">
-            <SyncButton isParentSyncing={isSyncing} />
-          </div>
           <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold rounded-xl border border-red-400 shadow-lg shadow-red-500/30 text-sm md:text-base">
             <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-white animate-pulse"></div> LIVE
           </div>

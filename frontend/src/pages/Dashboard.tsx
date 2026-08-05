@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Play, Folder, Search, Settings, Loader2, Trash2 } from 'lucide-react';
-import { SyncButton } from '../components/SyncButton';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { callApi } from '../api';
 import { FooterClock } from '../components/FooterClock';
 
@@ -75,7 +75,6 @@ export default function Dashboard() {
           WorshipPresenter
         </h1>
         <div className="flex flex-wrap justify-center items-center gap-2 md:gap-4">
-          <SyncButton />
           <button onClick={() => navigate('/library')} className="glass-button flex items-center gap-2"><Folder size={18}/> Library</button>
           {localStorage.getItem('worship_role') === 'admin' && (
             <button onClick={() => navigate('/settings')} className="glass-button flex items-center gap-2"><Settings size={18}/> Settings</button>
