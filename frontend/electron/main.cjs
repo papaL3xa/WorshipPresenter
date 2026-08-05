@@ -220,5 +220,13 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
     return { success: true, data: { totalSongs: 500, totalBibleVerses: 31102 }};
   }
 
+  if (action === 'deleteSongItem') {
+    if (db.customSongs) {
+      db.customSongs = db.customSongs.filter(s => s.id !== payload.id);
+      saveDb(db);
+    }
+    return { success: true, status: 'deleted' };
+  }
+
   return { success: false, message: 'Action not found' };
 });
