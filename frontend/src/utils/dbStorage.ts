@@ -223,15 +223,31 @@ export const addCustomDatabase = async (info: DatabaseVersion, tsvContent: strin
   } else {
     // For custom songs, we assume a simple flat TSV structure for user upload: 
     // songId, title, author, segment1, segment2, segment3...
+    // OR raw structure: id, title, author, lyrics
     const finalSongs: SongData[] = parsed.map((s: any) => {
       const segs = [];
-      let i = 1;
-      while (s[`segment${i}`] !== undefined) {
-        segs.push(s[`segment${i}`]);
-        i++;
+      
+      // Auto-detect format
+      if (s.segment1 !== undefined) {
+        let i = 1;
+        while (s[`segment${i}`] !== undefined) {
+          segs.push(s[`segment${i}`]);
+          i++;
+        }
+      } else if (s.lyrics !== undefined) {
+        // Raw TSV scraper format
+        const parts = s.lyrics.split(/\n\n/);
+        parts.forEach((p: string) => {
+          if (p.trim()) segs.push(p.trim());
+        });
       }
+
+      // Detect ID key, in case of BOM or 'id' vs 'songId'
+      const idKey = Object.keys(s).find(k => k.trim().replace(/^\\uFEFF/, '') === 'songId') || 'songId';
+      const fallbackIdKey = Object.keys(s).find(k => k.trim().replace(/^\\uFEFF/, '') === 'id') || 'id';
+
       return {
-        id: s.songId || `CUSTOM_${Math.random().toString(36).substring(7)}`,
+        id: s[idKey] || s[fallbackIdKey] || `CUSTOM_${Math.random().toString(36).substring(7)}`,
         title: s.title || 'Untitled',
         author: s.author || '',
         category: s.category || 'Custom',
