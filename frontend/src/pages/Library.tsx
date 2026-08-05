@@ -878,12 +878,12 @@ export default function Library() {
             <div className="flex-1 overflow-y-auto mb-6 pr-2 space-y-4">
               <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
                 <h3 className="font-bold text-indigo-900 mb-2">Unggah Versi Baru (.tsv)</h3>
-                <div className="flex gap-2 items-center mb-3">
-                  <select id="newDbType" className="glass-input !py-2 !text-sm">
+                <div className="flex flex-col gap-3 mb-4">
+                  <select id="newDbType" className="glass-input !py-2 !text-sm w-full">
                     <option value="song">Lagu</option>
                     <option value="bible">Alkitab</option>
                   </select>
-                  <input id="newDbName" type="text" placeholder="Nama Versi (mis: KJV, NKB)" className="glass-input !py-2 !text-sm flex-1" />
+                  <input id="newDbName" type="text" placeholder="Nama Versi (mis: KJV, NKB)" className="glass-input !py-2 !text-sm w-full" />
                 </div>
                 <input 
                   type="file" 
