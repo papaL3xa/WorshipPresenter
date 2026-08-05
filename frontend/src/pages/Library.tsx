@@ -1008,6 +1008,14 @@ export default function Library() {
                         alert("Database berhasil ditambahkan!");
                         const list = await getDatabaseList();
                         setDbList(list);
+                        
+                        // Auto-select the newly added version
+                        if (type === 'song') setSelectedSongVersion(newId);
+                        else setSelectedBibleVersion(newId);
+                        
+                        // Reset category to "Semua" to prevent filtering out the new DB's songs
+                        if (type === 'song') setSelectedSongCategory('Semua');
+                        
                       } catch (err: any) {
                         alert("Gagal memproses file: " + err.message);
                       }
@@ -1084,6 +1092,14 @@ export default function Library() {
                                 await deleteDatabase(db.id);
                                 const list = await getDatabaseList();
                                 setDbList(list);
+                                
+                                // Auto-revert to default if the deleted version was currently active
+                                if (db.type === 'song' && selectedSongVersion === db.id) {
+                                  setSelectedSongVersion('song_LSEB');
+                                  setSelectedSongCategory('Semua');
+                                } else if (db.type === 'bible' && selectedBibleVersion === db.id) {
+                                  setSelectedBibleVersion('bible_TB');
+                                }
                               }
                             }}
                             className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
