@@ -557,17 +557,20 @@ export default function Library() {
                   <>
                     {viewMode === 'grid' ? (
                       <div className="grid grid-cols-5 gap-1.5">
-                        {Array.from({length: 525}, (_, i) => i + 1).map(num => (
+                        {allSongTitles ? allSongTitles.map((song: any) => (
                           <button 
-                            key={num}
+                            key={song.id}
                             onClick={() => {
-                              handleQuickOpenSong(num.toString());
+                              handleQuickOpenSong(song.id.toString());
                             }}
-                            className="py-2 px-1 text-center text-xs font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm"
+                            className="py-2 px-1 text-center text-xs font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm overflow-hidden text-ellipsis whitespace-nowrap"
+                            title={song.title}
                           >
-                            {num}
+                            {song.id}
                           </button>
-                        ))}
+                        )) : (
+                          <div className="col-span-5 text-center p-4"><Loader2 size={20} className="animate-spin text-indigo-500 mx-auto"/></div>
+                        )}
                       </div>
                     ) : (
                       <div className="flex flex-col gap-1.5">
