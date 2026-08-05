@@ -34,7 +34,7 @@ export const initDefaultDatabases = async () => {
   const dbKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbinfo_')) as string[];
   const dataKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbdata_')) as string[];
 
-  const currentDbVersion = '1.2'; // Update this when default TSVs change
+  const currentDbVersion = '1.3'; // Update this when default TSVs change
   const savedDbVersion = localStorage.getItem('worship_db_version');
 
   // Cek info DAN data, jika salah satu hilang atau versi usang → re-init
