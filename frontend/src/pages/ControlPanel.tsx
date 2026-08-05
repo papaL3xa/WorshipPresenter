@@ -1016,7 +1016,7 @@ export default function ControlPanel() {
                               <span className="text-indigo-900/30 italic text-center w-full">Lirik tidak tersedia</span>
                             )}
                           </div>
-                          <div className="w-full lg:w-1/2 flex flex-col justify-center items-center h-full min-h-0">
+                          <div className="w-full lg:w-1/2 flex flex-col justify-start items-center h-full min-h-0">
                             <h4 className="text-sm font-bold text-indigo-900/60 dark:text-slate-400 uppercase mb-2 flex items-center gap-2 shrink-0"><Monitor size={14} /> Live Preview</h4>
                             <div 
                               className="w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg flex flex-col items-center justify-center p-2 md:p-4 border-[4px] md:border-[6px] border-slate-800 max-h-full shrink-0"

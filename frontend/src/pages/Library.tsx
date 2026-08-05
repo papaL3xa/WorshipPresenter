@@ -75,7 +75,7 @@ export default function Library() {
     }
   }, [searchType, selectedSongVersion]);
   
-  const lastSearchedRef = useRef({ query: '', type: '' });
+  const lastSearchedRef = useRef({ query: '', type: '', songVersion: '', bibleVersion: '' });
   
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
 
@@ -154,11 +154,15 @@ export default function Library() {
       return;
     }
     
-    if (lastSearchedRef.current.query === query && lastSearchedRef.current.type === type && !autoSelectFirst) {
+    if (lastSearchedRef.current.query === query && 
+        lastSearchedRef.current.type === type && 
+        lastSearchedRef.current.songVersion === selectedSongVersion && 
+        lastSearchedRef.current.bibleVersion === selectedBibleVersion && 
+        !autoSelectFirst) {
       return;
     }
     
-    lastSearchedRef.current = { query, type };
+    lastSearchedRef.current = { query, type, songVersion: selectedSongVersion, bibleVersion: selectedBibleVersion };
     setIsSearching(true);
     
     if (!autoSelectFirst) {
@@ -220,7 +224,7 @@ export default function Library() {
       }
     }, 500); // 500ms debounce
     return () => clearTimeout(timer);
-  }, [searchQuery, searchType, showFavorites, favorites]);
+  }, [searchQuery, searchType, showFavorites, favorites, selectedSongVersion, selectedBibleVersion]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
