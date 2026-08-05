@@ -337,6 +337,7 @@ export default function Library() {
         
         setSelectedItem(null);
         setIsEditingItem(false);
+        
         // Panggil pencarian ulang dengan state lama untuk update daftar
         // Karena kita mengubah IndexedDB di background, pencarian ulang akan mengambil data baru
         if (lastSearchedRef.current.query) {
@@ -345,6 +346,10 @@ export default function Library() {
         } else {
           setResults([]);
         }
+        
+        // Refresh daftar judul agar Grid view (saat query kosong) juga terupdate
+        const newTitles = await getAllLocalSongTitles(selectedSongVersion);
+        if (Array.isArray(newTitles)) setAllSongTitles(newTitles);
       } else {
         alert('Gagal menghapus lagu: ' + (res?.message || 'Error'));
       }
