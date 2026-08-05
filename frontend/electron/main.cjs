@@ -5,6 +5,7 @@ const fs = require('fs');
 // Memaksa aplikasi agar mengabaikan scaling display OS (misal: 150%)
 app.commandLine.appendSwitch('high-dpi-support', '1');
 app.commandLine.appendSwitch('force-device-scale-factor', '1');
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 // Path to local spreadsheet/json database
 // We place it in the same directory as the executable, or userData

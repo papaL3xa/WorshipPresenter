@@ -399,16 +399,16 @@ export default function DisplayWindow() {
                   videoId = url.split('v=')[1].split('&')[0];
                 }
                 embedUrl = videoId 
-                  ? `https://www.youtube.com/embed/${videoId}?list=${listId}&autoplay=0&mute=0`
-                  : `https://www.youtube.com/embed/videoseries?list=${listId}&autoplay=0&mute=0`;
+                  ? `https://www.youtube.com/embed/${videoId}?list=${listId}&autoplay=1&mute=0`
+                  : `https://www.youtube.com/embed/videoseries?list=${listId}&autoplay=1&mute=0`;
               } else if (url.includes('youtube.com/watch?v=')) {
                 const videoId = url.split('v=')[1].split('&')[0];
-                embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&mute=0`;
+                embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0`;
               } else if (url.includes('youtu.be/')) {
                 const videoId = url.split('youtu.be/')[1].split('?')[0];
-                embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&mute=0`;
+                embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0`;
               } else if (url.includes('youtube.com/embed/')) {
-                embedUrl = url.includes('?') ? url.replace('autoplay=1', 'autoplay=0') : `${url}?autoplay=0`;
+                embedUrl = url.includes('?') ? url.replace('autoplay=0', 'autoplay=1') : `${url}?autoplay=1`;
               } else {
                 embedUrl = url; // Fallback
               }
