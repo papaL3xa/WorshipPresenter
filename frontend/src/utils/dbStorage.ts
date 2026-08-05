@@ -34,7 +34,7 @@ export const initDefaultDatabases = async () => {
   const dbKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbinfo_')) as string[];
   const dataKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbdata_')) as string[];
 
-  const currentDbVersion = '1.1'; // Update this when default TSVs change
+  const currentDbVersion = '1.2'; // Update this when default TSVs change
   const savedDbVersion = localStorage.getItem('worship_db_version');
 
   // Cek info DAN data, jika salah satu hilang atau versi usang → re-init
@@ -141,7 +141,11 @@ const loadDefaultSongDatabase = async () => {
         segmentMap[seg.songId] = [];
         labelMap[seg.songId] = [];
       }
-      segmentMap[seg.songId].push(seg.text);
+      if (typeof seg.text === 'string') {
+        segmentMap[seg.songId].push(seg.text.replace(/\\n/g, '\n'));
+      } else {
+        segmentMap[seg.songId].push(seg.text);
+      }
       labelMap[seg.songId].push(seg.label || `Slide ${segmentMap[seg.songId].length}`);
     });
     
