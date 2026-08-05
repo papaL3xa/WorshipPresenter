@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Play, Folder, Search, Settings, Loader2, Trash2, HelpCircle, X } from 'lucide-react';
+import { Plus, Play, Folder, Search, Settings, Loader2, Trash2, HelpCircle, X, Info, Globe, Heart } from 'lucide-react';
 import { SyncButton } from '../components/SyncButton';
 import { callApi } from '../api';
 import { FooterClock } from '../components/FooterClock';
@@ -15,6 +15,7 @@ export default function Dashboard() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
 
   const fetchPlaylists = async () => {
     setIsLoading(true);
@@ -77,6 +78,7 @@ export default function Dashboard() {
         </h1>
         <div className="flex flex-wrap justify-center items-center gap-2 md:gap-4">
           <SyncButton />
+          <button onClick={() => setIsAboutOpen(true)} className="glass-button flex items-center gap-2"><Info size={18}/> Tentang</button>
           <button onClick={() => setIsGuideOpen(true)} className="glass-button flex items-center gap-2 bg-indigo-100 text-indigo-900 border border-indigo-300 hover:bg-indigo-200"><HelpCircle size={18}/> Cara Penggunaan</button>
           <button onClick={() => navigate('/library')} className="glass-button flex items-center gap-2"><Folder size={18}/> Library</button>
           {localStorage.getItem('worship_role') === 'admin' && (
@@ -219,6 +221,45 @@ export default function Dashboard() {
                 className="w-full h-full border-none absolute inset-0 bg-white" 
                 title="Panduan Pengguna"
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isAboutOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-indigo-100 relative">
+            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-indigo-600 via-indigo-700 to-blue-800"></div>
+            
+            <button 
+              onClick={() => setIsAboutOpen(false)} 
+              className="absolute top-4 right-4 p-2 text-white/80 hover:text-white bg-black/20 hover:bg-black/40 rounded-full transition-all z-10"
+            >
+              <X size={20} />
+            </button>
+            
+            <div className="relative pt-16 px-8 pb-8 text-center flex flex-col items-center">
+              <div className="w-24 h-24 rounded-2xl bg-white shadow-xl flex items-center justify-center mb-6 rotate-3 border-4 border-white/80 overflow-hidden">
+                <Play className="text-indigo-600 ml-1" size={48} strokeWidth={2}/>
+              </div>
+              
+              <h2 className="text-2xl font-black text-indigo-950 mb-1 tracking-tight">Worship Presenter</h2>
+              <p className="text-indigo-600 font-bold mb-6 tracking-widest text-xs">VERSI 1.0.0</p>
+              
+              <div className="bg-indigo-50 text-indigo-900 p-5 rounded-2xl mb-6 text-sm leading-relaxed border border-indigo-100 text-left">
+                <strong>Tentang Aplikasi Ini:</strong><br/>
+                Aplikasi manajemen tata ibadah ini adalah perangkat lunak <em>full free</em> yang didekasikan khusus untuk mendukung pelayanan ibadah multimedia.<br/><br/>
+                Dibuat dengan segenap hati <Heart className="inline text-rose-500 mb-1" size={16}/> oleh departemen <strong>MultiMedia Jemaat PISGAH BISDAC</strong>. Pengembangannya secara langsung dipimpin oleh <strong>Herbert JS Sagala</strong>.
+              </div>
+              
+              <a 
+                href="https://pisgahbisdac.app/" 
+                target="_blank" 
+                rel="noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-0.5 transition-all"
+              >
+                <Globe size={18} /> Kunjungi pisgahbisdac.app
+              </a>
             </div>
           </div>
         </div>
