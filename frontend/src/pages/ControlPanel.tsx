@@ -6,7 +6,7 @@ import { BackgroundPickerModal } from '../components/BackgroundPickerModal';
 import { saveLocalVideo } from '../utils/imageStorage';
 import { FooterClock } from '../components/FooterClock';
 import { RichEditor, RichEditorRef } from '../components/RichEditor';
-import { initDefaultDatabases, searchLocalSongs, searchLocalBible, syncCustomSongs, getDatabaseList, DatabaseVersion, getAllLocalSongTitles } from '../utils/dbStorage';
+import { initDefaultDatabases, searchLocalSongs, searchLocalBible, syncCustomSongs, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, getBibleBooksList } from '../utils/dbStorage';
 
 const processText = (raw: string) => {
   if (!raw) return '';
@@ -20,11 +20,6 @@ const processText = (raw: string) => {
   return t;
 };
 
-const bibleBooks = [
-  "Kejadian", "Keluaran", "Imamat", "Bilangan", "Ulangan", "Yosua", "Hakim-Hakim", "Rut", 
-  "1 Samuel", "2 Samuel", "1 Raja-Raja", "2 Raja-Raja", "1 Tawarikh", "2 Tawarikh", "Ezra", "Nehemia", "Ester", "Ayub", "Mazmur", "Amsal", "Pengkhotbah", "Kidung Agung", "Yesaya", "Yeremia", "Ratapan", "Yehezkiel", "Daniel", "Hosea", "Yoel", "Amos", "Obaja", "Yunus", "Mikha", "Nahum", "Habakuk", "Zefanya", "Hagai", "Zakharia", "Maleakhi",
-  "Matius", "Markus", "Lukas", "Yohanes", "Kisah Para Rasul", "Roma", "1 Korintus", "2 Korintus", "Galatia", "Efesus", "Filipi", "Kolose", "1 Tesalonika", "2 Tesalonika", "1 Timotius", "2 Timotius", "Titus", "Filemon", "Ibrani", "Yakobus", "1 Petrus", "2 Petrus", "1 Yohanes", "2 Yohanes", "3 Yohanes", "Yudas", "Wahyu"
-];
 import { splitLongSegments } from '../utils/textSplitter';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -113,18 +108,25 @@ export default function ControlPanel() {
   
   // Add Item States
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
-
-  useEffect(() => {
-    if (isAddItemModalOpen) {
-      getAllLocalSongTitles(selectedSongVersion).then(res => {
-        if (Array.isArray(res)) setAllSongTitles(res);
-      }).catch(err => console.error("Gagal memuat judul lagu", err));
-    }
-  }, [isAddItemModalOpen, selectedSongVersion]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState<'song'|'bible'>('song');
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [currentBibleBooks, setCurrentBibleBooks] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    if (isAddItemModalOpen) {
+      if (searchType === 'song') {
+        getAllLocalSongTitles(selectedSongVersion).then(res => {
+          if (Array.isArray(res)) setAllSongTitles(res);
+        }).catch(err => console.error("Gagal memuat judul lagu", err));
+      } else if (searchType === 'bible') {
+        getBibleBooksList(selectedBibleVersion).then(res => {
+          if (Array.isArray(res)) setCurrentBibleBooks(res);
+        }).catch(err => console.error("Gagal memuat daftar kitab", err));
+      }
+    }
+  }, [isAddItemModalOpen, searchType, selectedSongVersion, selectedBibleVersion]);
 
   
   const [isAutoSplitEnabled, setIsAutoSplitEnabled] = useState(
@@ -1401,7 +1403,7 @@ export default function ControlPanel() {
                     </>
                   ) : (
                     <div className="grid grid-cols-2 gap-1.5">
-                      {bibleBooks.map(book => (
+                      {currentBibleBooks.length > 0 ? currentBibleBooks.map(book => (
                         <button 
                           key={book}
                           onClick={() => {
@@ -1412,7 +1414,9 @@ export default function ControlPanel() {
                         >
                           {book}
                         </button>
-                      ))}
+                      )) : (
+                        <div className="col-span-2 text-center p-4"><Loader2 size={24} className="animate-spin text-indigo-500 mx-auto"/></div>
+                      )}
                     </div>
                   )}
                 </div>

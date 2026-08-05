@@ -21,47 +21,53 @@ export const splitLongSegments = (rawItems: any[]) => {
       
       item.segments.forEach((seg: string, idx: number) => {
         const wasVisible = !oldVisibleSegments || oldVisibleSegments.includes(idx);
+        const MAX_LEN = 160;
         
-        if (seg.length > 220) {
-          // Split at the nearest sentence boundary or space around the middle
-          const mid = Math.floor(seg.length / 2);
-          
-          // Try to find a period or comma near the middle
-          let splitIndex = -1;
-          const punctuationMarks = ['. ', ', ', '; ', ': ', '? ', '! '];
-          
-          for (let p of punctuationMarks) {
-            const pIdx = seg.indexOf(p, mid - 50);
-            if (pIdx !== -1 && pIdx < mid + 80) {
-              splitIndex = pIdx + 1; // split after the punctuation
-              break;
-            }
-          }
-          
-          if (splitIndex === -1) {
-            splitIndex = seg.indexOf(' ', mid);
-          }
-          
-          if (splitIndex === -1) {
-            splitIndex = mid;
-          }
-          
-          const part1 = seg.substring(0, splitIndex).trim();
-          const part2 = seg.substring(splitIndex).trim();
-          
-          const newIdx1 = newSegments.length;
-          newSegments.push(part1);
-          const newIdx2 = newSegments.length;
-          newSegments.push(part2);
-          
-          if (wasVisible) {
-            newVisibleSegments.push(newIdx1, newIdx2);
-          }
+        if (seg.length > MAX_LEN) {
+          let remaining = seg;
+          let partIndex = 0;
           
           const originalLabel = item.segmentLabels ? item.segmentLabels[idx] : (item.type === 'bible' ? `Ayat ${idx+1}` : `Bait ${idx+1}`);
-          const labelPrefix = originalLabel.replace(/a$|b$/, ''); // remove a or b if exists
+          const labelPrefix = originalLabel.replace(/[a-z]$/, ''); 
+          const alphabet = 'abcdefghijklmnopqrstuvwxyz';
           
-          newLabels.push(`${labelPrefix}a`, `${labelPrefix}b`);
+          while (remaining.length > 0) {
+            if (remaining.length <= MAX_LEN) {
+              const newIdx = newSegments.length;
+              newSegments.push(remaining.trim());
+              if (wasVisible) newVisibleSegments.push(newIdx);
+              newLabels.push(`${labelPrefix}${alphabet[Math.min(partIndex, 25)]}`);
+              break;
+            }
+            
+            let splitPos = -1;
+            const punctuationMarks = ['. ', ', ', '; ', ': ', '? ', '! '];
+            
+            for (let p of punctuationMarks) {
+              const pIdx = remaining.lastIndexOf(p, MAX_LEN);
+              if (pIdx > MAX_LEN - 60) {
+                splitPos = pIdx + 1;
+                break;
+              }
+            }
+            
+            if (splitPos === -1) {
+              splitPos = remaining.lastIndexOf(' ', MAX_LEN);
+            }
+            
+            if (splitPos === -1 || splitPos < MAX_LEN - 80) {
+              splitPos = MAX_LEN;
+            }
+            
+            const part = remaining.substring(0, splitPos).trim();
+            remaining = remaining.substring(splitPos).trim();
+            
+            const newIdx = newSegments.length;
+            newSegments.push(part);
+            if (wasVisible) newVisibleSegments.push(newIdx);
+            newLabels.push(`${labelPrefix}${alphabet[Math.min(partIndex, 25)]}`);
+            partIndex++;
+          }
         } else {
           const newIdx = newSegments.length;
           newSegments.push(seg);
