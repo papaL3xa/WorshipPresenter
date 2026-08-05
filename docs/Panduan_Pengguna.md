@@ -86,6 +86,6 @@ Jika Anda harus bertugas menggunakan laptop yang berbeda, Anda wajib melakukan *
 ## 🌟 Tips Tambahan untuk Operator
 
 *   **Running Text (Teks Berjalan):** Jika ada pengumuman mendadak di tengah ibadah (misal: "Mohon pindahkan mobil plat B 123"), Anda bisa mengetiknya di kotak *Running Text* di kanan atas, pilih letaknya (atas/bawah), lalu nyalakan. Pesan akan berjalan di layar tanpa mengganggu lirik lagu.
-*   **Lagu Kustom:** Jika gereja Anda memiliki lagu sendiri yang tidak ada di Buku Ende/Lagu Sion, hubungi administrator utama (*admin*) untuk menambahkannya via Google Sheets, agar lagu tersebut otomatis masuk ke semua aplikasi operator setelah disinkronisasi.
+*   **Lagu Kustom (Lagu Baru):** Jika Anda ingin menambahkan lagu sendiri yang tidak ada di *database* bawaan, Anda tidak perlu repot. Cukup masuk ke menu **Library**, pastikan tab **Lagu** terpilih, lalu klik **tombol Plus (+)** berwarna hijau di sebelah tulisan "Pencarian Data". Ketikkan lirik lagu Anda, klik Simpan, dan lagu tersebut akan tersimpan permanen serta langsung bisa dicari saat Anda membuat Rundown. (Cara lainnya adalah melalui sinkronisasi Google Sheets yang bisa diatur oleh Admin).
 
 *Selamat Melayani! Biarlah segala persiapan multimedia Anda memuliakan nama Tuhan.*
