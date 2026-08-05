@@ -418,7 +418,7 @@ export default function DisplayWindow() {
                   key={embedUrl}
                   className="w-full h-full object-contain animate-fade-in" 
                   src={embedUrl} 
-                  allow="encrypted-media" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                   allowFullScreen
                 ></iframe>
               );
