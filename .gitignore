@@ -4,9 +4,22 @@ node_modules/
 
 # Build outputs - jangan di-push ke GitHub (terlalu besar)
 frontend/release/
+frontend/release-installer/
 frontend/dist/
 frontend/*.log
 frontend/dist-electron/
+
+# File TSV hasil konversi (bisa dibuat ulang)
+BibleVerses_*.tsv
+BibleVerses_backup_*.tsv
+Songs_new.tsv
+SongSegments_new.tsv
+scrape_report.txt
+
+# File database Alkitab sumber (terlalu besar untuk GitHub)
+frontend/scripts/*.json
+frontend/scripts/*.sqlite3
+frontend/scripts/*.sqlite
 
 # Temp files
 *.tmp
