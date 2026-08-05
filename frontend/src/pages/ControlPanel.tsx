@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Monitor, Square, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock } from 'lucide-react';
 import { callApi } from '../api';
-import { callApi } from '../api';
+
 import { BackgroundPickerModal } from '../components/BackgroundPickerModal';
 import { saveLocalVideo } from '../utils/imageStorage';
 import { FooterClock } from '../components/FooterClock';
-import { initDefaultDatabases, searchLocalSongs, searchLocalBible, syncCustomSongs, getDatabaseList, DatabaseVersion, getAllLocalSongTitles } from '../utils/dbStorage';
+import { initDefaultDatabases, searchLocalSongs, searchLocalBible, getDatabaseList, DatabaseVersion, getAllLocalSongTitles } from '../utils/dbStorage';
 
 const processText = (raw: string) => {
   if (!raw) return '';
@@ -49,7 +49,7 @@ export default function ControlPanel() {
   const [isRunningTextModalOpen, setIsRunningTextModalOpen] = useState(false);
   const [isCountdownModalOpen, setIsCountdownModalOpen] = useState(false);
   const [countdownInputValue, setCountdownInputValue] = useState('5');
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [isRtVisible, setIsRtVisible] = useState(false);
   const [replaceIndex, setReplaceIndex] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [logos, setLogos] = useState<any[]>(() => {
@@ -90,8 +90,7 @@ export default function ControlPanel() {
   useEffect(() => {
     initDefaultDatabases().then(() => {
       getDatabaseList().then(setDbList);
-      syncCustomSongs(); // Sync background
-    });
+    }).catch(() => {});
   }, []);
 
   // Segment Edit State
@@ -104,7 +103,7 @@ export default function ControlPanel() {
   const [runningText, setRunningText] = useState(localStorage.getItem('worship_rt_text') || '');
   const [rtPos, setRtPos] = useState(localStorage.getItem('worship_rt_pos') || 'bottom');
   const [rtSpeed, setRtSpeed] = useState(Number(localStorage.getItem('worship_rt_speed') || 15));
-  const [isRtVisible, setIsRtVisible] = useState(false);
+
   
   // Add Item States
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
@@ -214,7 +213,6 @@ export default function ControlPanel() {
       return;
     }
 
-    setIsSyncing(true);
     setErrorMsg('');
     const stateObj = {
       playlistId: playlistId,
@@ -245,9 +243,9 @@ export default function ControlPanel() {
     syncTimeout.current = setTimeout(async () => {
       try {
         await callApi('setLiveState', {}, { method: 'POST', payload: stateObj });
-        setIsSyncing(false);
+        // setIsSyncing(false);
       } catch (err: any) {
-        setIsSyncing(false);
+        // setIsSyncing(false);
         setErrorMsg('Gagal sync ke server: ' + err.message);
       }
     }, 200);

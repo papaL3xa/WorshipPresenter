@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Play, Folder, Search, Settings, Loader2, Trash2 } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { callApi } from '../api';
 import { FooterClock } from '../components/FooterClock';
 

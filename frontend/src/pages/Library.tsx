@@ -5,7 +5,7 @@ import { FooterClock } from '../components/FooterClock';
 import { splitLongSegments } from '../utils/textSplitter';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useFavorites } from '../hooks/useFavorites';
-import { initDefaultDatabases, searchLocalSongs, searchLocalBible, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, deleteDatabase, addCustomDatabase, syncCustomSongs, exportDatabaseToTsv } from '../utils/dbStorage';
+import { initDefaultDatabases, searchLocalSongs, searchLocalBible, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, deleteDatabase, addCustomDatabase, exportDatabaseToTsv } from '../utils/dbStorage';
 import { get, set } from 'idb-keyval';
 
 const bibleBooks = [
@@ -300,7 +300,6 @@ export default function Library() {
         await set('dbdata_song_GAS_SYNC', currentSync);
 
         setIsEditingItem(false);
-        await syncCustomSongs(); // Sync local cache with backend
         
         // Refresh local views
         if (searchType === 'song') {

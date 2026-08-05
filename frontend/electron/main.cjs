@@ -130,6 +130,39 @@ function saveDb(data) {
     
     // 3. Timpa database utama dengan file temporary yang utuh
     fs.renameSync(tmpPath, dbPath);
+    
+    // 4. Auto-export CustomSongs to TSV
+    if (data.customSongs && data.customSongs.length > 0) {
+      const tsvPath = dbPath.replace('.json', '_LaguKustom.tsv');
+      let maxSegments = 0;
+      data.customSongs.forEach(s => {
+        if (s.segments && s.segments.length > maxSegments) maxSegments = s.segments.length;
+      });
+      
+      let header = "songId\ttitle\tauthor\tcategory";
+      for (let i = 1; i <= maxSegments; i++) header += `\tsegment${i}`;
+      header += "\n";
+      
+      const rows = data.customSongs.map(s => {
+        const escapeTsv = (str) => {
+          if (!str) return "";
+          let safe = str.toString().replace(/"/g, '""');
+          if (safe.includes('\n') || safe.includes('\t') || safe.includes('"')) {
+            safe = `"${safe}"`;
+          }
+          return safe;
+        };
+        
+        let row = `${escapeTsv(s.id)}\t${escapeTsv(s.title)}\t${escapeTsv(s.author)}\t${escapeTsv(s.category)}`;
+        for (let i = 0; i < maxSegments; i++) {
+          const segText = s.segments && s.segments[i] ? s.segments[i] : "";
+          row += `\t${escapeTsv(segText)}`;
+        }
+        return row;
+      });
+      
+      fs.writeFileSync(tsvPath, header + rows.join('\n'), 'utf8');
+    }
   } catch (e) {
     console.error('Critical error: Failed to save database!', e);
   }

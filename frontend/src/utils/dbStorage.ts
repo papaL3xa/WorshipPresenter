@@ -229,43 +229,28 @@ export const getDatabaseList = async (): Promise<DatabaseVersion[]> => {
 };
 
 // ------------------------------------------------------------------
-// SYNC GOOGLE APPS SCRIPT CUSTOM SONGS
-// ------------------------------------------------------------------
-export const syncCustomSongs = async () => {
-  try {
-    // Call GAS to get all songs. 
-    // Since we don't have a "modified" column, we just fetch ALL songs 
-    // from GAS and overwrite a special "dbdata_song_GAS_SYNC" in IndexedDB
-    // Or we merge it into "song_LSEB".
-    // It's better to store them in a separate DB key so it's clean.
-    const res = await callApi('getCustomSongs'); 
-    if (res && res.data) {
-       await set('dbdata_song_GAS_SYNC', res.data);
-    }
-  } catch (error) {
-    console.error("Failed to sync custom songs", error);
-  }
-};
-
-// ------------------------------------------------------------------
-// SEARCH & RETRIEVE
+// SEARCH & QUERY
 // ------------------------------------------------------------------
 export const searchLocalSongs = async (query: string, versionId: string): Promise<any[]> => {
   // 1. Get base version
   const baseSongs: SongData[] = (await get(`dbdata_${versionId}`)) || [];
   
-  // 2. Get synced GAS songs (only apply to default LSEB to mix them)
-  let gasSongs: SongData[] = [];
-  if (versionId === 'song_LSEB') {
-    const rawGas = await get('dbdata_song_GAS_SYNC');
-    gasSongs = Array.isArray(rawGas) ? rawGas : [];
-  }
-  
-  // Merge (GAS overrides Base if same ID)
+  // Only apply locally saved custom songs (Electron IPC)
   const mergedMap = new Map<string, SongData>();
   baseSongs.forEach(s => mergedMap.set(s.id, s));
-  gasSongs.forEach(s => mergedMap.set(s.id, s));
   
+  if (versionId === 'song_LSEB') {
+    try {
+      // Get saved custom songs from IPC
+      const res = await callApi('getCustomSongs');
+      if (res.success && res.data) {
+        res.data.forEach((s: SongData) => mergedMap.set(s.id, s));
+      }
+    } catch (err) {
+      console.warn("Could not load IPC custom songs", err);
+    }
+  }
+
   const allSongs = Array.from(mergedMap.values());
   
   if (!query) {
