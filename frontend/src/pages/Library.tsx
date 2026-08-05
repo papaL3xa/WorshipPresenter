@@ -928,6 +928,35 @@ export default function Library() {
                         <div className="text-xs text-indigo-500 uppercase tracking-wider">{db.type} • {db.isDefault ? 'Bawaan' : 'Kustom'}</div>
                       </div>
                       <div className="flex gap-2">
+                        {db.type === 'song' && (
+                          <button 
+                            onClick={async () => {
+                              if (confirm(`Backup seluruh data ${db.name} ke Cloud (Google Spreadsheet)? Ini akan menimpa data yang ada di Spreadsheet.`)) {
+                                try {
+                                  const data = await get(`dbdata_${db.id}`);
+                                  if (!data || !Array.isArray(data)) throw new Error("Data kosong");
+                                  
+                                  const res = await callApi('backupFullDatabase', {}, {
+                                    method: 'POST',
+                                    payload: { songs: data }
+                                  });
+                                  
+                                  if (res && res.status === 'success') {
+                                    alert("Backup seluruh database berhasil tersimpan ke Cloud!");
+                                  } else {
+                                    alert("Gagal mem-backup: " + (res?.message || 'Error'));
+                                  }
+                                } catch (err: any) {
+                                  alert("Terjadi kesalahan: " + err.message);
+                                }
+                              }
+                            }}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
+                            title="Backup Seluruh Isi Database ke Cloud"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path><path d="M12 12v9"></path><path d="m8 17 4 4 4-4"></path></svg>
+                          </button>
+                        )}
                         <button 
                           onClick={async () => {
                             try {
