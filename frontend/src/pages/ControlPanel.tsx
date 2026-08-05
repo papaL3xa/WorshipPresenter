@@ -1337,10 +1337,7 @@ export default function ControlPanel() {
         
         <section className="flex-1 flex flex-col gap-3 md:gap-6 min-w-0">
           {isEditingRundown ? (
-            <>
-              {renderDisplayBox(liveItem, liveSegment, true)}
-              {renderDisplayBox(activeItem, activeSegment, false)}
-            </>
+            renderDisplayBox(activeItem, activeSegment, false)
           ) : (
             renderDisplayBox(liveItem, liveSegment, true)
           )}
