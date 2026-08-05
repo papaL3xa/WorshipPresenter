@@ -34,14 +34,15 @@ export const initDefaultDatabases = async () => {
   const dbKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbinfo_')) as string[];
   const dataKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbdata_')) as string[];
 
-  const currentDbVersion = '1.3'; // Update this when default TSVs change
+  const currentDbVersion = '1.4'; // Update this when default TSVs change
   const savedDbVersion = localStorage.getItem('worship_db_version');
 
+  const isOutdated = savedDbVersion !== currentDbVersion;
+
   // Cek info DAN data, jika salah satu hilang atau versi usang → re-init
-  if (savedDbVersion !== currentDbVersion || !dbKeys.includes('dbinfo_song_LSEB') || !dataKeys.includes('dbdata_song_LSEB')) {
+  if (isOutdated || !dbKeys.includes('dbinfo_song_LSEB') || !dataKeys.includes('dbdata_song_LSEB')) {
     console.log("Initializing/Updating default song database...");
     await loadDefaultSongDatabase();
-    localStorage.setItem('worship_db_version', currentDbVersion);
   } else {
     // Auto-repair if segmentLabels are missing
     const songData = await get('dbdata_song_LSEB');
@@ -53,22 +54,24 @@ export const initDefaultDatabases = async () => {
     }
   }
   
-  if (!dbKeys.includes('dbinfo_bible_TB') || !dataKeys.includes('dbdata_bible_TB')) {
-    console.log("Initializing default bible database...");
-    await loadDefaultBibleDatabase();
+  if (isOutdated || !dbKeys.includes('dbinfo_bible_TB') || !dataKeys.includes('dbdata_bible_TB')) {
+    console.log("Initializing default bible database (TB)...");
+    await loadDefaultBibleDatabase('TB', 'Terjemahan Baru (TB)', 'data/BibleVerses_TB.tsv');
   }
 
-  // Validasi data bible tidak kosong
-  const bibleData = await get('dbdata_bible_TB');
-  if (!bibleData || (Array.isArray(bibleData) && bibleData.length === 0)) {
-    console.log("Bible data empty, re-initializing...");
-    await loadDefaultBibleDatabase();
+  if (isOutdated || !dbKeys.includes('dbinfo_bible_AYT') || !dataKeys.includes('dbdata_bible_AYT')) {
+    console.log("Initializing AYT bible database...");
+    await loadDefaultBibleDatabase('AYT', 'Alkitab Yang Terbuka (AYT)', 'data/BibleVerses_AYT.tsv');
   }
 
   // Init KJV
-  if (!dbKeys.includes('dbinfo_bible_KJV') || !dataKeys.includes('dbdata_bible_KJV')) {
+  if (isOutdated || !dbKeys.includes('dbinfo_bible_KJV') || !dataKeys.includes('dbdata_bible_KJV')) {
     console.log("Initializing KJV bible database...");
-    await loadDefaultBibleDatabaseKJV();
+    await loadDefaultBibleDatabase('KJV', 'King James Version (KJV)', 'data/BibleVerses_KJV.tsv');
+  }
+
+  if (isOutdated) {
+    localStorage.setItem('worship_db_version', currentDbVersion);
   }
 };
 
@@ -172,9 +175,9 @@ const loadDefaultSongDatabase = async () => {
   }
 };
 
-const loadDefaultBibleDatabase = async () => {
+const loadDefaultBibleDatabase = async (idSuffix: string, name: string, fileRelativePath: string) => {
   try {
-    const text = await fetchText('data/BibleVerses.tsv');
+    const text = await fetchText(fileRelativePath);
     const parsedBible = parseTsv(text);
     
     const finalVerses: BibleVerse[] = parsedBible.map((v: any) => ({
@@ -184,29 +187,10 @@ const loadDefaultBibleDatabase = async () => {
       text: v.text
     }));
     
-    await set('dbinfo_bible_TB', { id: 'bible_TB', name: 'Terjemahan Baru (TB)', type: 'bible', isDefault: true } as DatabaseVersion);
-    await set('dbdata_bible_TB', finalVerses);
+    await set(`dbinfo_bible_${idSuffix}`, { id: `bible_${idSuffix}`, name: name, type: 'bible', isDefault: true } as DatabaseVersion);
+    await set(`dbdata_bible_${idSuffix}`, finalVerses);
   } catch (error) {
-    console.error("Failed to load default bible db", error);
-  }
-};
-
-const loadDefaultBibleDatabaseKJV = async () => {
-  try {
-    const text = await fetchText('data/BibleVerses_KJV.tsv');
-    const parsedBible = parseTsv(text);
-    
-    const finalVerses: BibleVerse[] = parsedBible.map((v: any) => ({
-      book: v.book,
-      chapter: parseInt(v.chapter, 10),
-      verse: parseInt(v.verse, 10),
-      text: v.text
-    }));
-    
-    await set('dbinfo_bible_KJV', { id: 'bible_KJV', name: 'King James Version (KJV)', type: 'bible', isDefault: true } as DatabaseVersion);
-    await set('dbdata_bible_KJV', finalVerses);
-  } catch (error) {
-    console.error("Failed to load KJV bible db", error);
+    console.error(`Failed to load default bible db ${idSuffix}`, error);
   }
 };
 
