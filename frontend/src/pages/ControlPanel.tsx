@@ -5,6 +5,7 @@ import { SyncButton } from '../components/SyncButton';
 import { BackgroundPickerModal } from '../components/BackgroundPickerModal';
 import { saveLocalVideo } from '../utils/imageStorage';
 import { FooterClock } from '../components/FooterClock';
+import { RichEditor, RichEditorRef } from '../components/RichEditor';
 import { initDefaultDatabases, searchLocalSongs, searchLocalBible, syncCustomSongs, getDatabaseList, DatabaseVersion, getAllLocalSongTitles } from '../utils/dbStorage';
 
 const processText = (raw: string) => {
@@ -70,9 +71,11 @@ export default function ControlPanel() {
     return [];
   });
 
-  const [isEditingRundown, setIsEditingRundown] = useState(urlId === 'new');
+  const [isEditingRundown, setIsEditingRundown] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [dragItem, setDragItem] = useState<number | null>(null);
+  const [hasSelection, setHasSelection] = useState(false);
+  const editorRef = useRef<RichEditorRef>(null);
   
   const [activeDragLogo, setActiveDragLogo] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -100,7 +103,7 @@ export default function ControlPanel() {
   const [isSegmentModalOpen, setIsSegmentModalOpen] = useState(false);
   const [segmentEditIndex, setSegmentEditIndex] = useState<number | null>(null);
   const [tempVisibleSegments, setTempVisibleSegments] = useState<number[]>([]);
-  const [hasSelection, setHasSelection] = useState(false);
+
   
   // Running Text States
   const [runningText, setRunningText] = useState(localStorage.getItem('worship_rt_text') || '');
@@ -690,32 +693,16 @@ export default function ControlPanel() {
   }, [activeItem, activeSegment, mode, playlist, isEditingRundown]);
 
   const wrapText = (colorTag: string) => {
-    const textarea = document.getElementById('editor-textarea') as HTMLTextAreaElement;
-    if (!textarea) return;
-    
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    if (start === end) return; 
+    let hex = '#ef4444';
+    if (colorTag === 'kuning') hex = '#eab308';
+    if (colorTag === 'hijau') hex = '#22c55e';
+    if (colorTag === 'biru') hex = '#3b82f6';
+    if (colorTag === 'ungu') hex = '#c084fc';
+    if (colorTag === 'oranye') hex = '#fb923c';
 
-    const currentText = playlist[activeItem]?.segments[activeSegment] || '';
-    const before = currentText.substring(0, start);
-    const selected = currentText.substring(start, end);
-    const after = currentText.substring(end);
-
-    setPlaylist(prev => {
-      const newPlaylist = [...prev];
-      newPlaylist[activeItem] = {
-        ...newPlaylist[activeItem],
-        segments: [...newPlaylist[activeItem].segments]
-      };
-      newPlaylist[activeItem].segments[activeSegment] = `${before}[${colorTag}]${selected}[/${colorTag}]${after}`;
-      return newPlaylist;
-    });
-
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start, start + selected.length + (colorTag.length * 2) + 5);
-    }, 10);
+    if (editorRef.current) {
+      editorRef.current.applyColor(colorTag, hex);
+    }
   };
 
   const openDisplay = () => {
@@ -978,28 +965,22 @@ export default function ControlPanel() {
                             {isEditView ? (
                               <div className="w-full h-full flex flex-col relative min-h-0">
                                 {/* Toolbar Warna dipindahkan ke bawah */}
-                                <textarea 
-                                  id="editor-textarea"
-                                  className="w-full flex-1 bg-white/80 backdrop-blur-md border border-indigo-200 rounded-xl p-4 text-lg md:text-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 shadow-inner text-indigo-900 whitespace-pre-wrap leading-relaxed transition-all resize-none text-center"
+                                <RichEditor
+                                  ref={editorRef}
+                                  className="w-full flex-1 bg-white/80 backdrop-blur-md border border-indigo-200 rounded-xl p-4 text-lg md:text-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 shadow-inner text-indigo-900 whitespace-pre-wrap leading-relaxed transition-all text-center overflow-y-auto"
                                   value={playlist[itemIdx]?.segments[segIdx] || ''}
-                                  onChange={(e) => {
+                                  onChange={(val) => {
                                     setPlaylist(prev => {
                                       const newPlaylist = [...prev];
                                       newPlaylist[itemIdx] = {
                                         ...newPlaylist[itemIdx],
                                         segments: [...newPlaylist[itemIdx].segments]
                                       };
-                                      newPlaylist[itemIdx].segments[segIdx] = e.target.value;
+                                      newPlaylist[itemIdx].segments[segIdx] = val;
                                       return newPlaylist;
                                     });
                                   }}
-                                  onSelect={(e) => {
-                                    const target = e.target as HTMLTextAreaElement;
-                                    setHasSelection(target.selectionStart !== target.selectionEnd);
-                                  }}
-                                  onBlur={() => {
-                                    setTimeout(() => setHasSelection(false), 150);
-                                  }}
+                                  onSelectChange={setHasSelection}
                                   placeholder="Ketik teks di sini (blok teks untuk mewarnai)..."
                                 />
                                 <div className="flex justify-between items-center mt-2 gap-2">
@@ -1011,6 +992,8 @@ export default function ControlPanel() {
                                     <button onClick={() => wrapText('kuning')} className="px-3 py-1.5 bg-yellow-400 text-slate-900 rounded-lg text-xs font-bold hover:bg-yellow-500 transition shadow-sm">Kuning</button>
                                     <button onClick={() => wrapText('hijau')} className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-xs font-bold hover:bg-green-600 transition shadow-sm">Hijau</button>
                                     <button onClick={() => wrapText('biru')} className="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-xs font-bold hover:bg-blue-600 transition shadow-sm">Biru</button>
+                                    <button onClick={() => wrapText('ungu')} className="px-3 py-1.5 bg-purple-500 text-white rounded-lg text-xs font-bold hover:bg-purple-600 transition shadow-sm">Ungu</button>
+                                    <button onClick={() => wrapText('oranye')} className="px-3 py-1.5 bg-orange-400 text-white rounded-lg text-xs font-bold hover:bg-orange-500 transition shadow-sm">Oranye</button>
                                   </div>
 
                                   <button 
