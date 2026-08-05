@@ -399,16 +399,17 @@ export default function DisplayWindow() {
                   videoId = url.split('v=')[1].split('&')[0];
                 }
                 embedUrl = videoId 
-                  ? `https://www.youtube.com/embed/${videoId}?list=${listId}&autoplay=1&mute=0`
-                  : `https://www.youtube.com/embed/videoseries?list=${listId}&autoplay=1&mute=0`;
+                  ? `https://www.youtube-nocookie.com/embed/${videoId}?list=${listId}&autoplay=1&mute=0`
+                  : `https://www.youtube-nocookie.com/embed/videoseries?list=${listId}&autoplay=1&mute=0`;
               } else if (url.includes('youtube.com/watch?v=')) {
                 const videoId = url.split('v=')[1].split('&')[0];
-                embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0`;
+                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0`;
               } else if (url.includes('youtu.be/')) {
                 const videoId = url.split('youtu.be/')[1].split('?')[0];
-                embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0`;
-              } else if (url.includes('youtube.com/embed/')) {
+                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0`;
+              } else if (url.includes('youtube.com/embed/') || url.includes('youtube-nocookie.com/embed/')) {
                 embedUrl = url.includes('?') ? url.replace('autoplay=0', 'autoplay=1') : `${url}?autoplay=1`;
+                embedUrl = embedUrl.replace('youtube.com', 'youtube-nocookie.com');
               } else {
                 embedUrl = url; // Fallback
               }
@@ -417,7 +418,8 @@ export default function DisplayWindow() {
                 <iframe 
                   key={embedUrl}
                   className="w-full h-full object-contain animate-fade-in" 
-                  src={embedUrl} 
+                  src={embedUrl}
+                  referrerPolicy="strict-origin-when-cross-origin"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                   allowFullScreen
                 ></iframe>

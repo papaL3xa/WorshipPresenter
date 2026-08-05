@@ -56,6 +56,15 @@ app.on('browser-window-created', (event, window) => {
 });
 
 app.whenReady().then(() => {
+  const { session } = require('electron');
+  session.defaultSession.webRequest.onBeforeSendHeaders(
+    { urls: ['*://*.youtube.com/*', '*://*.youtube-nocookie.com/*'] },
+    (details, callback) => {
+      details.requestHeaders['Referer'] = 'https://localhost/';
+      callback({ requestHeaders: details.requestHeaders });
+    }
+  );
+
   const mainWin = createWindow();
 
   // Pastikan jendela baru (Display Window) juga mendapat preload script
