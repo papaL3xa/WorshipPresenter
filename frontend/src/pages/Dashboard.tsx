@@ -249,7 +249,7 @@ export default function Dashboard() {
               <div className="bg-indigo-50 text-indigo-900 p-5 rounded-2xl mb-6 text-sm leading-relaxed border border-indigo-100 text-left">
                 <strong>Tentang Aplikasi Ini:</strong><br/>
                 Aplikasi manajemen tata ibadah ini adalah perangkat lunak <em>full free</em> yang didekasikan khusus untuk mendukung pelayanan ibadah multimedia.<br/><br/>
-                Dibuat dengan segenap hati <Heart className="inline text-rose-500 mb-1" size={16}/> oleh departemen <strong>MultiMedia Jemaat PISGAH BISDAC</strong>. Pengembangannya secara langsung dipimpin oleh <strong>Herbert JS Sagala</strong>.
+                Dibuat dengan segenap hati <Heart className="inline text-rose-500 mb-1" size={16}/> oleh departemen <strong>MultiMedia Jemaat PISGAH BISDAC (Batam International Seventh-day Adventist Church)</strong>. Pengembangannya secara langsung dipimpin oleh <strong>Herbert JS Sagala</strong>.
               </div>
               
               <a 
