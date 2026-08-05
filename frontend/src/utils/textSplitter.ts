@@ -21,7 +21,7 @@ export const splitLongSegments = (rawItems: any[]) => {
       
       item.segments.forEach((seg: string, idx: number) => {
         const wasVisible = !oldVisibleSegments || oldVisibleSegments.includes(idx);
-        const MAX_LEN = 160;
+        const MAX_LEN = 220;
         
         if (seg.length > MAX_LEN) {
           let remaining = seg;
@@ -39,11 +39,12 @@ export const splitLongSegments = (rawItems: any[]) => {
             }
             
             let splitPos = -1;
-            const punctuationMarks = ['. ', ', ', '; ', ': ', '? ', '! '];
+            // Prioritaskan pemotongan di baris baru (\n) untuk lagu, baru tanda baca
+            const punctuationMarks = ['\n', '. ', ', ', '; ', ': ', '? ', '! '];
             
             for (let p of punctuationMarks) {
               const pIdx = remaining.lastIndexOf(p, MAX_LEN);
-              if (pIdx > MAX_LEN - 60) {
+              if (pIdx > MAX_LEN - 80) {
                 splitPos = pIdx + 1;
                 break;
               }
