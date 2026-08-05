@@ -46,10 +46,17 @@ echo "Sedang mengemas menjadi file Installer (.exe)..."
 npx electron-builder --win --x64
 
 if [ $? -eq 0 ]; then
+    echo "Membersihkan file-file sementara..."
+    mkdir -p release
+    # Pindahkan file .exe ke folder release
+    mv release-installer/*.exe release/ 2>/dev/null
+    # Hapus folder release-installer yang berisi file rongsokan (win-unpacked dll)
+    rm -rf release-installer
+
     echo "==================================================="
     echo "✅ INSTALLER BERHASIL DIBUAT!"
-    echo "File Installer berada di:"
-    echo "$(pwd)/release-installer/"
+    echo "Hanya File Installer yang disimpan di:"
+    echo "$(pwd)/release/"
     echo ""
     echo "Cari file bernama: 'Worship Presenter Setup *.exe'"
     echo "Kirimkan file tersebut ke pengguna untuk diinstall."
