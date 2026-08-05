@@ -157,7 +157,7 @@ export default function Library() {
   const performSearch = async (query: string, type: string, autoSelectFirst = false) => {
     if (!query || query.trim().length === 0) {
       setResults([]);
-      lastSearchedRef.current = { query: '', type: '', songVersion: '', bibleVersion: '' };
+      lastSearchedRef.current = { query: '', type: '', songVersion: '', bibleVersion: '', songCategory: '' };
       return;
     }
     
