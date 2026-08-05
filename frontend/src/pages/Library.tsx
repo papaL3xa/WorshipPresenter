@@ -50,6 +50,7 @@ export default function Library() {
   const [activeSegment, setActiveSegment] = useState<number | null>(null);
   const [isEditingItem, setIsEditingItem] = useState(false);
   const [isSavingItem, setIsSavingItem] = useState(false);
+  const [isDeletingSong, setIsDeletingSong] = useState(false);
   const [dragSegmentIdx, setDragSegmentIdx] = useState<number | null>(null);
   const [showFavorites, setShowFavorites] = useState(false);
   const [allSongTitles, setAllSongTitles] = useState<{id: string, title: string}[] | null>(null);
@@ -319,6 +320,39 @@ export default function Library() {
       alert('Error saat menyimpan ke server');
     } finally {
       setIsSavingItem(false);
+    }
+  };
+
+  const handleDeleteSong = async () => {
+    if (!selectedItem || !selectedItem.id) return;
+    if (!confirm('Anda yakin ingin menghapus lagu ini secara permanen?')) return;
+    
+    setIsDeletingSong(true);
+    try {
+      const res = await callApi('deleteSongItem', {}, { method: 'POST', payload: { id: selectedItem.id } });
+      if (res && res.status === 'deleted') {
+        const currentSync = await get('dbdata_song_GAS_SYNC') || [];
+        const filteredSync = currentSync.filter((s: any) => s.id !== selectedItem.id);
+        await set('dbdata_song_GAS_SYNC', filteredSync);
+        
+        setSelectedItem(null);
+        setIsEditingItem(false);
+        // Panggil pencarian ulang dengan state lama untuk update daftar
+        // Karena kita mengubah IndexedDB di background, pencarian ulang akan mengambil data baru
+        if (lastSearchedRef.current.query) {
+          const resSearch = await searchLocalSongs(lastSearchedRef.current.query, selectedSongVersion);
+          setResults(resSearch.slice(0, 100).map((item: any) => ({ ...item, type: 'song' })));
+        } else {
+          setResults([]);
+        }
+      } else {
+        alert('Gagal menghapus lagu: ' + (res?.message || 'Error'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Gagal menghubungi server untuk menghapus lagu');
+    } finally {
+      setIsDeletingSong(false);
     }
   };
 
@@ -622,21 +656,33 @@ export default function Library() {
                     </>
                   )}
                 </div>
-                <button 
-                  onClick={() => {
-                    if (isEditingItem) {
-                      handleSaveItem();
-                    } else {
-                      setIsEditingItem(true);
-                    }
-                  }}
-                  disabled={isSavingItem}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition ${
-                    isEditingItem ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'glass-button text-indigo-900'
-                  } ${isSavingItem ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  {isSavingItem ? <><Loader2 size={16} className="animate-spin" /> Menyimpan...</> : (isEditingItem ? <><Save size={16} /> Simpan ke Database</> : <><Edit size={16} /> Edit Lirik/Slide</>)}
-                </button>
+                <div className="flex items-center gap-2">
+                  {isEditingItem && selectedItem.type === 'song' && (
+                    <button 
+                      onClick={handleDeleteSong}
+                      disabled={isDeletingSong || isSavingItem}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition bg-red-100 text-red-700 hover:bg-red-200 shadow-sm border border-red-200 ${isDeletingSong ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      title="Hapus Lagu Permanen"
+                    >
+                      {isDeletingSong ? <><Loader2 size={16} className="animate-spin" /> Menghapus...</> : <><Trash2 size={16} /> Hapus Lagu</>}
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => {
+                      if (isEditingItem) {
+                        handleSaveItem();
+                      } else {
+                        setIsEditingItem(true);
+                      }
+                    }}
+                    disabled={isSavingItem || isDeletingSong}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition ${
+                      isEditingItem ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'glass-button text-indigo-900'
+                    } ${isSavingItem || isDeletingSong ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {isSavingItem ? <><Loader2 size={16} className="animate-spin" /> Menyimpan...</> : (isEditingItem ? <><Save size={16} /> Simpan ke Database</> : <><Edit size={16} /> Edit Lirik/Slide</>)}
+                  </button>
+                </div>
               </div>
               
               <div className={`flex flex-col md:flex-row gap-6 mt-4 flex-1 min-h-0`}>

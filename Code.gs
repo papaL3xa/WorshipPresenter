@@ -35,7 +35,8 @@ function handleRequest(e, method) {
     deletePlaylist: deletePlaylist,
     uploadImages: uploadImagesHandler,
     getDriveImages: getDriveImagesHandler,
-    saveSongItem: saveSongItem
+    saveSongItem: saveSongItem,
+    deleteSongItem: deleteSongItem
   };
 
   const handler = routes[action];
@@ -225,6 +226,35 @@ function saveSongItem(e) {
   
   SpreadsheetApp.flush();
   return { status: "saved", songId: songId };
+}
+
+function deleteSongItem(e) {
+  const payloadStr = e.parameter.payload || (e.postData ? e.postData.contents : "{}");
+  const data = JSON.parse(payloadStr);
+  const songId = data.id;
+  
+  if (!songId) return { status: "error", message: "ID tidak ditemukan" };
+  
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sSongs = ss.getSheetByName("Songs");
+  const sSongSegments = ss.getSheetByName("SongSegments");
+  
+  const songData = sSongs.getDataRange().getValues();
+  for (let i = songData.length - 1; i > 0; i--) {
+    if (String(songData[i][0]).trim() === String(songId).trim()) {
+      sSongs.deleteRow(i + 1);
+    }
+  }
+  
+  const segData = sSongSegments.getDataRange().getValues();
+  for (let i = segData.length - 1; i > 0; i--) {
+    if (String(segData[i][1]).trim() === String(songId).trim()) {
+      sSongSegments.deleteRow(i + 1);
+    }
+  }
+  
+  SpreadsheetApp.flush();
+  return { status: "deleted" };
 }
 
 function deletePlaylist(e) {
