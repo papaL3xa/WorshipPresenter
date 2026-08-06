@@ -175,6 +175,7 @@ export default function DisplayWindow() {
 
   let segmentLabel = '';
   let displayLabel = '';
+  let categoryLabel = '';
   let totalSegments = 1;
   
   // 1. Prioritaskan item yang datang dari BroadcastChannel (liveState.item)
@@ -184,6 +185,9 @@ export default function DisplayWindow() {
     itemType = liveState.item.type || (liveState.item.book ? 'bible' : 'song');
     if (liveState.item.segmentLabels && liveState.item.segmentLabels.length > liveState.segmentIndex) {
       segmentLabel = liveState.item.segmentLabels[liveState.segmentIndex];
+    }
+    if (liveState.item.category && liveState.item.category !== 'Custom') {
+      categoryLabel = liveState.item.category;
     }
     totalSegments = liveState.item.segments.length;
 

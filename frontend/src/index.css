@@ -24,7 +24,7 @@
   .dark body {
     /* Windows 11 Dark Mica-like Background */
     background-color: #202020;
-    color: #FFFFFF;
+    color: #D4B872;
     color-scheme: dark;
   }
   
@@ -50,11 +50,11 @@
   }
   
   .dark .glass-panel {
-    @apply bg-[#282828] border border-white/10 shadow-sm text-white;
+    @apply bg-[#282828] border border-white/10 shadow-sm text-[#D4B872];
   }
   
   .glass-panel-dark {
-    @apply bg-[#282828] border border-white/10 shadow-sm rounded-xl text-white transition-all duration-200;
+    @apply bg-[#282828] border border-white/10 shadow-sm rounded-xl text-[#D4B872] transition-all duration-200;
   }
 
   .glass-button {
@@ -64,7 +64,7 @@
   }
   
   .dark .glass-button {
-    @apply bg-[#2D2D2D] border-white/10 text-slate-200 hover:bg-[#323232] focus:ring-indigo-500/50 active:bg-[#282828] shadow-black/20;
+    @apply bg-[#2D2D2D] border-white/10 text-[#C5A059] hover:bg-[#323232] focus:ring-indigo-500/50 active:bg-[#282828] shadow-black/20;
   }
 
   .glass-input {
@@ -74,7 +74,7 @@
   }
   
   .dark .glass-input {
-    @apply bg-[#2D2D2D] border-white/10 text-slate-200 placeholder-slate-500 focus:bg-[#333333] focus:border-b-indigo-500 shadow-black/20;
+    @apply bg-[#2D2D2D] border-white/10 text-[#C5A059] placeholder-[#9C8346] focus:bg-[#333333] focus:border-b-indigo-500 shadow-black/20;
   }
   
   /* Global dark mode text color overrides to avoid modifying every file manually */
@@ -82,7 +82,7 @@
   .dark .text-indigo-950,
   .dark .text-slate-900,
   .dark .text-slate-800 {
-    color: #FFFFFF;
+    color: #D4B872; /* Light Gold */
   }
   
   .dark .text-indigo-800,
@@ -93,17 +93,17 @@
   .dark .text-indigo-900\/60,
   .dark .text-indigo-900\/70,
   .dark .text-indigo-900\/50 {
-    color: #EAEAEA;
+    color: #C5A059; /* Medium Gold */
   }
 
   .dark .text-slate-500,
   .dark .text-slate-400 {
-    color: #A0A0A0;
+    color: #9C8346; /* Dark Gold */
   }
   
   .dark .bg-indigo-100 {
     background-color: #333333;
-    color: #FFFFFF;
+    color: #D4B872;
   }
   
   .dark .bg-indigo-50 {
