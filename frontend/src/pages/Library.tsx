@@ -514,7 +514,7 @@ export default function Library() {
           </form>
           </div>
           
-          {results.length === 0 && !isSearching && searchQuery === '' && searchType === 'song' && (
+          {searchType === 'song' && (
             <div className="flex justify-center gap-2 mb-3 shrink-0">
               <button onClick={() => setViewMode('grid')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-900 border border-indigo-200'}`}>Nomor Saja</button>
               <button onClick={() => setViewMode('list')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-900 border border-indigo-200'}`}>Nomor & Judul</button>
@@ -522,7 +522,7 @@ export default function Library() {
           )}
 
           <div className="flex-1 overflow-y-auto space-y-2 pr-2">
-            {results.map((res) => (
+            {searchType === 'bible' && results.map((res) => (
               <div 
                 key={res.id} 
                 className={`w-full flex items-stretch rounded-xl border transition overflow-hidden ${
@@ -577,39 +577,57 @@ export default function Library() {
                 </button>
               </div>
             ))}
-            {results.length === 0 && !isSearching && searchQuery !== '' && (
+            
+            {searchType === 'bible' && results.length === 0 && !isSearching && searchQuery !== '' && (
               <div className="text-center text-sm text-indigo-900/60 p-4">Tidak ada hasil ditemukan.</div>
             )}
-            {results.length === 0 && !isSearching && searchQuery === '' && (
+            
+            {searchType === 'song' && (
               <div className="p-1">
-                {searchType === 'song' ? (
-                  <>
-                    {viewMode === 'grid' ? (
-                      <div className="grid grid-cols-5 gap-1.5">
-                        {filteredSongTitles ? filteredSongTitles.map((song: any) => (
+                {(() => {
+                  const displaySongs = (results.length > 0 || (searchQuery !== '' && !isSearching)) ? results : filteredSongTitles;
+                  if (!displaySongs || (displaySongs.length === 0 && !isSearching)) {
+                    return <div className="text-center text-sm text-indigo-900/60 p-4">Tidak ada hasil ditemukan.</div>;
+                  }
+                  
+                  return viewMode === 'grid' ? (
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {displaySongs.map((song: any) => (
+                        <button 
+                          key={song.id}
+                          onClick={() => {
+                            handleQuickOpenSong(song.id.toString());
+                          }}
+                          className="relative py-2 px-1 text-center text-xs font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm overflow-hidden text-ellipsis whitespace-nowrap dark:bg-[#282828] dark:border-white/10 dark:text-[#C5A059] dark:hover:bg-[#333] dark:hover:text-[#D4B872]"
+                          title={song.title}
+                        >
+                          {song.id}
+                          {isFavorite(song.id) && <Star size={10} className="absolute top-1 right-1 text-yellow-500 fill-yellow-500" />}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-1.5">
+                      {displaySongs.map((song: any) => (
+                        <div key={song.id} className={`w-full flex items-stretch rounded-md border transition overflow-hidden bg-white/40 border-white/20 hover:bg-indigo-600/10 dark:bg-[#282828] dark:border-white/10 ${selectedResultIds.includes(song.id) ? 'ring-1 ring-indigo-500' : ''}`}>
                           <button 
-                            key={song.id}
-                            onClick={() => {
+                            onClick={(e) => {
+                              let newSelection = [...selectedResultIds];
+                              if (e.ctrlKey || e.metaKey) {
+                                if (newSelection.includes(song.id)) {
+                                  newSelection = newSelection.filter(id => id !== song.id);
+                                } else {
+                                  newSelection.push(song.id);
+                                }
+                              } else {
+                                newSelection = [song.id];
+                              }
+                              setSelectedResultIds(newSelection);
+                              setActiveSegment(null);
+                              setIsEditingItem(false);
                               handleQuickOpenSong(song.id.toString());
                             }}
-                            className="py-2 px-1 text-center text-xs font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm overflow-hidden text-ellipsis whitespace-nowrap dark:bg-[#282828] dark:border-white/10 dark:text-[#C5A059] dark:hover:bg-[#333] dark:hover:text-[#D4B872]"
-                            title={song.title}
-                          >
-                            {song.id}
-                          </button>
-                        )) : (
-                          <div className="col-span-5 text-center p-4"><Loader2 size={20} className="animate-spin text-indigo-500 mx-auto"/></div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-1.5">
-                        {filteredSongTitles ? filteredSongTitles.map((song: any) => (
-                          <button 
-                            key={song.id}
-                            onClick={() => {
-                              handleQuickOpenSong(song.id.toString());
-                            }}
-                            className="w-full overflow-hidden p-2 text-left text-sm font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm flex items-center gap-3 dark:bg-[#282828] dark:border-white/10 dark:text-[#C5A059] dark:hover:bg-[#333] dark:hover:text-[#D4B872]"
+                            className="flex-1 p-2 text-left text-sm font-semibold text-indigo-900 transition flex items-center gap-3 dark:text-[#C5A059]"
                           >
                             <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded text-xs min-w-[32px] text-center shrink-0 dark:bg-[#444] dark:text-[#D4B872]">{song.id}</span>
                             <div className="flex flex-col flex-1 truncate text-left">
@@ -619,12 +637,32 @@ export default function Library() {
                               )}
                             </div>
                           </button>
-                        )) : (
-                          <div className="text-center p-4"><Loader2 size={20} className="animate-spin text-indigo-500 mx-auto"/></div>
-                        )}
-                      </div>
-                    )}
-                  </>
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (song.segments) {
+                                toggleFavorite(song);
+                              } else {
+                                const fullSong = await searchLocalSongs(song.id, selectedSongVersion);
+                                if (fullSong && fullSong.length > 0) {
+                                  toggleFavorite({ ...fullSong[0], type: 'song' });
+                                } else {
+                                  toggleFavorite({ ...song, segments: ['(Lirik tidak tersedia)'], type: 'song' });
+                                }
+                              }
+                            }}
+                            className="px-4 border-l border-white/20 flex items-center justify-center transition hover:bg-white/50 dark:hover:bg-white/10"
+                            title={isFavorite(song.id) ? "Hapus dari Favorit" : "Tambahkan ke Favorit"}
+                          >
+                            <Star size={18} className={isFavorite(song.id) ? "text-yellow-500 fill-yellow-500" : "text-indigo-300 dark:text-white/20"} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
                 ) : (
                   <div className="flex flex-col h-full">
                     {!selectedBibleBook ? (
