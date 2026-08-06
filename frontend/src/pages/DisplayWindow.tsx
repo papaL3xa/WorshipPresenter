@@ -387,7 +387,7 @@ export default function DisplayWindow() {
           }`}
         >
           {title && (itemType === 'song' || itemType === 'bible' || itemType === 'announcement') && (
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center gap-3">
               <h2 
                 key={`title-${title}-${liveState.segmentIndex}`}
                 className="px-8 md:px-64 text-center text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-yellow-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] opacity-90 tracking-wider mb-2"
@@ -397,7 +397,7 @@ export default function DisplayWindow() {
               </h2>
               {categoryLabel && (
                 <div 
-                  className="bg-white/20 border border-white/30 px-3 py-1 rounded-full text-[1.2vw] font-bold text-white shadow-sm backdrop-blur-md uppercase tracking-wider mb-2"
+                  className="bg-white/20 border border-white/30 px-3 py-1 rounded-full text-[1.2vw] font-bold text-white shadow-sm backdrop-blur-md uppercase tracking-wider"
                   style={{ textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' }}
                 >
                   {categoryLabel}
