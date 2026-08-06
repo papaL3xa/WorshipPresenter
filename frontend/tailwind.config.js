@@ -15,8 +15,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        heading: ['Outfit', 'sans-serif'],
+        sans: ['"Segoe UI Variable Display"', '"Segoe UI Variable"', '"Segoe UI"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        heading: ['"Segoe UI Variable Display"', '"Segoe UI Variable"', '"Segoe UI"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
       colors: {
         indigo: { // Tosca

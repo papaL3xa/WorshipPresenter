@@ -34,7 +34,7 @@ export const initDefaultDatabases = async () => {
   const dbKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbinfo_')) as string[];
   const dataKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbdata_')) as string[];
 
-  const currentDbVersion = '1.7'; // Update this when default TSVs change
+  const currentDbVersion = '1.0.2'; // Update this when default TSVs change
   const savedDbVersion = localStorage.getItem('worship_db_version');
 
   const isOutdated = savedDbVersion !== currentDbVersion;
@@ -83,13 +83,14 @@ export const initDefaultDatabases = async () => {
 
 import Papa from 'papaparse';
 
-const parseTsv = (tsvContent: string) => {
+const parseTsv = (tsvContent: string, isBible: boolean = false) => {
   // Pre-process: if user had \n literally typed as strings in TSV, we replace them with actual newlines temporarily
   // but PapaParse natively handles actual newlines inside quotes!
   const result = Papa.parse(tsvContent.trim(), {
     delimiter: '\t',
     header: true,
     skipEmptyLines: true,
+    quoteChar: isBible ? '' : '"',
   });
   // PapaParse returns an array of objects
   return result.data as any[];
@@ -184,7 +185,7 @@ const loadDefaultSongDatabase = async () => {
 const loadDefaultBibleDatabase = async (idSuffix: string, name: string, fileRelativePath: string) => {
   try {
     const text = await fetchText(fileRelativePath);
-    const parsedBible = parseTsv(text);
+    const parsedBible = parseTsv(text, true);
     
     const finalVerses: BibleVerse[] = parsedBible.map((v: any) => ({
       book: v.book,
@@ -204,7 +205,7 @@ const loadDefaultBibleDatabase = async (idSuffix: string, name: string, fileRela
 // UPLOAD CUSTOM TSV DATABASES
 // ------------------------------------------------------------------
 export const addCustomDatabase = async (info: DatabaseVersion, tsvContent: string) => {
-  const parsed = parseTsv(tsvContent);
+  const parsed = parseTsv(tsvContent, info.type === 'bible');
   // Basic validation
   if (info.type === 'bible' && (!parsed[0].book || !parsed[0].text)) {
     throw new Error("Format TSV Alkitab salah. Harus ada kolom book, chapter, verse, text.");
