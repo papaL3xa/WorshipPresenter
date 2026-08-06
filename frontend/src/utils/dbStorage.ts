@@ -34,14 +34,14 @@ export const initDefaultDatabases = async () => {
   const dbKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbinfo_')) as string[];
   const dataKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbdata_')) as string[];
 
-  const currentDbVersion = '1.0.2'; // Update this when default TSVs change
+  const currentDbVersion = '1.0.3'; // Update this when default files change
   const savedDbVersion = localStorage.getItem('worship_db_version');
 
   const isOutdated = savedDbVersion !== currentDbVersion;
 
   // Cek info DAN data, jika salah satu hilang atau versi usang → re-init
   if (isOutdated || !dbKeys.includes('dbinfo_song_LSEB') || !dataKeys.includes('dbdata_song_LSEB')) {
-    console.log("Initializing/Updating default song database...");
+    console.log("Initializing LSEB song database...");
     await loadDefaultSongDatabase();
   } else {
     // Auto-repair if segmentLabels are missing
@@ -57,6 +57,12 @@ export const initDefaultDatabases = async () => {
   if (isOutdated || !dbKeys.includes('dbinfo_bible_TB') || !dataKeys.includes('dbdata_bible_TB')) {
     console.log("Initializing default bible database (TB)...");
     await loadDefaultBibleDatabase('TB', 'Terjemahan Baru (TB)', 'data/BibleVerses_TB.tsv');
+  }
+
+  // Init Kidung Jemaat
+  if (isOutdated || !dbKeys.includes('dbinfo_song_KJ') || !dataKeys.includes('dbdata_song_KJ')) {
+    console.log("Initializing Kidung Jemaat song database...");
+    await loadDefaultFlatSongDatabase('song_KJ', 'Kidung Jemaat', 'data/Kidung_Jemaat.tsv');
   }
 
   if (isOutdated || !dbKeys.includes('dbinfo_bible_AYT') || !dataKeys.includes('dbdata_bible_AYT')) {
@@ -179,6 +185,16 @@ const loadDefaultSongDatabase = async () => {
     await set('dbdata_song_LSEB', finalSongs);
   } catch (error) {
     console.error("Failed to load default song db", error);
+  }
+};
+
+const loadDefaultFlatSongDatabase = async (idSuffix: string, name: string, fileRelativePath: string) => {
+  try {
+    const text = await fetchText(fileRelativePath);
+    const info: DatabaseVersion = { id: idSuffix, name, type: 'song', isDefault: true };
+    await addCustomDatabase(info, text);
+  } catch (error) {
+    console.error(`Failed to load flat song db ${idSuffix}`, error);
   }
 };
 
