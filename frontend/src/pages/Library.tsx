@@ -47,6 +47,7 @@ export default function Library() {
   const [isDbManagerOpen, setIsDbManagerOpen] = useState(false);
   const [selectedSongCategory, setSelectedSongCategory] = useState<string>('Semua');
   const [songCategories, setSongCategories] = useState<string[]>(['Semua']);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   // Bible Progressive Navigation State
   const [currentBibleBooks, setCurrentBibleBooks] = useState<string[]>([]);
@@ -1087,25 +1088,31 @@ export default function Library() {
                         </button>
                         {!db.isDefault && (
                           <button 
+                            disabled={processingId === db.id}
                             onClick={async () => {
                               if (confirm(`Hapus database ${db.name}?`)) {
-                                await deleteDatabase(db.id);
-                                const list = await getDatabaseList();
-                                setDbList(list);
-                                
-                                // Auto-revert to default if the deleted version was currently active
-                                if (db.type === 'song' && selectedSongVersion === db.id) {
-                                  setSelectedSongVersion('song_LSEB');
-                                  setSelectedSongCategory('Semua');
-                                } else if (db.type === 'bible' && selectedBibleVersion === db.id) {
-                                  setSelectedBibleVersion('bible_TB');
+                                setProcessingId(db.id);
+                                try {
+                                  await deleteDatabase(db.id);
+                                  const list = await getDatabaseList();
+                                  setDbList(list);
+                                  
+                                  // Auto-revert to default if the deleted version was currently active
+                                  if (db.type === 'song' && selectedSongVersion === db.id) {
+                                    setSelectedSongVersion('song_LSEB');
+                                    setSelectedSongCategory('Semua');
+                                  } else if (db.type === 'bible' && selectedBibleVersion === db.id) {
+                                    setSelectedBibleVersion('bible_TB');
+                                  }
+                                } finally {
+                                  setProcessingId(null);
                                 }
                               }
                             }}
-                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                            className={`p-2 rounded-lg transition ${processingId === db.id ? 'text-slate-400' : 'text-red-500 hover:bg-red-50'}`}
                             title="Hapus Database"
                           >
-                            <Trash2 size={16} />
+                            {processingId === db.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                           </button>
                         )}
                       </div>
