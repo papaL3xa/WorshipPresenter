@@ -181,7 +181,7 @@ export default function Library() {
       let resultsData: any[] = [];
       if (type === 'song') {
         const res = await searchLocalSongs(query, selectedSongVersion, selectedSongCategory);
-        resultsData = res.slice(0, 100).map((item: any) => ({ ...item, type: 'song' }));
+        resultsData = res.slice(0, 2000).map((item: any) => ({ ...item, type: 'song' }));
       } else {
         const res = await searchLocalBible(query, selectedBibleVersion);
         resultsData = res.map((item: any, idx: number) => ({
@@ -343,7 +343,7 @@ export default function Library() {
         // Karena kita mengubah IndexedDB di background, pencarian ulang akan mengambil data baru
         if (lastSearchedRef.current.query) {
           const resSearch = await searchLocalSongs(lastSearchedRef.current.query, selectedSongVersion);
-          setResults(resSearch.slice(0, 100).map((item: any) => ({ ...item, type: 'song' })));
+          setResults(resSearch.slice(0, 2000).map((item: any) => ({ ...item, type: 'song' })));
         } else {
           setResults([]);
         }
@@ -592,7 +592,7 @@ export default function Library() {
                             onClick={() => {
                               handleQuickOpenSong(song.id.toString());
                             }}
-                            className="py-2 px-1 text-center text-xs font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm overflow-hidden text-ellipsis whitespace-nowrap"
+                            className="py-2 px-1 text-center text-xs font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm overflow-hidden text-ellipsis whitespace-nowrap dark:bg-[#282828] dark:border-white/10 dark:text-[#C5A059] dark:hover:bg-[#333] dark:hover:text-[#D4B872]"
                             title={song.title}
                           >
                             {song.id}
@@ -609,13 +609,13 @@ export default function Library() {
                             onClick={() => {
                               handleQuickOpenSong(song.id.toString());
                             }}
-                            className="w-full overflow-hidden p-2 text-left text-sm font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm flex items-center gap-3"
+                            className="w-full overflow-hidden p-2 text-left text-sm font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm flex items-center gap-3 dark:bg-[#282828] dark:border-white/10 dark:text-[#C5A059] dark:hover:bg-[#333] dark:hover:text-[#D4B872]"
                           >
-                            <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded text-xs min-w-[32px] text-center shrink-0">{song.id}</span>
+                            <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded text-xs min-w-[32px] text-center shrink-0 dark:bg-[#444] dark:text-[#D4B872]">{song.id}</span>
                             <div className="flex flex-col flex-1 truncate text-left">
                               <span className="line-clamp-1 break-all">{song.title}</span>
                               {song.category && song.category !== 'Custom' && (
-                                <span className="text-[10px] text-indigo-500 font-medium uppercase tracking-wider">{song.category}</span>
+                                <span className="text-[10px] text-indigo-500 font-medium uppercase tracking-wider dark:text-[#9C8346]">{song.category}</span>
                               )}
                             </div>
                           </button>
