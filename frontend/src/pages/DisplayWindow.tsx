@@ -405,15 +405,6 @@ export default function DisplayWindow() {
               )}
             </div>
           )}
-          {progressText && (
-            <div 
-              key={`progress-${progressText}`}
-              className="text-white/80 text-[1.5vw] font-medium tracking-wider lowercase"
-              style={{ textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)' }}
-            >
-              {progressText}
-            </div>
-          )}
         </div>
       )}
 
