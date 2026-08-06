@@ -16,6 +16,7 @@ export interface SearchResult {
   type: string;
   title: string;
   author?: string;
+  category?: string;
   segments: string[];
   segmentLabels?: string[];
 }
@@ -156,11 +157,6 @@ export default function Library() {
   }, [activeSegment]);
 
   const performSearch = async (query: string, type: string, autoSelectFirst = false) => {
-    if (!query || query.trim().length === 0) {
-      setResults([]);
-      lastSearchedRef.current = { query: '', type: '', songVersion: '', bibleVersion: '', songCategory: '' };
-      return;
-    }
     
     if (lastSearchedRef.current.query === query && 
         lastSearchedRef.current.type === type && 
@@ -218,18 +214,10 @@ export default function Library() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (searchQuery.trim().length > 0) {
-        if (!showFavorites) {
-          performSearch(searchQuery, searchType);
-        } else {
-          setResults(favorites.filter(f => f.type === searchType && (searchQuery ? f.title.toLowerCase().includes(searchQuery.toLowerCase()) : true)));
-        }
+      if (!showFavorites) {
+        performSearch(searchQuery, searchType);
       } else {
-        if (showFavorites) {
-          setResults(favorites.filter(f => f.type === searchType));
-        } else {
-          setResults([]);
-        }
+        setResults(favorites.filter(f => f.type === searchType && (searchQuery.trim() ? f.title.toLowerCase().includes(searchQuery.trim().toLowerCase()) : true)));
       }
     }, 500); // 500ms debounce
     return () => clearTimeout(timer);
@@ -393,6 +381,8 @@ export default function Library() {
     setSelectedItem(newItem);
     setDragSegmentIdx(null);
   };
+
+  const filteredSongTitles = allSongTitles ? allSongTitles.filter((s: any) => selectedSongCategory === 'Semua' || s.category === selectedSongCategory) : null;
 
   return (
     <div className="h-full p-4 flex flex-col gap-4">
@@ -596,7 +586,7 @@ export default function Library() {
                   <>
                     {viewMode === 'grid' ? (
                       <div className="grid grid-cols-5 gap-1.5">
-                        {allSongTitles ? allSongTitles.map((song: any) => (
+                        {filteredSongTitles ? filteredSongTitles.map((song: any) => (
                           <button 
                             key={song.id}
                             onClick={() => {
@@ -613,7 +603,7 @@ export default function Library() {
                       </div>
                     ) : (
                       <div className="flex flex-col gap-1.5">
-                        {allSongTitles ? allSongTitles.map((song: any) => (
+                        {filteredSongTitles ? filteredSongTitles.map((song: any) => (
                           <button 
                             key={song.id}
                             onClick={() => {
@@ -622,7 +612,12 @@ export default function Library() {
                             className="w-full overflow-hidden p-2 text-left text-sm font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm flex items-center gap-3"
                           >
                             <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded text-xs min-w-[32px] text-center shrink-0">{song.id}</span>
-                            <span className="line-clamp-1 break-all">{song.title}</span>
+                            <div className="flex flex-col flex-1 truncate text-left">
+                              <span className="line-clamp-1 break-all">{song.title}</span>
+                              {song.category && song.category !== 'Custom' && (
+                                <span className="text-[10px] text-indigo-500 font-medium uppercase tracking-wider">{song.category}</span>
+                              )}
+                            </div>
                           </button>
                         )) : (
                           <div className="text-center p-4"><Loader2 size={20} className="animate-spin text-indigo-500 mx-auto"/></div>

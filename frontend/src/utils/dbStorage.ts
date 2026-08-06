@@ -425,7 +425,7 @@ export const searchLocalBible = async (query: string, versionId: string): Promis
 
 export const getAllLocalSongTitles = async (versionId: string) => {
   const songs = await searchLocalSongs('', versionId);
-  return songs.map(s => ({ id: s.id, title: s.title }));
+  return songs.map(s => ({ id: s.id, title: s.title, category: s.category }));
 };
 
 export const getLocalSongCategories = async (versionId: string): Promise<string[]> => {
