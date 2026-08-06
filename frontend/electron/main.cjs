@@ -184,7 +184,7 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
       id: payload.id,
       title: payload.title || "Lagu Baru",
       author: payload.author || "-",
-      category: "Pujian",
+      category: payload.category || "Pujian",
       segmentOrder: Array.from({length: payload.segments.length}, (_, i) => i),
       segments: payload.segments,
       segmentLabels: payload.segmentLabels || payload.segments.map((_, i) => `Slide ${i + 1}`)
