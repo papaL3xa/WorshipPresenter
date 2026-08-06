@@ -663,9 +663,9 @@ export default function Library() {
                 })()}
               </div>
             )}
-                ) : (
-                  <div className="flex flex-col h-full">
-                    {!selectedBibleBook ? (
+            {searchType === 'bible' && results.length === 0 && !isSearching && searchQuery === '' && (
+              <div className="flex flex-col h-full p-1">
+                {!selectedBibleBook ? (
                       <div className="grid grid-cols-2 gap-1.5">
                         {currentBibleBooks.length > 0 ? currentBibleBooks.map(book => (
                           <button 
@@ -749,8 +749,6 @@ export default function Library() {
                     )}
                   </div>
                 )}
-              </div>
-            )}
           </div>
         </section>
 
