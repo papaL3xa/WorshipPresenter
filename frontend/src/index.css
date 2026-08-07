@@ -51,11 +51,11 @@
   }
   
   .dark .glass-panel {
-    @apply bg-[#282828] border border-white/10 shadow-sm text-[#D4B872];
+    @apply bg-transparent border border-white/10 shadow-none text-[#D4B872];
   }
   
   .glass-panel-dark {
-    @apply bg-[#282828] border border-white/10 shadow-sm rounded-xl text-[#D4B872] transition-all duration-200;
+    @apply bg-transparent border border-white/10 shadow-none rounded-xl text-[#D4B872] transition-all duration-200;
   }
 
   .glass-button {
