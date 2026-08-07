@@ -942,6 +942,22 @@ export default function ControlPanel() {
                             />
                             <span className="text-indigo-950 dark:text-slate-200 font-bold select-none">Putar Berulang (Looping)</span>
                           </label>
+                          <label className="flex items-center gap-3 cursor-pointer mt-2 bg-white/70 dark:bg-slate-800/80 px-5 py-3 rounded-xl border border-indigo-100 dark:border-slate-700 shadow-sm transition-colors hover:bg-white dark:hover:bg-slate-700">
+                            <input 
+                              type="checkbox" 
+                              checked={!!playlist[itemIdx]?.muted} 
+                              onChange={(e) => {
+                                const val = e.target.checked;
+                                setPlaylist(prev => {
+                                  const newPl = [...prev];
+                                  newPl[itemIdx] = { ...newPl[itemIdx], muted: val };
+                                  return newPl;
+                                });
+                              }}
+                              className="w-5 h-5 rounded border-indigo-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-slate-900" 
+                            />
+                            <span className="text-indigo-950 dark:text-slate-200 font-bold select-none">Bisukan Suara (Mute)</span>
+                          </label>
                         </div>
                       ) : (playlist[itemIdx]?.type === 'countdown') ? (
                         <div className="flex flex-col items-center w-full">
@@ -1627,6 +1643,22 @@ export default function ControlPanel() {
                     className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shadow-sm" 
                   />
                   <span className="text-slate-700 font-semibold select-none">Putar berulang-ulang (Loop) sampai pindah slide</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                  <input 
+                    type="checkbox" 
+                    checked={!!playlist[activeItem]?.muted} 
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      setPlaylist(prev => {
+                        const newPl = [...prev];
+                        newPl[activeItem] = { ...newPl[activeItem], muted: val };
+                        return newPl;
+                      });
+                    }}
+                    className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" 
+                  />
+                  <span className="text-slate-700 font-semibold select-none">Bisukan Suara (Mute)</span>
                 </label>
               </div>
               <div className="flex items-center gap-4">

@@ -151,13 +151,17 @@ export default function DisplayWindow() {
   let categoryLabel = '';
   let totalSegments = 1;
   let isVideoLoop = false;
+  let isVideoMuted = false;
   
   // 1. Prioritaskan item yang datang dari BroadcastChannel (liveState.item)
   if (liveState.item && liveState.item.segments) {
     text = liveState.item.segments[liveState.segmentIndex];
     title = liveState.item.title;
     itemType = liveState.item.type || (liveState.item.book ? 'bible' : 'song');
-    if (itemType === 'video') isVideoLoop = !!liveState.item.loop;
+    if (itemType === 'video') {
+      isVideoLoop = !!liveState.item.loop;
+      isVideoMuted = !!liveState.item.muted;
+    }
     if (liveState.item.segmentLabels && liveState.item.segmentLabels.length > liveState.segmentIndex) {
       segmentLabel = liveState.item.segmentLabels[liveState.segmentIndex];
     }
@@ -174,7 +178,10 @@ export default function DisplayWindow() {
       text = pItem.segments[liveState.segmentIndex];
       title = pItem.title;
       itemType = pItem.type || (pItem.book ? 'bible' : 'song');
-      if (itemType === 'video') isVideoLoop = !!pItem.loop;
+      if (itemType === 'video') {
+        isVideoLoop = !!pItem.loop;
+        isVideoMuted = !!pItem.muted;
+      }
       if (pItem.segmentLabels && pItem.segmentLabels.length > liveState.segmentIndex) {
         segmentLabel = pItem.segmentLabels[liveState.segmentIndex];
       }
@@ -400,16 +407,23 @@ export default function DisplayWindow() {
                   videoId = url.split('v=')[1].split('&')[0];
                 }
                 embedUrl = videoId 
-                  ? `https://www.youtube-nocookie.com/embed/${videoId}?list=${listId}&autoplay=1&mute=0`
-                  : `https://www.youtube-nocookie.com/embed/videoseries?list=${listId}&autoplay=1&mute=0`;
+                  ? `https://www.youtube-nocookie.com/embed/${videoId}?list=${listId}&autoplay=1&mute=${isVideoMuted ? '1' : '0'}`
+                  : `https://www.youtube-nocookie.com/embed/videoseries?list=${listId}&autoplay=1&mute=${isVideoMuted ? '1' : '0'}`;
               } else if (url.includes('youtube.com/watch?v=')) {
                 videoId = url.split('v=')[1].split('&')[0];
-                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0`;
+                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=${isVideoMuted ? '1' : '0'}`;
               } else if (url.includes('youtu.be/')) {
                 videoId = url.split('youtu.be/')[1].split('?')[0];
-                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0`;
+                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=${isVideoMuted ? '1' : '0'}`;
               } else if (url.includes('youtube.com/embed/') || url.includes('youtube-nocookie.com/embed/')) {
                 embedUrl = url.includes('?') ? url.replace('autoplay=0', 'autoplay=1') : `${url}?autoplay=1`;
+                if (isVideoMuted) {
+                  embedUrl = embedUrl.replace('mute=0', 'mute=1');
+                  if (!embedUrl.includes('mute=')) embedUrl += '&mute=1';
+                } else {
+                  embedUrl = embedUrl.replace('mute=1', 'mute=0');
+                  if (!embedUrl.includes('mute=')) embedUrl += '&mute=0';
+                }
                 embedUrl = embedUrl.replace('youtube.com', 'youtube-nocookie.com');
                 // try to parse videoId from embed url
                 videoId = embedUrl.split('embed/')[1].split('?')[0];
@@ -433,16 +447,16 @@ export default function DisplayWindow() {
               );
             }
             if (url.startsWith('local_vid_')) {
-              return <LocalVideoPlayer key={url} id={url} loop={isVideoLoop} autoPlay={true} />;
+              return <LocalVideoPlayer key={url} id={url} loop={isVideoLoop} autoPlay={true} muted={isVideoMuted} />;
             }
             return (
               <video 
                 key={url}
                 className="w-full h-full object-contain animate-fade-in" 
-                controls
-                loop={isVideoLoop}
-                autoPlay={true}
                 src={url} 
+                autoPlay 
+                loop={isVideoLoop}
+                muted={isVideoMuted}
               />
             );
           })()
