@@ -65,7 +65,7 @@
   }
   
   .dark .glass-button {
-    @apply bg-[#2D2D2D] border-white/10 text-[#C5A059] hover:bg-[#323232] focus:ring-indigo-500/50 active:bg-[#282828] shadow-black/20;
+    @apply bg-transparent border-white/10 text-[#C5A059] hover:bg-white/5 focus:ring-indigo-500/50 active:bg-white/10 shadow-none;
   }
 
   .glass-input {
@@ -75,7 +75,7 @@
   }
   
   .dark .glass-input {
-    @apply bg-[#2D2D2D] border-white/10 text-[#C5A059] placeholder-[#9C8346] focus:bg-[#333333] focus:border-b-indigo-500 shadow-black/20;
+    @apply bg-transparent border-white/10 text-[#C5A059] placeholder-[#9C8346] focus:bg-transparent focus:border-b-[#D4B872] shadow-none;
   }
   
   /* Global dark mode text color overrides to avoid modifying every file manually */

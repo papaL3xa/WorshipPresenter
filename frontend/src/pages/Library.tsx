@@ -406,7 +406,7 @@ export default function Library() {
       <main className="flex-1 flex flex-col md:flex-row gap-4 min-h-0">
         <section className="w-full h-[45%] md:h-auto md:w-1/3 glass-panel p-4 flex flex-col">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-indigo-900">Pencarian Data</h2>
+            <h2 className="text-lg font-bold text-indigo-900 dark:text-[#C5A059]">Pencarian Data</h2>
             {searchType === 'song' && (
               <button 
                 onClick={() => {
@@ -421,7 +421,7 @@ export default function Library() {
                   setIsEditingItem(true);
                   setActiveSegment(0);
                 }}
-                className="p-1.5 rounded-lg transition-all shadow-sm font-semibold bg-green-500/10 text-green-700 border border-green-500/30 hover:bg-green-500/20"
+                className="p-1.5 rounded-lg transition-all shadow-sm font-semibold bg-green-500/10 dark:bg-transparent text-green-700 dark:text-green-500 border border-green-500/30 dark:border-white/10 hover:bg-green-500/20 dark:hover:bg-white/5"
                 title="Tambah Lagu Baru"
               >
                 <Plus size={18} />
@@ -430,7 +430,7 @@ export default function Library() {
           </div>
           
           <div className="flex gap-2 mb-2">
-            <button onClick={() => {setSearchType('song'); setResults([]); setSelectedItem(null); setSelectedResultIds([]);}} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'song' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white/30 text-indigo-900'}`}><Music size={16}/> Lagu</button>
+            <button onClick={() => {setSearchType('song'); setResults([]); setSelectedItem(null); setSelectedResultIds([]);}} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'song' ? 'bg-indigo-600 text-white shadow-md dark:shadow-none' : 'bg-white/30 dark:bg-transparent text-indigo-900 dark:text-[#C5A059] dark:border dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/5'}`}><Music size={16}/> Lagu</button>
             <button onClick={() => {
               setSearchType('bible'); 
               setResults([]); 
@@ -438,12 +438,12 @@ export default function Library() {
               setSelectedResultIds([]);
               setSelectedBibleBook(null);
               setSelectedBibleChapter(null);
-            }} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'bible' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white/30 text-indigo-900'}`}><BookOpen size={16}/> Alkitab</button>
+            }} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'bible' ? 'bg-indigo-600 text-white shadow-md dark:shadow-none' : 'bg-white/30 dark:bg-transparent text-indigo-900 dark:text-[#C5A059] dark:border dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/5'}`}><BookOpen size={16}/> Alkitab</button>
           </div>
           
           <div className="mb-4 flex gap-2">
             <select 
-              className="flex-1 bg-white/50 border border-indigo-200 rounded-lg px-2 py-2 text-sm text-indigo-900 font-semibold focus:outline-none focus:border-indigo-500 transition"
+              className="flex-1 bg-white/50 dark:bg-transparent border border-indigo-200 dark:border-white/10 rounded-lg px-2 py-2 text-sm text-indigo-900 dark:text-[#C5A059] font-semibold focus:outline-none focus:border-indigo-500 dark:focus:border-[#D4B872] transition"
               value={searchType === 'song' ? selectedSongVersion : selectedBibleVersion}
               onChange={(e) => searchType === 'song' ? setSelectedSongVersion(e.target.value) : setSelectedBibleVersion(e.target.value)}
             >
@@ -453,7 +453,7 @@ export default function Library() {
             </select>
             <button 
               onClick={() => setIsDbManagerOpen(true)}
-              className="p-2 bg-indigo-50 text-indigo-900 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition shadow-sm flex items-center justify-center"
+              className="p-2 bg-indigo-50 dark:bg-transparent text-indigo-900 dark:text-[#C5A059] border border-indigo-200 dark:border-white/10 rounded-lg hover:bg-indigo-100 dark:hover:bg-white/5 transition shadow-sm dark:shadow-none flex items-center justify-center"
               title="Kelola Database (Tambah Versi)"
             >
               <Settings size={18} />
@@ -463,7 +463,7 @@ export default function Library() {
           {searchType === 'song' && (
             <div className="mb-4">
               <select 
-                className="w-full bg-white/50 border border-indigo-200 rounded-lg px-2 py-2 text-sm text-indigo-900 font-semibold focus:outline-none focus:border-indigo-500 transition"
+                className="w-full bg-white/50 dark:bg-transparent border border-indigo-200 dark:border-white/10 rounded-lg px-2 py-2 text-sm text-indigo-900 dark:text-[#C5A059] font-semibold focus:outline-none focus:border-indigo-500 dark:focus:border-[#D4B872] transition"
                 value={selectedSongCategory}
                 onChange={(e) => setSelectedSongCategory(e.target.value)}
               >
@@ -480,7 +480,7 @@ export default function Library() {
                 const newShowFavs = !showFavorites;
                 setShowFavorites(newShowFavs);
               }}
-              className={`p-3 rounded-xl flex items-center justify-center transition-all shadow-sm border ${showFavorites ? 'bg-yellow-400 border-yellow-500 text-yellow-900 shadow-yellow-400/50 scale-105' : 'bg-white/40 border-white/40 text-indigo-900 hover:bg-white/60'}`}
+              className={`p-3 rounded-xl flex items-center justify-center transition-all shadow-sm border ${showFavorites ? 'bg-yellow-400 dark:bg-yellow-900/30 border-yellow-500 dark:border-yellow-600/50 text-yellow-900 dark:text-yellow-400 shadow-yellow-400/50 scale-105' : 'bg-white/40 dark:bg-transparent border-white/40 dark:border-white/10 text-indigo-900 dark:text-[#C5A059] hover:bg-white/60 dark:hover:bg-white/5'}`}
               title="Tampilkan hanya favorit"
             >
               <Star size={20} className={showFavorites ? 'text-yellow-600 stroke-[2.5px]' : ''} />
@@ -508,7 +508,7 @@ export default function Library() {
                 </button>
               )}
             </div>
-            <button type="submit" disabled={isSearching} className="glass-button bg-indigo-500/20 text-indigo-900 border-indigo-500/30">
+            <button type="submit" disabled={isSearching} className="glass-button bg-indigo-500/20 dark:bg-transparent text-indigo-900 dark:text-[#C5A059] border-indigo-500/30 dark:border-white/10 dark:hover:bg-white/5">
               {isSearching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16}/>}
             </button>
           </form>
@@ -516,8 +516,8 @@ export default function Library() {
           
           {searchType === 'song' && (
             <div className="flex justify-center gap-2 mb-3 shrink-0">
-              <button onClick={() => setViewMode('grid')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-900 border border-indigo-200'}`}>Nomor Saja</button>
-              <button onClick={() => setViewMode('list')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-900 border border-indigo-200'}`}>Nomor & Judul</button>
+              <button onClick={() => setViewMode('grid')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'grid' ? 'bg-indigo-600 text-white dark:border dark:border-[#C5A059]' : 'bg-white dark:bg-transparent text-indigo-900 dark:text-[#C5A059] border border-indigo-200 dark:border-white/10'}`}>Nomor Saja</button>
+              <button onClick={() => setViewMode('list')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-indigo-600 text-white dark:border dark:border-[#C5A059]' : 'bg-white dark:bg-transparent text-indigo-900 dark:text-[#C5A059] border border-indigo-200 dark:border-white/10'}`}>Nomor & Judul</button>
             </div>
           )}
 
