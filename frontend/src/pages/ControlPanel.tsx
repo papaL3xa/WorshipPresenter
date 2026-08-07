@@ -104,6 +104,7 @@ export default function ControlPanel() {
   const [runningText, setRunningText] = useState(localStorage.getItem('worship_rt_text') || '');
   const [rtPos, setRtPos] = useState(localStorage.getItem('worship_rt_pos') || 'bottom');
   const [rtSpeed, setRtSpeed] = useState(Number(localStorage.getItem('worship_rt_speed') || 15));
+  const [rtHeight, setRtHeight] = useState(Number(localStorage.getItem('worship_rt_height') || 7));
   const [isRtVisible, setIsRtVisible] = useState(false);
   
   // Add Item States
@@ -721,12 +722,13 @@ export default function ControlPanel() {
     localStorage.setItem('worship_rt_text', runningText);
     localStorage.setItem('worship_rt_pos', rtPos);
     localStorage.setItem('worship_rt_speed', String(rtSpeed));
+    localStorage.setItem('worship_rt_height', String(rtHeight));
     setIsRtVisible(visible);
 
     const channel = new BroadcastChannel('worship_live_sync');
     channel.postMessage({
       type: 'RUNNING_TEXT_UPDATE',
-      payload: { text: runningText, position: rtPos, speed: rtSpeed, isVisible: visible }
+      payload: { text: runningText, position: rtPos, speed: rtSpeed, height: rtHeight, isVisible: visible }
     });
     channel.close();
   };
@@ -1669,18 +1671,31 @@ export default function ControlPanel() {
                 <label className="block text-sm font-semibold text-indigo-900 mb-2">
                   Kecepatan (Durasi: {rtSpeed} detik)
                 </label>
-                <input 
-                  type="range" 
-                  min="5" 
-                  max="40" 
-                  value={rtSpeed}
-                  onChange={(e) => setRtSpeed(Number(e.target.value))}
-                  className="w-full accent-indigo-600"
-                />
-                <div className="flex justify-between text-xs text-indigo-400 mt-1">
-                  <span>Sangat Cepat</span>
-                  <span>Normal</span>
-                  <span>Sangat Lambat</span>
+
+                <div className="flex items-center gap-3">
+                  <input 
+                    type="range" 
+                    min="5" 
+                    max="40" 
+                    value={rtSpeed}
+                    onChange={(e) => setRtSpeed(Number(e.target.value))}
+                    className="w-full accent-indigo-600"
+                  />
+                  <span className="text-sm font-bold w-8 text-indigo-900 bg-indigo-50 px-2 py-1 rounded text-center">{rtSpeed}</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Ukuran / Tinggi Bar (vw)</label>
+                <div className="flex items-center gap-3">
+                  <input 
+                    type="range" 
+                    min="4" 
+                    max="15" 
+                    value={rtHeight} 
+                    onChange={(e) => setRtHeight(Number(e.target.value))} 
+                    className="w-full accent-indigo-600"
+                  />
+                  <span className="text-sm font-bold w-8 text-indigo-900 bg-indigo-50 px-2 py-1 rounded text-center">{rtHeight}</span>
                 </div>
               </div>
             </div>

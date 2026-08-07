@@ -78,7 +78,8 @@ export default function DisplayWindow() {
     text: localStorage.getItem('worship_rt_text') || '',
     position: localStorage.getItem('worship_rt_pos') || 'bottom',
     speed: Number(localStorage.getItem('worship_rt_speed') || 15),
-    isVisible: localStorage.getItem('worship_rt_visible') === 'true'
+    isVisible: localStorage.getItem('worship_rt_visible') === 'true',
+    height: Number(localStorage.getItem('worship_rt_height') || 7)
   });
 
   const [playlistMap, setPlaylistMap] = useState<Record<string, any>>({});
@@ -362,8 +363,8 @@ export default function DisplayWindow() {
         <div 
           className="absolute left-0 right-0 transition-all duration-500 pointer-events-none z-40"
           style={{
-            top: rtState.isVisible && rtState.position === 'top' ? '7vw' : '0',
-            bottom: rtState.isVisible && rtState.position === 'bottom' ? '7vw' : '0'
+            top: rtState.isVisible && rtState.position === 'top' ? `${rtState.height || 7}vw` : '0',
+            bottom: rtState.isVisible && rtState.position === 'bottom' ? `${rtState.height || 7}vw` : '0'
           }}
         >
           {logos.map(logo => (
@@ -548,16 +549,16 @@ export default function DisplayWindow() {
           className={`absolute left-0 right-0 z-50 bg-black/60 backdrop-blur-md border-y border-white/10 overflow-hidden flex items-center ${
             rtState.position === 'top' ? 'top-0' : 'bottom-0'
           }`}
-          style={{ height: '7vw' }}
+          style={{ height: `${rtState.height || 7}vw` }}
         >
           <div 
             className="animate-marquee-seamless"
             style={{ animationDuration: `${calculatedDuration}s` }}
           >
-            <div className="text-white font-bold text-[2.5vw] whitespace-nowrap">
+            <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${(rtState.height || 7) * 0.35}vw` }}>
               {rtBlockText}
             </div>
-            <div className="text-white font-bold text-[2.5vw] whitespace-nowrap">
+            <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${(rtState.height || 7) * 0.35}vw` }}>
               {rtBlockText}
             </div>
           </div>
