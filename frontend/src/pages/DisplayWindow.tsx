@@ -339,7 +339,7 @@ export default function DisplayWindow() {
       {/* Multi-Logo Watermarks */}
       {logos.length > 0 && (text || itemType === 'video') && (
         <div 
-          className="absolute left-0 right-0 transition-all duration-500 pointer-events-none z-40"
+          className="absolute left-0 right-0 transition-all duration-500 pointer-events-none z-[60]"
           style={{
             top: rtState.isVisible && rtState.position === 'top' ? `${rtState.height || 7}vw` : '0',
             bottom: rtState.isVisible && rtState.position === 'bottom' ? `${rtState.height || 7}vw` : '0'
