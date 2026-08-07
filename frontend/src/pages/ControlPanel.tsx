@@ -103,7 +103,7 @@ export default function ControlPanel() {
 
   
   // Running Text States
-  const [runningText, setRunningText] = useState(localStorage.getItem('worship_rt_text') || '');
+  const [runningText, setRunningText] = useState(localStorage.getItem(`worship_rt_text_${playlistId}`) || localStorage.getItem('worship_rt_text') || '');
   const [rtPos, setRtPos] = useState(localStorage.getItem('worship_rt_pos') || 'bottom');
   const [rtSpeed, setRtSpeed] = useState(Number(localStorage.getItem('worship_rt_speed') || 15));
   const [rtHeight, setRtHeight] = useState(Number(localStorage.getItem('worship_rt_height') || 7));
@@ -124,6 +124,16 @@ export default function ControlPanel() {
     setGlobalDisplayWindow(displayWindowRef.current);
     setGlobalIsDisplayOpen(isDisplayOpen);
   }, [isDisplayOpen]);
+
+  // Broadcast running text on mount so DisplayWindow gets the specific playlist's text
+  useEffect(() => {
+    const channel = new BroadcastChannel('worship_live_sync');
+    channel.postMessage({ 
+      type: 'RUNNING_TEXT_UPDATE', 
+      payload: { text: runningText, position: rtPos, speed: rtSpeed, isVisible: isRtVisible, height: rtHeight } 
+    });
+    channel.close();
+  }, [playlistId]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -738,6 +748,16 @@ export default function ControlPanel() {
       setIsDisplayOpen(true);
       setGlobalDisplayWindow(displayWindowRef.current);
       setGlobalIsDisplayOpen(true);
+      
+      // Sinkronisasi data ke display yang baru dibuka setelah delay singkat
+      setTimeout(() => {
+        const channel = new BroadcastChannel('worship_live_sync');
+        channel.postMessage({ 
+          type: 'RUNNING_TEXT_UPDATE', 
+          payload: { text: runningText, position: rtPos, speed: rtSpeed, isVisible: isRtVisible, height: rtHeight } 
+        });
+        channel.close();
+      }, 1500);
     }
   };
 
@@ -801,7 +821,7 @@ export default function ControlPanel() {
   };
 
   const broadcastRunningText = (visible: boolean) => {
-    localStorage.setItem('worship_rt_text', runningText);
+    localStorage.setItem(`worship_rt_text_${playlistId}`, runningText);
     localStorage.setItem('worship_rt_pos', rtPos);
     localStorage.setItem('worship_rt_speed', String(rtSpeed));
     localStorage.setItem('worship_rt_height', String(rtHeight));
