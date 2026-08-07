@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Monitor, Square, Play, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock } from 'lucide-react';
+import { Monitor, Square, Play, Pause, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock } from 'lucide-react';
 import { callApi } from '../api';
 import { SyncButton } from '../components/SyncButton';
 import { BackgroundPickerModal } from '../components/BackgroundPickerModal';
@@ -244,16 +244,43 @@ export default function ControlPanel() {
   }, [liveCountdown, playlist, activeItem, isEditingRundown]);
 
   const [videoProgress, setVideoProgress] = useState<{currentTime: number, duration: number} | null>(null);
+  const [videoState, setVideoState] = useState<'play'|'pause'>('play');
 
   useEffect(() => {
     const channel = new BroadcastChannel('worship_live_sync');
     channel.onmessage = (msg) => {
       if (msg.data.type === 'VIDEO_PROGRESS') {
         setVideoProgress(msg.data.payload);
+      } else if (msg.data.type === 'VIDEO_STATE') {
+        setVideoState(msg.data.payload);
       }
     };
     return () => channel.close();
   }, []);
+
+  useEffect(() => {
+    // Sync preview HTML5 video state
+    const vid = document.getElementById('preview-video') as HTMLVideoElement;
+    const localVidContainer = document.getElementById('preview-video-container');
+    const localVid = localVidContainer?.querySelector('video') as HTMLVideoElement;
+    const targetVid = vid || localVid;
+    if (targetVid) {
+      if (mode === 'content' && videoState === 'play') {
+        targetVid.play().catch(() => {});
+      } else {
+        targetVid.pause();
+      }
+    }
+    
+    // Sync preview YouTube iframe state
+    const frame = document.getElementById('preview-youtube') as HTMLIFrameElement;
+    if (frame && frame.contentWindow) {
+      frame.contentWindow.postMessage(JSON.stringify({
+        event: 'command',
+        func: (mode === 'content' && videoState === 'play') ? 'playVideo' : 'pauseVideo'
+      }), '*');
+    }
+  }, [mode, videoState]);
 
   const handleVideoSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value);
@@ -263,6 +290,19 @@ export default function ControlPanel() {
     if (videoProgress) {
       setVideoProgress({ ...videoProgress, currentTime: time });
     }
+  };
+
+  const toggleVideoPlay = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const channel = new BroadcastChannel('worship_live_sync');
+    if (videoState === 'play') {
+      channel.postMessage({ type: 'VIDEO_PAUSE' });
+      setVideoState('pause');
+    } else {
+      channel.postMessage({ type: 'VIDEO_PLAY' });
+      setVideoState('play');
+    }
+    channel.close();
   };
 
   const formatVideoTime = (seconds: number) => {
@@ -964,10 +1004,20 @@ export default function ControlPanel() {
                                 e.stopPropagation();
                                 pushStateToLive(itemIdx, 0, 'content');
                                 setMode('content');
+                                const channel = new BroadcastChannel('worship_live_sync');
+                                channel.postMessage({ type: 'VIDEO_PLAY' });
+                                channel.close();
+                                setVideoState('play');
                               }}
                               className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md font-bold transition-all hover:scale-105 active:scale-95"
                             >
-                              <Play size={20} className="fill-current" /> Putar (Play)
+                              <Play size={20} className="fill-current" /> Mulai Tampil
+                            </button>
+                            <button 
+                              onClick={toggleVideoPlay}
+                              className={`${videoState === 'play' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-green-500 hover:bg-green-600'} text-white px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md font-bold transition-all hover:scale-105 active:scale-95`}
+                            >
+                              {videoState === 'play' ? <><Pause size={20} className="fill-current" /> Jeda</> : <><Play size={20} className="fill-current" /> Lanjut</>}
                             </button>
                             <button 
                               onClick={(e) => {
@@ -1167,29 +1217,34 @@ export default function ControlPanel() {
                                           videoId = url.split('v=')[1].split('&')[0];
                                         }
                                         embedUrl = videoId 
-                                          ? `https://www.youtube-nocookie.com/embed/${videoId}?list=${listId}&autoplay=${isPlay}&mute=1&controls=0`
-                                          : `https://www.youtube-nocookie.com/embed/videoseries?list=${listId}&autoplay=${isPlay}&mute=1&controls=0`;
+                                          ? `https://www.youtube-nocookie.com/embed/${videoId}?list=${listId}&autoplay=${isPlay}&mute=1&controls=0&enablejsapi=1`
+                                          : `https://www.youtube-nocookie.com/embed/videoseries?list=${listId}&autoplay=${isPlay}&mute=1&controls=0&enablejsapi=1`;
                                       } else if (url.includes('youtube.com/watch?v=')) {
                                         videoId = url.split('v=')[1].split('&')[0];
-                                        embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=${isPlay}&mute=1&controls=0`;
+                                        embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=${isPlay}&mute=1&controls=0&enablejsapi=1`;
                                       } else if (url.includes('youtu.be/')) {
                                         videoId = url.split('youtu.be/')[1].split('?')[0];
-                                        embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=${isPlay}&mute=1&controls=0`;
+                                        embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=${isPlay}&mute=1&controls=0&enablejsapi=1`;
                                       } else if (url.includes('youtube.com/embed/') || url.includes('youtube-nocookie.com/embed/')) {
                                         embedUrl = url.includes('?') ? url.replace(/autoplay=[01]/, `autoplay=${isPlay}`) : `${url}?autoplay=${isPlay}`;
                                         if (!embedUrl.includes('autoplay=')) embedUrl += `&autoplay=${isPlay}`;
                                         embedUrl = embedUrl.replace('youtube.com', 'youtube-nocookie.com');
                                         if (!embedUrl.includes('mute=1')) embedUrl += '&mute=1';
                                         if (!embedUrl.includes('controls=0')) embedUrl += '&controls=0';
+                                        if (!embedUrl.includes('enablejsapi=1')) embedUrl += '&enablejsapi=1';
                                       } else {
                                         embedUrl = url;
                                       }
-                                      return <iframe key={embedUrl} className="w-full h-full object-contain pointer-events-none" src={embedUrl} allow="autoplay; encrypted-media" tabIndex={-1} />;
+                                      return <iframe id="preview-youtube" key={embedUrl} className="w-full h-full object-contain pointer-events-none" src={embedUrl} allow="autoplay; encrypted-media" tabIndex={-1} />;
                                     }
                                     if (url.startsWith('local_vid_')) {
-                                      return <LocalVideoPlayer key={`${url}-${mode}`} id={url} loop={playlist[itemIdx].loop || false} autoPlay={mode === 'content'} muted={true} />;
+                                      return (
+                                        <div id="preview-video-container" className="w-full h-full">
+                                          <LocalVideoPlayer key={`${url}-${mode}`} id={url} loop={playlist[itemIdx].loop || false} autoPlay={mode === 'content' && videoState === 'play'} muted={true} />
+                                        </div>
+                                      );
                                     }
-                                    return <video key={`${url}-${mode}`} className="w-full h-full object-contain pointer-events-none" src={url} muted={true} autoPlay={mode === 'content'} loop={playlist[itemIdx].loop || false} />;
+                                    return <video id="preview-video" key={`${url}-${mode}`} className="w-full h-full object-contain pointer-events-none" src={url} muted={true} autoPlay={mode === 'content' && videoState === 'play'} loop={playlist[itemIdx].loop || false} />;
                                   })()}
                                 </div>
                               )}

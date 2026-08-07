@@ -1,6 +1,6 @@
 import { useState, useEffect, forwardRef } from 'react';
 
-export const LocalVideoPlayer = forwardRef<HTMLVideoElement, { id: string, loop?: boolean, autoPlay?: boolean, muted?: boolean, onTimeUpdate?: (e: React.SyntheticEvent<HTMLVideoElement>) => void }>(({ id, loop, autoPlay, muted, onTimeUpdate }, ref) => {
+export const LocalVideoPlayer = forwardRef<HTMLVideoElement, { id: string, loop?: boolean, autoPlay?: boolean, muted?: boolean, onTimeUpdate?: (e: React.SyntheticEvent<HTMLVideoElement>) => void, onPlay?: () => void, onPause?: () => void }>(({ id, loop, autoPlay, muted, onTimeUpdate, onPlay, onPause }, ref) => {
   const [url, setUrl] = useState<string>('');
   
   useEffect(() => {
@@ -26,11 +26,13 @@ export const LocalVideoPlayer = forwardRef<HTMLVideoElement, { id: string, loop?
     <video 
       ref={ref}
       className="w-full h-full object-contain animate-fade-in" 
-      controls={!muted}
+      controls={false}
       loop={loop}
       autoPlay={autoPlay}
       muted={muted}
       onTimeUpdate={onTimeUpdate}
+      onPlay={onPlay}
+      onPause={onPause}
       src={url} 
     />
   );

@@ -3,6 +3,7 @@ import { callApi } from '../api';
 import { CONFIG } from '../config';
 import { getSlideBackground } from '../utils/imageStorage';
 import { LocalVideoPlayer } from '../components/LocalVideoPlayer';
+import YouTube from 'react-youtube';
 
 export default function DisplayWindow() {
   
@@ -57,6 +58,7 @@ export default function DisplayWindow() {
   const lastUpdateRef = useRef<number>(0);
   const currentPlaylistIdRef = useRef<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const ytPlayerRef = useRef<any>(null);
 
   useEffect(() => {
     // 1. Terima update cepat via BroadcastChannel lokal
@@ -89,6 +91,15 @@ export default function DisplayWindow() {
         if (videoRef.current) {
           videoRef.current.currentTime = msg.data.payload.time;
         }
+        if (ytPlayerRef.current) {
+          ytPlayerRef.current.seekTo(msg.data.payload.time);
+        }
+      } else if (msg.data.type === 'VIDEO_PLAY') {
+        if (videoRef.current) videoRef.current.play();
+        if (ytPlayerRef.current) ytPlayerRef.current.playVideo();
+      } else if (msg.data.type === 'VIDEO_PAUSE') {
+        if (videoRef.current) videoRef.current.pause();
+        if (ytPlayerRef.current) ytPlayerRef.current.pauseVideo();
       }
     };
 
@@ -137,9 +148,29 @@ export default function DisplayWindow() {
     pollGas(); // jalankan sekali saat mount
     interval = setInterval(pollGas, CONFIG.POLLING_INTERVAL_MS);
 
+    // YouTube Progress Polling
+    const ytInterval = setInterval(() => {
+      if (ytPlayerRef.current && ytPlayerRef.current.getPlayerState) {
+        try {
+          const state = ytPlayerRef.current.getPlayerState();
+          if (state === 1) { // PLAYING
+            const currentTime = ytPlayerRef.current.getCurrentTime();
+            const duration = ytPlayerRef.current.getDuration();
+            const ch = new BroadcastChannel('worship_live_sync');
+            ch.postMessage({
+              type: 'VIDEO_PROGRESS',
+              payload: { currentTime, duration }
+            });
+            ch.close();
+          }
+        } catch(e) {}
+      }
+    }, 500);
+
     return () => {
       channel.close();
       clearInterval(interval);
+      clearInterval(ytInterval);
     };
   }, []);
 
@@ -436,8 +467,38 @@ export default function DisplayWindow() {
                 embedUrl = url; // Fallback
               }
               
-              if (isVideoLoop && videoId) {
-                embedUrl += `&loop=1&playlist=${videoId}`;
+              if (videoId) {
+                const opts = {
+                  width: '100%',
+                  height: '100%',
+                  playerVars: {
+                    autoplay: 1,
+                    controls: 0,
+                    disablekb: 1,
+                    loop: isVideoLoop ? 1 : 0,
+                    mute: isVideoMuted ? 1 : 0,
+                    playlist: isVideoLoop ? videoId : undefined,
+                  }
+                };
+                return (
+                  <YouTube
+                    videoId={videoId}
+                    opts={opts}
+                    className="w-full h-full object-contain animate-fade-in pointer-events-none"
+                    onReady={(e: any) => {
+                      ytPlayerRef.current = e.target;
+                    }}
+                    onStateChange={(e: any) => {
+                      const ch = new BroadcastChannel('worship_live_sync');
+                      if (e.data === 2) {
+                        ch.postMessage({ type: 'VIDEO_STATE', payload: 'pause' });
+                      } else if (e.data === 1) {
+                        ch.postMessage({ type: 'VIDEO_STATE', payload: 'play' });
+                      }
+                      ch.close();
+                    }}
+                  />
+                );
               }
               
               return (
@@ -461,10 +522,22 @@ export default function DisplayWindow() {
                   duration: vid.duration
                 }
               });
+              channel.close();
+            };
+
+            const handlePlay = () => {
+              const ch = new BroadcastChannel('worship_live_sync');
+              ch.postMessage({ type: 'VIDEO_STATE', payload: 'play' });
+              ch.close();
+            };
+            const handlePause = () => {
+              const ch = new BroadcastChannel('worship_live_sync');
+              ch.postMessage({ type: 'VIDEO_STATE', payload: 'pause' });
+              ch.close();
             };
 
             if (url.startsWith('local_vid_')) {
-              return <LocalVideoPlayer ref={videoRef} key={url} id={url} loop={isVideoLoop} autoPlay={true} muted={isVideoMuted} onTimeUpdate={handleTimeUpdate} />;
+              return <LocalVideoPlayer ref={videoRef} key={url} id={url} loop={isVideoLoop} autoPlay={true} muted={isVideoMuted} onTimeUpdate={handleTimeUpdate} onPlay={handlePlay} onPause={handlePause} />;
             }
             return (
               <video 
@@ -476,6 +549,8 @@ export default function DisplayWindow() {
                 loop={isVideoLoop}
                 muted={isVideoMuted}
                 onTimeUpdate={handleTimeUpdate}
+                onPlay={handlePlay}
+                onPause={handlePause}
               />
             );
           })()
