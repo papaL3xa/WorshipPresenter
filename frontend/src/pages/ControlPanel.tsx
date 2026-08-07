@@ -298,17 +298,21 @@ export default function ControlPanel() {
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [videoUrlInput, setVideoUrlInput] = useState('');
   const [isVideoUploading, setIsVideoUploading] = useState(false);
+  const [isVideoLoop, setIsVideoLoop] = useState(false);
 
   const openVideoModal = (index: number | null = null) => {
     if (index !== null) {
       setReplaceIndex(index);
       if (playlist[index]?.type === 'video') {
         setVideoUrlInput(playlist[index].segments[0] || '');
+        setIsVideoLoop(!!playlist[index].loop);
       } else {
         setVideoUrlInput('');
+        setIsVideoLoop(false);
       }
     } else {
       setVideoUrlInput('');
+      setIsVideoLoop(false);
     }
     setIsVideoModalOpen(true);
   };
@@ -320,6 +324,7 @@ export default function ControlPanel() {
       type: 'video',
       title: 'Video / Multimedia',
       segments: [videoUrlInput.trim()],
+      loop: isVideoLoop
     } as any;
     
     let finalPlaylist = [];
@@ -1460,6 +1465,16 @@ export default function ControlPanel() {
                   onChange={e => setVideoUrlInput(e.target.value)}
                   placeholder="https://www.youtube.com/watch?v=..."
                 />
+                
+                <label className="flex items-center gap-3 mt-4 cursor-pointer p-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                  <input 
+                    type="checkbox" 
+                    checked={isVideoLoop} 
+                    onChange={(e) => setIsVideoLoop(e.target.checked)} 
+                    className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shadow-sm" 
+                  />
+                  <span className="text-slate-700 font-semibold select-none">Putar berulang-ulang (Loop) sampai pindah slide</span>
+                </label>
               </div>
               <div className="flex items-center gap-4">
                 <div className="h-px bg-slate-200 flex-1"></div>
