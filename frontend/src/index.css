@@ -23,8 +23,8 @@
   }
   
   .dark body {
-    /* Windows 11 Dark Mica-like Background */
-    background-color: #202020;
+    /* Deep Pitch Black Background to avoid monitor Mura/dust effect */
+    background-color: #050505;
     color: #D4B872;
     color-scheme: dark;
   }
