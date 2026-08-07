@@ -24,6 +24,9 @@ const processText = (raw: string) => {
 import { splitLongSegments } from '../utils/textSplitter';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+let globalDisplayWindow: Window | null = null;
+let globalIsDisplayOpen: boolean = false;
+
 export default function ControlPanel() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -116,14 +119,21 @@ export default function ControlPanel() {
   const [currentBibleBooks, setCurrentBibleBooks] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  const [isDisplayOpen, setIsDisplayOpen] = useState(false);
-  const displayWindowRef = useRef<Window | null>(null);
+  const [isDisplayOpen, setIsDisplayOpen] = useState(globalIsDisplayOpen);
+  const displayWindowRef = useRef<Window | null>(globalDisplayWindow);
+
+  useEffect(() => {
+    globalDisplayWindow = displayWindowRef.current;
+    globalIsDisplayOpen = isDisplayOpen;
+  }, [isDisplayOpen]);
 
   useEffect(() => {
     const timer = setInterval(() => {
       if (displayWindowRef.current && displayWindowRef.current.closed) {
         setIsDisplayOpen(false);
         displayWindowRef.current = null;
+        globalDisplayWindow = null;
+        globalIsDisplayOpen = false;
       }
     }, 1000);
     return () => clearInterval(timer);
@@ -687,9 +697,13 @@ export default function ControlPanel() {
       displayWindowRef.current.close();
       displayWindowRef.current = null;
       setIsDisplayOpen(false);
+      globalDisplayWindow = null;
+      globalIsDisplayOpen = false;
     } else {
       displayWindowRef.current = window.open('#/display', '_blank', 'width=1280,height=720');
       setIsDisplayOpen(true);
+      globalDisplayWindow = displayWindowRef.current;
+      globalIsDisplayOpen = true;
     }
   };
 
