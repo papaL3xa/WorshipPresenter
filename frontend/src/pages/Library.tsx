@@ -763,7 +763,7 @@ export default function Library() {
                         type="text" 
                         value={selectedItem.title}
                         onChange={(e) => setSelectedItem({...selectedItem, title: e.target.value})}
-                        className="w-full text-2xl font-bold text-indigo-900 mb-2 bg-white border border-indigo-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full text-2xl font-bold text-indigo-900 bg-transparent border border-indigo-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-[#D4B872] dark:border-white/20 dark:focus:ring-[#C5A059]"
                         placeholder="Judul Lagu"
                       />
                       {selectedItem.type === 'song' && (
@@ -772,7 +772,7 @@ export default function Library() {
                             type="text" 
                             value={selectedItem.id}
                             onChange={(e) => setSelectedItem({...selectedItem, id: e.target.value.replace(/\s+/g, '_')})}
-                            className="w-1/4 text-sm font-semibold text-indigo-900 bg-indigo-50 border border-indigo-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-1/4 text-sm font-semibold text-indigo-900 bg-transparent border border-indigo-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-slate-300 dark:border-white/20 dark:focus:ring-[#C5A059]"
                             placeholder="No Lagu"
                             title="Nomor atau ID Unik Lagu"
                           />
@@ -781,7 +781,7 @@ export default function Library() {
                             list="category-options"
                             value={selectedItem.category || ''}
                             onChange={(e) => setSelectedItem({...selectedItem, category: e.target.value})}
-                            className="w-1/4 text-sm font-semibold text-indigo-900 bg-white border border-indigo-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-1/4 text-sm font-semibold text-indigo-900 bg-transparent border border-indigo-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-[#9C8346] dark:border-white/20 dark:focus:ring-[#C5A059]"
                             placeholder="Kategori"
                             title="Kategori Lagu (kosongkan jika tidak ada)"
                           />
@@ -794,7 +794,7 @@ export default function Library() {
                             type="text" 
                             value={selectedItem.author || ''}
                             onChange={(e) => setSelectedItem({...selectedItem, author: e.target.value})}
-                            className="w-2/4 text-sm font-semibold text-indigo-900/60 bg-white border border-indigo-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-2/4 text-sm font-semibold text-indigo-900/60 bg-transparent border border-indigo-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-[#9C8346] dark:border-white/20 dark:focus:ring-[#C5A059]"
                             placeholder="Pencipta Lagu"
                           />
                         </div>
@@ -886,7 +886,7 @@ export default function Library() {
                             newItem.segmentLabels[idx] = e.target.value;
                             setSelectedItem(newItem);
                           }}
-                          className="bg-white border border-indigo-200 text-indigo-900 text-xs font-bold uppercase tracking-wider px-2 py-1 rounded w-32"
+                          className="bg-transparent border border-indigo-200 text-indigo-900 text-xs font-bold uppercase tracking-wider px-2 py-1 rounded w-32 dark:text-[#00E5FF] dark:border-[#00E5FF]/50"
                         />
                       ) : (
                         <div className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${activeSegment === idx ? 'text-indigo-200 dark:text-[#00E5FF]' : 'text-indigo-400 dark:text-[#00E5FF]/70'}`}>
@@ -940,7 +940,7 @@ export default function Library() {
                           newItem.segments[idx] = e.target.value;
                           setSelectedItem(newItem);
                         }}
-                        className="w-full h-24 bg-white border border-indigo-200 text-indigo-900 text-lg whitespace-pre-wrap leading-relaxed p-2 rounded focus:outline-none focus:border-indigo-500"
+                        className="w-full h-24 bg-transparent border border-indigo-200 text-indigo-900 text-lg whitespace-pre-wrap leading-relaxed p-2 rounded focus:outline-none focus:border-indigo-500 dark:text-[#D4B872] dark:border-white/20 dark:focus:border-[#C5A059]"
                       />
                     ) : (
                       <div 
