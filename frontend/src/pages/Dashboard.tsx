@@ -71,8 +71,8 @@ export default function Dashboard() {
     <div className="min-h-full flex flex-col p-4 md:p-8 gap-4 overflow-hidden relative">
       <header className="glass-panel p-5 flex flex-col md:flex-row justify-between items-center gap-4">
         <h1 className="text-3xl font-heading font-extrabold text-indigo-950 dark:text-white drop-shadow-md tracking-tight flex items-center gap-3">
-          <div className="bg-indigo-600/10 dark:bg-white/20 p-2 rounded-xl backdrop-blur-sm border border-indigo-600/20 dark:border-white/30">
-            <Play className="text-indigo-600 dark:text-white" size={24} strokeWidth={2.5}/>
+          <div className="bg-indigo-600/10 dark:bg-white/90 p-1.5 rounded-xl backdrop-blur-sm border border-indigo-600/20 dark:border-white/30 overflow-hidden w-10 h-10 flex items-center justify-center shadow-sm">
+            <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
           </div>
           WorshipPresenter
         </h1>
@@ -239,8 +239,8 @@ export default function Dashboard() {
             </button>
             
             <div className="relative pt-16 px-8 pb-8 text-center flex flex-col items-center">
-              <div className="w-24 h-24 rounded-2xl bg-white dark:bg-[#444] shadow-xl flex items-center justify-center mb-6 rotate-3 border-4 border-white/80 dark:border-white/10 overflow-hidden">
-                <Play className="text-indigo-600 dark:text-[#D4B872] ml-1" size={48} strokeWidth={2}/>
+              <div className="w-24 h-24 rounded-2xl bg-white shadow-xl flex items-center justify-center mb-6 rotate-3 border-4 border-white/80 overflow-hidden">
+                <img src="/logo.png" alt="Worship Presenter Logo" className="w-full h-full object-contain scale-90" />
               </div>
               
               <h2 className="text-2xl font-black text-indigo-950 dark:text-[#D4B872] mb-1 tracking-tight">Worship Presenter</h2>
