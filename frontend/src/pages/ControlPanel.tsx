@@ -657,6 +657,7 @@ export default function ControlPanel() {
 
   // Sync saat ada perubahan
   const prevActiveItemRef = useRef<number | null>(null);
+  const isInitialMount = useRef(true);
 
   useEffect(() => {
     if (!isEditingRundown && activeItem !== null && playlist[activeItem]) {
@@ -671,6 +672,12 @@ export default function ControlPanel() {
         }
         prevActiveItemRef.current = activeItem;
       }
+      
+      if (isInitialMount.current) {
+        isInitialMount.current = false;
+        return;
+      }
+
       pushStateToLive(activeItem, activeSegment, currentMode);
     }
   }, [activeItem, activeSegment, mode, playlist, isEditingRundown]);
@@ -1343,10 +1350,18 @@ export default function ControlPanel() {
               >
                 <div 
                   onClick={() => { 
-                    setActiveItem(idx);
                     const item = playlist[idx];
                     const visible = item.visibleSegments || [...Array(item.segments?.length || 1).keys()];
-                    setActiveSegment(visible.length > 0 ? visible[0] : 0);
+                    const seg = visible.length > 0 ? visible[0] : 0;
+                    const isAlreadyActive = activeItem === idx && activeSegment === seg;
+                    
+                    setActiveItem(idx);
+                    setActiveSegment(seg);
+                    
+                    if (isAlreadyActive) {
+                      pushStateToLive(idx, seg, item.type === 'video' ? 'logo' : 'content');
+                      if (item.type === 'video') setMode('logo'); else setMode('content');
+                    }
                   }}
                   className={`flex-1 text-left py-2 px-3 rounded-md border backdrop-blur-sm transition-all ${isEditingRundown ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${
                     activeItem === idx
@@ -1451,7 +1466,12 @@ export default function ControlPanel() {
                    {(playlist[activeItem].visibleSegments || [...Array(playlist[activeItem].segments.length).keys()]).map((idx: number) => (
                      <button 
                        key={idx}
-                       onClick={() => { setActiveSegment(idx); setMode('content'); }}
+                       onClick={() => { 
+                         const isAlreadyActive = activeSegment === idx && mode === 'content';
+                         setActiveSegment(idx); 
+                         setMode('content'); 
+                         if (isAlreadyActive) pushStateToLive(activeItem, idx, 'content');
+                       }}
                        className={`px-3 py-1.5 md:px-4 md:py-2 font-semibold text-xs md:text-sm whitespace-nowrap rounded-lg transition-all duration-200 border shadow-sm hover:-translate-y-0.5 shrink-0 ${
                          activeSegment === idx && mode === 'content' 
                            ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-600/30' 
