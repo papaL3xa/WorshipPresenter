@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { callApi } from '../api';
 import { CONFIG } from '../config';
 import { getSlideBackground } from '../utils/imageStorage';
@@ -173,6 +173,16 @@ export default function DisplayWindow() {
       clearInterval(ytInterval);
     };
   }, []);
+
+  useEffect(() => {
+    if (ytPlayerRef.current) {
+      if (isVideoMuted) {
+        ytPlayerRef.current.mute();
+      } else {
+        ytPlayerRef.current.unMute();
+      }
+    }
+  }, [isVideoMuted]);
 
   // Mode blank: jangan early return, gunakan overlay agar komponen tetap render
   const isBlank = liveState.displayMode === 'blank';
@@ -476,7 +486,6 @@ export default function DisplayWindow() {
                     controls: 0,
                     disablekb: 1,
                     loop: isVideoLoop ? 1 : 0,
-                    mute: isVideoMuted ? 1 : 0,
                     playlist: isVideoLoop ? videoId : undefined,
                   }
                 };

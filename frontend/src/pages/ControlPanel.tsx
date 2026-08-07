@@ -300,8 +300,23 @@ export default function ControlPanel() {
     const channel = new BroadcastChannel('worship_live_sync');
     channel.postMessage({ type: 'VIDEO_SEEK', payload: { time } });
     channel.close();
-    if (videoProgress) {
-      setVideoProgress({ ...videoProgress, currentTime: time });
+    setVideoProgress(prev => prev ? { ...prev, currentTime: time } : null);
+    
+    const vid = document.getElementById('preview-video') as HTMLVideoElement;
+    const localVidContainer = document.getElementById('preview-video-container');
+    const localVid = localVidContainer?.querySelector('video') as HTMLVideoElement;
+    const targetVid = vid || localVid;
+    if (targetVid) {
+      targetVid.currentTime = time;
+    }
+    
+    const frame = document.getElementById('preview-youtube') as HTMLIFrameElement;
+    if (frame && frame.contentWindow) {
+      frame.contentWindow.postMessage(JSON.stringify({
+        event: 'command',
+        func: 'seekTo',
+        args: [time, true]
+      }), '*');
     }
   };
 
