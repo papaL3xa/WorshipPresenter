@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -50,6 +50,13 @@ app.on('browser-window-created', (event, window) => {
       window.webContents.setZoomFactor(1);
     }
   });
+
+  window.webContents.on('before-input-event', (e, input) => {
+    if (input.key === 'F11' && input.type === 'keyDown') {
+      window.setFullScreen(!window.isFullScreen());
+      e.preventDefault();
+    }
+  });
 });
 
 app.whenReady().then(() => {
@@ -66,11 +73,23 @@ app.whenReady().then(() => {
 
   // Pastikan jendela baru (Display Window) juga mendapat preload script
   mainWin.webContents.setWindowOpenHandler(({ url }) => {
+    const displays = screen.getAllDisplays();
+    let displayOptions = { fullscreen: true };
+    if (displays.length > 1) {
+      const externalDisplay = displays.find((display) => display.bounds.x !== 0 || display.bounds.y !== 0) || displays[1];
+      displayOptions = {
+        x: externalDisplay.bounds.x,
+        y: externalDisplay.bounds.y,
+        fullscreen: true
+      };
+    }
+
     return {
       action: 'allow',
       overrideBrowserWindowOptions: {
         width: 1280,
         height: 720,
+        ...displayOptions,
         autoHideMenuBar: true,
         webPreferences: {
           preload: path.join(__dirname, 'preload.cjs'),

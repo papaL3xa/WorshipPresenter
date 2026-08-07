@@ -356,7 +356,9 @@ export default function DisplayWindow() {
       )}
 
       {/* Judul dan Progress Slide (Header) */}
-      {itemType !== 'video' && (
+      {liveState.displayMode === 'content' && (
+        <>
+          {itemType !== 'video' && (
         <div 
           className={`absolute left-0 right-0 w-full flex flex-col items-center z-20 animate-fade-in transition-all duration-500 ${
             rtState.isVisible && rtState.position === 'top' ? 'top-32' : 'top-12'
@@ -514,6 +516,8 @@ export default function DisplayWindow() {
             {progressText}
           </div>
         </div>
+          )}
+        </>
       )}
 
       {/* Running Text */}
