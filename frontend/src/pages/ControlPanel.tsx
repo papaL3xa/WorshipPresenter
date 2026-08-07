@@ -6,6 +6,7 @@ import { BackgroundPickerModal } from '../components/BackgroundPickerModal';
 import { saveLocalVideo } from '../utils/imageStorage';
 import { FooterClock } from '../components/FooterClock';
 import { RichEditor, RichEditorRef } from '../components/RichEditor';
+import { LocalVideoPlayer } from '../components/LocalVideoPlayer';
 import { initDefaultDatabases, searchLocalSongs, searchLocalBible, syncCustomSongs, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, getBibleBooksList } from '../utils/dbStorage';
 
 const processText = (raw: string) => {
@@ -889,7 +890,7 @@ export default function ControlPanel() {
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setMode('blank');
+                                setMode('logo');
                               }}
                               className="bg-rose-500 hover:bg-rose-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md font-bold transition-all hover:scale-105 active:scale-95"
                             >
@@ -1041,6 +1042,46 @@ export default function ControlPanel() {
                               }}
                             >
                               <div className="absolute inset-0 bg-black/40 z-0 pointer-events-none"></div>
+
+                              {/* Video Preview */}
+                              {playlist[itemIdx]?.type === 'video' && playlist[itemIdx]?.segments[segIdx] && (
+                                <div className="absolute inset-0 z-[5] bg-black pointer-events-none flex items-center justify-center">
+                                  {(() => {
+                                    const url = playlist[itemIdx].segments[segIdx];
+                                    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                                      let embedUrl = '';
+                                      let videoId = '';
+                                      if (url.includes('list=')) {
+                                        const listId = url.split('list=')[1].split('&')[0];
+                                        if (url.includes('v=')) {
+                                          videoId = url.split('v=')[1].split('&')[0];
+                                        }
+                                        embedUrl = videoId 
+                                          ? `https://www.youtube-nocookie.com/embed/${videoId}?list=${listId}&autoplay=0&mute=1&controls=0`
+                                          : `https://www.youtube-nocookie.com/embed/videoseries?list=${listId}&autoplay=0&mute=1&controls=0`;
+                                      } else if (url.includes('youtube.com/watch?v=')) {
+                                        videoId = url.split('v=')[1].split('&')[0];
+                                        embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&mute=1&controls=0`;
+                                      } else if (url.includes('youtu.be/')) {
+                                        videoId = url.split('youtu.be/')[1].split('?')[0];
+                                        embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&mute=1&controls=0`;
+                                      } else if (url.includes('youtube.com/embed/') || url.includes('youtube-nocookie.com/embed/')) {
+                                        embedUrl = url.includes('?') ? url.replace('autoplay=1', 'autoplay=0') : `${url}?autoplay=0`;
+                                        embedUrl = embedUrl.replace('youtube.com', 'youtube-nocookie.com');
+                                        if (!embedUrl.includes('mute=1')) embedUrl += '&mute=1';
+                                        if (!embedUrl.includes('controls=0')) embedUrl += '&controls=0';
+                                      } else {
+                                        embedUrl = url;
+                                      }
+                                      return <iframe className="w-full h-full object-contain pointer-events-none" src={embedUrl} allow="autoplay; encrypted-media" tabIndex={-1} />;
+                                    }
+                                    if (url.startsWith('local_vid_')) {
+                                      return <LocalVideoPlayer key={url} id={url} loop={false} autoPlay={false} muted={true} />;
+                                    }
+                                    return <video className="w-full h-full object-contain pointer-events-none" src={url} muted={true} />;
+                                  })()}
+                                </div>
+                              )}
                               
                               {/* Multi-Logos */}
                               {logos.length > 0 && playlist[itemIdx]?.type !== 'countdown' && (
@@ -1076,38 +1117,40 @@ export default function ControlPanel() {
                               )}
 
                               {/* Content Container */}
-                              <div className="relative z-10 flex flex-col items-center justify-center w-full mt-[10%] mb-[8%] px-[8%]">
-                                {/* Subtitle (Bait) */}
-                                {playlist[itemIdx]?.type !== 'video' && playlist[itemIdx]?.type !== 'countdown' && playlist[itemIdx]?.segments[segIdx] && (
+                              {playlist[itemIdx]?.type !== 'video' && (
+                                <div className="relative z-10 flex flex-col items-center justify-center w-full mt-[10%] mb-[8%] px-[8%]">
+                                  {/* Subtitle (Bait) */}
+                                  {playlist[itemIdx]?.type !== 'countdown' && playlist[itemIdx]?.segments[segIdx] && (
+                                    <div 
+                                      className="text-yellow-300 font-bold mb-[1.5cqw] tracking-wider uppercase"
+                                      style={{
+                                        fontSize: '2cqw',
+                                        textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)'
+                                      }}
+                                    >
+                                      {playlist[itemIdx]?.segmentLabels?.[segIdx] || `BAIT ${segIdx + 1}`}
+                                    </div>
+                                  )}
+                                  
                                   <div 
-                                    className="text-yellow-300 font-bold mb-[1.5cqw] tracking-wider uppercase"
-                                    style={{
-                                      fontSize: '2cqw',
-                                      textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)'
+                                    className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl w-full" 
+                                    style={{ 
+                                      textShadow: '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)', 
+                                      fontSize: (() => {
+                                        const t = playlist[itemIdx]?.segments[segIdx] || '';
+                                        if (t.length > 250) return '2cqw';
+                                        if (t.length > 180) return '2.5cqw';
+                                        if (t.length > 120) return '3cqw';
+                                        if (t.length > 70) return '3.5cqw';
+                                        if (t.length > 40) return '4cqw';
+                                        return '4.5cqw';
+                                      })(),
+                                      lineHeight: '1.4'
                                     }}
-                                  >
-                                    {playlist[itemIdx]?.segmentLabels?.[segIdx] || `BAIT ${segIdx + 1}`}
-                                  </div>
-                                )}
-                                
-                                <div 
-                                  className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl w-full" 
-                                  style={{ 
-                                    textShadow: '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)', 
-                                    fontSize: (() => {
-                                      const t = playlist[itemIdx]?.segments[segIdx] || '';
-                                      if (t.length > 250) return '2cqw';
-                                      if (t.length > 180) return '2.5cqw';
-                                      if (t.length > 120) return '3cqw';
-                                      if (t.length > 70) return '3.5cqw';
-                                      if (t.length > 40) return '4cqw';
-                                      return '4.5cqw';
-                                    })(),
-                                    lineHeight: '1.4'
-                                  }}
-                                  dangerouslySetInnerHTML={{ __html: processText(playlist[itemIdx]?.segments[segIdx] || 'Pilih slide...') }}
-                                />
-                              </div>
+                                    dangerouslySetInnerHTML={{ __html: processText(playlist[itemIdx]?.segments[segIdx] || 'Pilih slide...') }}
+                                  />
+                                </div>
+                              )}
 
                               {/* Progress Text - above running text */}
                               {playlist[itemIdx]?.type !== 'video' && playlist[itemIdx]?.segments[segIdx] && (

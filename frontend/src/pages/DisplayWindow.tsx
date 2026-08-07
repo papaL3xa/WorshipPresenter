@@ -2,40 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { callApi } from '../api';
 import { CONFIG } from '../config';
 import { getSlideBackground } from '../utils/imageStorage';
-
-const LocalVideoPlayer = ({ id, loop }: { id: string, loop?: boolean }) => {
-  const [url, setUrl] = useState<string>('');
-  
-  useEffect(() => {
-    let objectUrl = '';
-    const load = async () => {
-      import('../utils/imageStorage').then(async (m) => {
-        const blob = await m.getLocalVideo(id);
-        if (blob) {
-          objectUrl = URL.createObjectURL(blob);
-          setUrl(objectUrl);
-        }
-      });
-    };
-    load();
-    return () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [id]);
-
-  if (!url) return <div className="text-white text-2xl font-semibold animate-pulse flex flex-col items-center justify-center h-full"><div className="animate-spin border-4 border-indigo-500 border-t-transparent rounded-full w-12 h-12 mb-4"></div>Memuat Video...</div>;
-
-  return (
-    <video 
-      className="w-full h-full object-contain animate-fade-in" 
-      src={url} 
-      controls 
-      loop={loop}
-    />
-  );
-};
+import { LocalVideoPlayer } from '../components/LocalVideoPlayer';
 
 export default function DisplayWindow() {
+  
+
   const [liveState, setLiveState] = useState<{
     playlistId?: string;
     currentItemId?: string;
@@ -427,16 +398,16 @@ export default function DisplayWindow() {
                   videoId = url.split('v=')[1].split('&')[0];
                 }
                 embedUrl = videoId 
-                  ? `https://www.youtube-nocookie.com/embed/${videoId}?list=${listId}&autoplay=0&mute=0`
-                  : `https://www.youtube-nocookie.com/embed/videoseries?list=${listId}&autoplay=0&mute=0`;
+                  ? `https://www.youtube-nocookie.com/embed/${videoId}?list=${listId}&autoplay=1&mute=0`
+                  : `https://www.youtube-nocookie.com/embed/videoseries?list=${listId}&autoplay=1&mute=0`;
               } else if (url.includes('youtube.com/watch?v=')) {
                 videoId = url.split('v=')[1].split('&')[0];
-                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&mute=0`;
+                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0`;
               } else if (url.includes('youtu.be/')) {
                 videoId = url.split('youtu.be/')[1].split('?')[0];
-                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&mute=0`;
+                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0`;
               } else if (url.includes('youtube.com/embed/') || url.includes('youtube-nocookie.com/embed/')) {
-                embedUrl = url.includes('?') ? url.replace('autoplay=1', 'autoplay=0') : `${url}?autoplay=0`;
+                embedUrl = url.includes('?') ? url.replace('autoplay=0', 'autoplay=1') : `${url}?autoplay=1`;
                 embedUrl = embedUrl.replace('youtube.com', 'youtube-nocookie.com');
                 // try to parse videoId from embed url
                 videoId = embedUrl.split('embed/')[1].split('?')[0];
@@ -460,7 +431,7 @@ export default function DisplayWindow() {
               );
             }
             if (url.startsWith('local_vid_')) {
-              return <LocalVideoPlayer key={url} id={url} loop={isVideoLoop} />;
+              return <LocalVideoPlayer key={url} id={url} loop={isVideoLoop} autoPlay={true} />;
             }
             return (
               <video 
@@ -468,6 +439,7 @@ export default function DisplayWindow() {
                 className="w-full h-full object-contain animate-fade-in" 
                 controls
                 loop={isVideoLoop}
+                autoPlay={true}
                 src={url} 
               />
             );
