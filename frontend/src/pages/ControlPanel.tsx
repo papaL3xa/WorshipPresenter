@@ -115,6 +115,19 @@ export default function ControlPanel() {
   const [currentBibleBooks, setCurrentBibleBooks] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  const [isDisplayOpen, setIsDisplayOpen] = useState(false);
+  const displayWindowRef = useRef<Window | null>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (displayWindowRef.current && displayWindowRef.current.closed) {
+        setIsDisplayOpen(false);
+        displayWindowRef.current = null;
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   useEffect(() => {
     if (isAddItemModalOpen) {
       if (searchType === 'song') {
@@ -656,7 +669,14 @@ export default function ControlPanel() {
   };
 
   const openDisplay = () => {
-    window.open('#/display', '_blank', 'width=1280,height=720');
+    if (displayWindowRef.current && !displayWindowRef.current.closed) {
+      displayWindowRef.current.close();
+      displayWindowRef.current = null;
+      setIsDisplayOpen(false);
+    } else {
+      displayWindowRef.current = window.open('#/display', '_blank', 'width=1280,height=720');
+      setIsDisplayOpen(true);
+    }
   };
 
   const handleGlobalBackgroundSelect = (bgUrl: string | null) => {
@@ -1163,8 +1183,15 @@ export default function ControlPanel() {
           <button onClick={() => setIsBgModalOpen(true)} className="shrink-0 glass-button text-indigo-900 flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base">
             <ImageIcon size={16}/> BG
           </button>
-          <button onClick={openDisplay} className="shrink-0 glass-button bg-indigo-600/10 text-indigo-900 flex items-center gap-2 border-indigo-400/30 font-bold hover:bg-indigo-600/20 px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base">
-            <Monitor size={16}/> Display
+          <button 
+            onClick={openDisplay} 
+            className={`shrink-0 glass-button flex items-center gap-2 font-bold px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base transition-all ${
+              isDisplayOpen 
+                ? 'bg-rose-500 text-white hover:bg-rose-600 border-rose-500 shadow-rose-500/30 shadow-md' 
+                : 'bg-indigo-600/10 text-indigo-900 border-indigo-400/30 hover:bg-indigo-600/20'
+            }`}
+          >
+            <Monitor size={16}/> {isDisplayOpen ? 'Tutup Display' : 'Buka Display'}
           </button>
         </div>
       </header>
