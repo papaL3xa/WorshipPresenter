@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Monitor, Square, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock } from 'lucide-react';
+import { Monitor, Square, Play, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock } from 'lucide-react';
 import { callApi } from '../api';
 import { SyncButton } from '../components/SyncButton';
 import { BackgroundPickerModal } from '../components/BackgroundPickerModal';
@@ -850,9 +850,49 @@ export default function ControlPanel() {
                   {mode === 'blank' ? <span className="text-indigo-900/20 dark:text-slate-200/20 text-2xl font-bold italic">Layar Kosong (Blank)</span> : (
                     <>
                       {(playlist[itemIdx]?.type === 'video') ? (
-                        <div className="flex flex-col items-center">
-                          <Monitor size={48} className="text-indigo-900/40 mb-2 md:mb-4" />
-                          <span className="text-indigo-900/60 italic text-sm md:text-xl">Memutar Video</span>
+                        <div className="flex flex-col items-center gap-5">
+                          <div className="flex flex-col items-center">
+                            <Monitor size={48} className="text-indigo-900/40 dark:text-slate-400 mb-2 md:mb-2" />
+                            <span className="text-indigo-900/80 dark:text-slate-200 font-bold text-lg md:text-xl">Kontrol Video</span>
+                          </div>
+                          <div className="flex gap-4">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                pushStateToLive(itemIdx, 0, 'normal');
+                                setMode('normal');
+                              }}
+                              className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md font-bold transition-all hover:scale-105 active:scale-95"
+                            >
+                              <Play size={20} className="fill-current" /> Putar (Play)
+                            </button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMode('blank');
+                              }}
+                              className="bg-rose-500 hover:bg-rose-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md font-bold transition-all hover:scale-105 active:scale-95"
+                            >
+                              <Square size={20} className="fill-current" /> Hentikan
+                            </button>
+                          </div>
+                          
+                          <label className="flex items-center gap-3 cursor-pointer mt-2 bg-white/70 dark:bg-slate-800/80 px-5 py-3 rounded-xl border border-indigo-100 dark:border-slate-700 shadow-sm transition-colors hover:bg-white dark:hover:bg-slate-700">
+                            <input 
+                              type="checkbox" 
+                              checked={!!playlist[itemIdx]?.loop} 
+                              onChange={(e) => {
+                                const val = e.target.checked;
+                                setPlaylist(prev => {
+                                  const newPl = [...prev];
+                                  newPl[itemIdx] = { ...newPl[itemIdx], loop: val };
+                                  return newPl;
+                                });
+                              }}
+                              className="w-5 h-5 rounded border-indigo-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-slate-900" 
+                            />
+                            <span className="text-indigo-950 dark:text-slate-200 font-bold select-none">Putar Berulang (Looping)</span>
+                          </label>
                         </div>
                       ) : (playlist[itemIdx]?.type === 'countdown') ? (
                         <div className="flex flex-col items-center w-full">
