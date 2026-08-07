@@ -1059,37 +1059,39 @@ export default function ControlPanel() {
                                 <div className="absolute inset-0 z-[5] bg-black pointer-events-none flex items-center justify-center">
                                   {(() => {
                                     const url = playlist[itemIdx].segments[segIdx];
+                                    const isPlay = mode === 'content' ? '1' : '0';
+                                    let embedUrl = '';
+                                    let videoId = '';
                                     if (url.includes('youtube.com') || url.includes('youtu.be')) {
-                                      let embedUrl = '';
-                                      let videoId = '';
                                       if (url.includes('list=')) {
                                         const listId = url.split('list=')[1].split('&')[0];
                                         if (url.includes('v=')) {
                                           videoId = url.split('v=')[1].split('&')[0];
                                         }
                                         embedUrl = videoId 
-                                          ? `https://www.youtube-nocookie.com/embed/${videoId}?list=${listId}&autoplay=0&mute=1&controls=0`
-                                          : `https://www.youtube-nocookie.com/embed/videoseries?list=${listId}&autoplay=0&mute=1&controls=0`;
+                                          ? `https://www.youtube-nocookie.com/embed/${videoId}?list=${listId}&autoplay=${isPlay}&mute=1&controls=0`
+                                          : `https://www.youtube-nocookie.com/embed/videoseries?list=${listId}&autoplay=${isPlay}&mute=1&controls=0`;
                                       } else if (url.includes('youtube.com/watch?v=')) {
                                         videoId = url.split('v=')[1].split('&')[0];
-                                        embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&mute=1&controls=0`;
+                                        embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=${isPlay}&mute=1&controls=0`;
                                       } else if (url.includes('youtu.be/')) {
                                         videoId = url.split('youtu.be/')[1].split('?')[0];
-                                        embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&mute=1&controls=0`;
+                                        embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=${isPlay}&mute=1&controls=0`;
                                       } else if (url.includes('youtube.com/embed/') || url.includes('youtube-nocookie.com/embed/')) {
-                                        embedUrl = url.includes('?') ? url.replace('autoplay=1', 'autoplay=0') : `${url}?autoplay=0`;
+                                        embedUrl = url.includes('?') ? url.replace(/autoplay=[01]/, `autoplay=${isPlay}`) : `${url}?autoplay=${isPlay}`;
+                                        if (!embedUrl.includes('autoplay=')) embedUrl += `&autoplay=${isPlay}`;
                                         embedUrl = embedUrl.replace('youtube.com', 'youtube-nocookie.com');
                                         if (!embedUrl.includes('mute=1')) embedUrl += '&mute=1';
                                         if (!embedUrl.includes('controls=0')) embedUrl += '&controls=0';
                                       } else {
                                         embedUrl = url;
                                       }
-                                      return <iframe className="w-full h-full object-contain pointer-events-none" src={embedUrl} allow="autoplay; encrypted-media" tabIndex={-1} />;
+                                      return <iframe key={embedUrl} className="w-full h-full object-contain pointer-events-none" src={embedUrl} allow="autoplay; encrypted-media" tabIndex={-1} />;
                                     }
                                     if (url.startsWith('local_vid_')) {
-                                      return <LocalVideoPlayer key={url} id={url} loop={false} autoPlay={false} muted={true} />;
+                                      return <LocalVideoPlayer key={`${url}-${mode}`} id={url} loop={playlist[itemIdx].loop || false} autoPlay={mode === 'content'} muted={true} />;
                                     }
-                                    return <video className="w-full h-full object-contain pointer-events-none" src={url} muted={true} />;
+                                    return <video key={`${url}-${mode}`} className="w-full h-full object-contain pointer-events-none" src={url} muted={true} autoPlay={mode === 'content'} loop={playlist[itemIdx].loop || false} />;
                                   })()}
                                 </div>
                               )}
