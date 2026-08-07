@@ -777,13 +777,19 @@ export default function Library() {
                             title="Nomor atau ID Unik Lagu"
                           />
                           <input 
-                            type="text" 
+                            type="text"
+                            list="category-options"
                             value={selectedItem.category || ''}
                             onChange={(e) => setSelectedItem({...selectedItem, category: e.target.value})}
                             className="w-1/4 text-sm font-semibold text-indigo-900 bg-white border border-indigo-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             placeholder="Kategori"
                             title="Kategori Lagu (kosongkan jika tidak ada)"
                           />
+                          <datalist id="category-options">
+                            {songCategories.filter(c => c !== 'Semua').map(cat => (
+                              <option key={cat} value={cat} />
+                            ))}
+                          </datalist>
                           <input 
                             type="text" 
                             value={selectedItem.author || ''}
