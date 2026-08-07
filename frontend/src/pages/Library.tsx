@@ -802,15 +802,21 @@ export default function Library() {
                     </>
                   ) : (
                     <>
-                      <h2 className="text-2xl font-bold text-indigo-900 mb-2">{selectedItem.title}</h2>
+                      <h2 className="text-2xl font-bold text-indigo-900 dark:text-[#D4B872] mb-2">{selectedItem.title}</h2>
                       <div className="flex items-center gap-3">
-                        <div className="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 text-xs font-bold uppercase rounded-full">
+                        <div className="inline-block px-3 py-1 bg-indigo-100 dark:bg-white/10 text-indigo-800 dark:text-[#C5A059] text-xs font-bold uppercase rounded-full border border-transparent dark:border-white/20">
                           {searchType === 'song' ? (dbList.find(db => db.id === selectedSongVersion)?.name || 'Lagu Sion') : 'Alkitab (TB)'}
                         </div>
                         {selectedItem.author && selectedItem.author !== 'N/A' && (
-                          <div className="text-sm font-semibold text-indigo-900/60 flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-300"></span>
+                          <div className="text-sm font-semibold text-indigo-900/60 dark:text-[#9C8346] flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-300 dark:bg-[#9C8346]"></span>
                             {selectedItem.author}
+                          </div>
+                        )}
+                        {selectedItem.category && selectedItem.category !== 'Semua' && (
+                          <div className="text-sm font-semibold text-indigo-900/60 dark:text-[#9C8346] flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-300 dark:bg-[#9C8346]"></span>
+                            {selectedItem.category}
                           </div>
                         )}
                       </div>
@@ -863,8 +869,8 @@ export default function Library() {
                     onDragEnd={() => setDragSegmentIdx(null)}
                     className={`w-full text-left p-4 rounded-lg border shadow-sm transition group relative overflow-hidden ${
                       activeSegment === idx 
-                        ? 'bg-indigo-600 border-indigo-700' 
-                        : 'bg-white/50 border-white/40 hover:bg-white/70'
+                        ? 'bg-indigo-600 border-indigo-700 dark:bg-indigo-600/30 dark:border-[#C5A059]' 
+                        : 'bg-transparent border-indigo-200 dark:border-white/20 hover:border-indigo-400 dark:hover:border-white/40'
                     } ${dragSegmentIdx === idx ? 'opacity-50' : ''} ${isEditingItem ? 'cursor-grab active:cursor-grabbing' : ''}`}
                   >
                     <div className="flex justify-between items-center mb-2">
@@ -883,7 +889,7 @@ export default function Library() {
                           className="bg-white border border-indigo-200 text-indigo-900 text-xs font-bold uppercase tracking-wider px-2 py-1 rounded w-32"
                         />
                       ) : (
-                        <div className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${activeSegment === idx ? 'text-indigo-200' : 'text-indigo-400'}`}>
+                        <div className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${activeSegment === idx ? 'text-indigo-200 dark:text-[#00E5FF]' : 'text-indigo-400 dark:text-[#00E5FF]/70'}`}>
                           {selectedItem.segmentLabels ? selectedItem.segmentLabels[idx] : `Slide ${idx + 1}`}
                           {activeSegment === idx && <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] text-white animate-pulse">LIVE SEKARANG</span>}
                           {activeSegment !== idx && <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-indigo-500/10 px-2 py-0.5 rounded text-[10px] text-indigo-600">Klik untuk Tampilkan</span>}
@@ -939,7 +945,7 @@ export default function Library() {
                     ) : (
                       <div 
                         onClick={() => handlePresent(idx)}
-                        className={`text-lg whitespace-pre-wrap leading-relaxed cursor-pointer ${activeSegment === idx ? 'text-white' : 'text-indigo-900'}`}
+                        className={`text-lg whitespace-pre-wrap leading-relaxed cursor-pointer ${activeSegment === idx ? 'text-white dark:text-[#D4B872]' : 'text-indigo-900 dark:text-[#D4B872]/80'}`}
                       >
                         {seg}
                       </div>
