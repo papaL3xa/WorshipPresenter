@@ -23,9 +23,7 @@ const processText = (raw: string) => {
 
 import { splitLongSegments } from '../utils/textSplitter';
 import { useLocation, useNavigate } from 'react-router-dom';
-
-let globalDisplayWindow: Window | null = null;
-let globalIsDisplayOpen: boolean = false;
+import { globalDisplayWindow, globalIsDisplayOpen, setGlobalDisplayWindow, setGlobalIsDisplayOpen } from '../utils/displayState';
 
 export default function ControlPanel() {
   const location = useLocation();
@@ -123,8 +121,8 @@ export default function ControlPanel() {
   const displayWindowRef = useRef<Window | null>(globalDisplayWindow);
 
   useEffect(() => {
-    globalDisplayWindow = displayWindowRef.current;
-    globalIsDisplayOpen = isDisplayOpen;
+    setGlobalDisplayWindow(displayWindowRef.current);
+    setGlobalIsDisplayOpen(isDisplayOpen);
   }, [isDisplayOpen]);
 
   useEffect(() => {
@@ -132,8 +130,8 @@ export default function ControlPanel() {
       if (displayWindowRef.current && displayWindowRef.current.closed) {
         setIsDisplayOpen(false);
         displayWindowRef.current = null;
-        globalDisplayWindow = null;
-        globalIsDisplayOpen = false;
+        setGlobalDisplayWindow(null);
+        setGlobalIsDisplayOpen(false);
       }
     }, 1000);
     return () => clearInterval(timer);
@@ -697,13 +695,13 @@ export default function ControlPanel() {
       displayWindowRef.current.close();
       displayWindowRef.current = null;
       setIsDisplayOpen(false);
-      globalDisplayWindow = null;
-      globalIsDisplayOpen = false;
+      setGlobalDisplayWindow(null);
+      setGlobalIsDisplayOpen(false);
     } else {
       displayWindowRef.current = window.open('#/display', '_blank', 'width=1280,height=720');
       setIsDisplayOpen(true);
-      globalDisplayWindow = displayWindowRef.current;
-      globalIsDisplayOpen = true;
+      setGlobalDisplayWindow(displayWindowRef.current);
+      setGlobalIsDisplayOpen(true);
     }
   };
 

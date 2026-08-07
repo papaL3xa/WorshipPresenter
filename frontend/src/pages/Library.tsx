@@ -8,6 +8,7 @@ import { useFavorites } from '../hooks/useFavorites';
 import { SyncButton } from '../components/SyncButton';
 import { initDefaultDatabases, searchLocalSongs, searchLocalBible, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, deleteDatabase, addCustomDatabase, syncCustomSongs, exportDatabaseToTsv, getBibleBookMetadata, getBibleChapterMetadata, getBibleBooksList, getLocalSongCategories } from '../utils/dbStorage';
 import { get, set } from 'idb-keyval';
+import { globalDisplayWindow, globalIsDisplayOpen, setGlobalDisplayWindow, setGlobalIsDisplayOpen } from '../utils/displayState';
 
 // bibleBooks array removed, fetched dynamically from database instead
 
@@ -58,6 +59,26 @@ export default function Library() {
   const [bibleVersesCount, setBibleVersesCount] = useState<number>(0);
   const [isLoadingBibleMeta, setIsLoadingBibleMeta] = useState(false);
 
+  const [isDisplayOpen, setIsDisplayOpen] = useState(globalIsDisplayOpen);
+  const displayWindowRef = useRef<Window | null>(globalDisplayWindow);
+
+  useEffect(() => {
+    setGlobalDisplayWindow(displayWindowRef.current);
+    setGlobalIsDisplayOpen(isDisplayOpen);
+  }, [isDisplayOpen]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (displayWindowRef.current && displayWindowRef.current.closed) {
+        setIsDisplayOpen(false);
+        displayWindowRef.current = null;
+        setGlobalDisplayWindow(null);
+        setGlobalIsDisplayOpen(false);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   useEffect(() => {
     initDefaultDatabases().then(() => {
       getDatabaseList().then(setDbList);
@@ -90,6 +111,21 @@ export default function Library() {
 
   // Gunakan BroadcastChannel untuk sinkronisasi ke DisplayWindow
   const channel = new BroadcastChannel('worship_live_sync');
+
+  const openDisplay = () => {
+    if (displayWindowRef.current && !displayWindowRef.current.closed) {
+      displayWindowRef.current.close();
+      displayWindowRef.current = null;
+      setIsDisplayOpen(false);
+      setGlobalDisplayWindow(null);
+      setGlobalIsDisplayOpen(false);
+    } else {
+      displayWindowRef.current = window.open('#/display', '_blank', 'width=1280,height=720');
+      setIsDisplayOpen(true);
+      setGlobalDisplayWindow(displayWindowRef.current);
+      setGlobalIsDisplayOpen(true);
+    }
+  };
 
   const handlePresent = (idx: number) => {
     if (!selectedItem) return;
@@ -395,8 +431,16 @@ export default function Library() {
         </div>
         <div className="flex items-center gap-3">
           <SyncButton />
-          <button onClick={() => window.open('#/display', '_blank', 'width=1280,height=720')} className="glass-button text-indigo-900 flex items-center gap-2">
-            <Monitor size={16}/> Buka Display
+          <button 
+            onClick={openDisplay} 
+            className={`flex items-center gap-2 px-4 py-2 font-bold rounded-full transition shadow-md ${
+              isDisplayOpen 
+              ? 'bg-rose-500 hover:bg-rose-600 text-white' 
+              : 'bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-[#C5A059] dark:hover:bg-[#A38347]'
+            }`}
+          >
+            <Monitor size={16} className={isDisplayOpen ? "animate-pulse" : ""} /> 
+            {isDisplayOpen ? 'Tutup Display' : 'Buka Display'}
           </button>
         </div>
       </header>
