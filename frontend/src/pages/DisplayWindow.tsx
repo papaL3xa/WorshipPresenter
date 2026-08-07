@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { callApi } from '../api';
 import { CONFIG } from '../config';
 import { getSlideBackground } from '../utils/imageStorage';
@@ -174,6 +174,17 @@ export default function DisplayWindow() {
     };
   }, []);
 
+  // Derive isVideoMuted early for useEffect
+  let isVideoMuted = false;
+  if (liveState.item && liveState.item.segments && liveState.item.type === 'video') {
+    isVideoMuted = !!liveState.item.muted;
+  } else if (liveState.currentItemId && playlistMap[liveState.currentItemId]) {
+    const pItem = playlistMap[liveState.currentItemId];
+    if (pItem.type === 'video') {
+      isVideoMuted = !!pItem.muted;
+    }
+  }
+
   useEffect(() => {
     if (ytPlayerRef.current) {
       if (isVideoMuted) {
@@ -197,7 +208,6 @@ export default function DisplayWindow() {
   let categoryLabel = '';
   let totalSegments = 1;
   let isVideoLoop = false;
-  let isVideoMuted = false;
   
   // 1. Prioritaskan item yang datang dari BroadcastChannel (liveState.item)
   if (liveState.item && liveState.item.segments) {
@@ -206,7 +216,6 @@ export default function DisplayWindow() {
     itemType = liveState.item.type || (liveState.item.book ? 'bible' : 'song');
     if (itemType === 'video') {
       isVideoLoop = !!liveState.item.loop;
-      isVideoMuted = !!liveState.item.muted;
     }
     if (liveState.item.segmentLabels && liveState.item.segmentLabels.length > liveState.segmentIndex) {
       segmentLabel = liveState.item.segmentLabels[liveState.segmentIndex];
@@ -226,7 +235,6 @@ export default function DisplayWindow() {
       itemType = pItem.type || (pItem.book ? 'bible' : 'song');
       if (itemType === 'video') {
         isVideoLoop = !!pItem.loop;
-        isVideoMuted = !!pItem.muted;
       }
       if (pItem.segmentLabels && pItem.segmentLabels.length > liveState.segmentIndex) {
         segmentLabel = pItem.segmentLabels[liveState.segmentIndex];
