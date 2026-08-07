@@ -1000,9 +1000,9 @@ export default function Library() {
               )}
             </div>
           ) : (
-            <div className="h-full w-full flex flex-col items-center justify-center text-indigo-900/40">
-              <BookOpen size={48} className="mb-4 opacity-50" />
-              <p className="text-lg font-medium">Pilih item dari panel kiri untuk melihat isi detailnya.</p>
+            <div className="h-full w-full flex flex-col items-center justify-center text-indigo-900/40 dark:text-[#C5A059]/60">
+              <BookOpen size={48} className="mb-4 opacity-50 dark:opacity-100" />
+              <p className="text-lg font-medium opacity-100">Pilih item dari panel kiri untuk melihat isi detailnya.</p>
             </div>
           )}
         </section>
