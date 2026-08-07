@@ -568,7 +568,13 @@ export default function DisplayWindow() {
 
       {/* Blank Mode Overlay - menutupi semua konten tanpa unmount komponen */}
       {isBlank && (
-        <div className="absolute inset-0 bg-black z-[999] cursor-none" />
+        <div className="absolute inset-0 bg-black z-[999] cursor-none flex items-center justify-center overflow-hidden">
+          <img 
+            src={import.meta.env.BASE_URL + "blank_logo.png"} 
+            alt="Blank Logo" 
+            className="w-full h-full object-cover"
+          />
+        </div>
       )}
     </div>
   );

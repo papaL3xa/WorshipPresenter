@@ -859,8 +859,8 @@ export default function ControlPanel() {
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                pushStateToLive(itemIdx, 0, 'normal');
-                                setMode('normal');
+                                pushStateToLive(itemIdx, 0, 'content');
+                                setMode('content');
                               }}
                               className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md font-bold transition-all hover:scale-105 active:scale-95"
                             >
