@@ -430,7 +430,7 @@ export default function Library() {
           </div>
           
           <div className="flex gap-2 mb-2">
-            <button onClick={() => {setSearchType('song'); setResults([]); setSelectedItem(null); setSelectedResultIds([]);}} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'song' ? 'bg-indigo-600 text-white shadow-md dark:shadow-none' : 'bg-white/30 dark:bg-transparent text-indigo-900 dark:text-[#C5A059] dark:border dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/5'}`}><Music size={16}/> Lagu</button>
+            <button onClick={() => {setSearchType('song'); setResults([]); setSelectedItem(null); setSelectedResultIds([]);}} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'song' ? 'bg-indigo-600 dark:!bg-[#C5A059] text-white shadow-md dark:shadow-none' : 'bg-white/30 dark:bg-transparent text-indigo-900 dark:text-[#C5A059] dark:border dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/5'}`}><Music size={16}/> Lagu</button>
             <button onClick={() => {
               setSearchType('bible'); 
               setResults([]); 
@@ -438,7 +438,7 @@ export default function Library() {
               setSelectedResultIds([]);
               setSelectedBibleBook(null);
               setSelectedBibleChapter(null);
-            }} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'bible' ? 'bg-indigo-600 text-white shadow-md dark:shadow-none' : 'bg-white/30 dark:bg-transparent text-indigo-900 dark:text-[#C5A059] dark:border dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/5'}`}><BookOpen size={16}/> Alkitab</button>
+            }} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'bible' ? 'bg-indigo-600 dark:!bg-[#C5A059] text-white shadow-md dark:shadow-none' : 'bg-white/30 dark:bg-transparent text-indigo-900 dark:text-[#C5A059] dark:border dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/5'}`}><BookOpen size={16}/> Alkitab</button>
           </div>
           
           <div className="mb-4 flex gap-2">
@@ -516,8 +516,8 @@ export default function Library() {
           
           {searchType === 'song' && (
             <div className="flex justify-center gap-2 mb-3 shrink-0">
-              <button onClick={() => setViewMode('grid')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'grid' ? 'bg-indigo-600 text-white dark:border dark:border-[#C5A059]' : 'bg-white dark:bg-transparent text-indigo-900 dark:text-[#C5A059] border border-indigo-200 dark:border-white/10'}`}>Nomor Saja</button>
-              <button onClick={() => setViewMode('list')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-indigo-600 text-white dark:border dark:border-[#C5A059]' : 'bg-white dark:bg-transparent text-indigo-900 dark:text-[#C5A059] border border-indigo-200 dark:border-white/10'}`}>Nomor & Judul</button>
+              <button onClick={() => setViewMode('grid')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'grid' ? 'bg-indigo-600 dark:!bg-[#C5A059] text-white dark:border dark:border-[#C5A059]' : 'bg-white dark:bg-transparent text-indigo-900 dark:text-[#C5A059] border border-indigo-200 dark:border-white/10'}`}>Nomor Saja</button>
+              <button onClick={() => setViewMode('list')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-indigo-600 dark:!bg-[#C5A059] text-white dark:border dark:border-[#C5A059]' : 'bg-white dark:bg-transparent text-indigo-900 dark:text-[#C5A059] border border-indigo-200 dark:border-white/10'}`}>Nomor & Judul</button>
             </div>
           )}
 
