@@ -1196,7 +1196,6 @@ export default function ControlPanel() {
 
                           </div>
                         </div>
-                    </div>
                   )}
                 </div>
               </div>
