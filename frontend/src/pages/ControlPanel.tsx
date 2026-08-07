@@ -1049,16 +1049,33 @@ export default function ControlPanel() {
                                 />
                               </div>
 
-                              {/* Progress Text Footer */}
+                              {/* Progress Text - above running text */}
                               {playlist[itemIdx]?.type !== 'video' && playlist[itemIdx]?.segments[segIdx] && (
                                 <div 
-                                  className="absolute bottom-[4%] left-0 right-0 w-full text-center text-white/60 font-medium tracking-wider lowercase z-20"
+                                  className="absolute left-0 right-0 w-full text-center text-white/60 font-medium tracking-wider lowercase z-20"
                                   style={{ 
                                     fontSize: '1.5cqw',
-                                    textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)'
+                                    textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)',
+                                    bottom: isRtVisible && rtPos === 'bottom' ? `${((rtHeight || 7) / 56.25 * 100) + 1}%` : '2%'
                                   }}
                                 >
                                   {`bait ${(playlist[itemIdx]?.visibleSegments || [...Array(playlist[itemIdx].segments?.length || 1).keys()]).indexOf(segIdx) + 1} dari ${(playlist[itemIdx]?.visibleSegments || playlist[itemIdx]?.segments || []).length}`}
+                                </div>
+                              )}
+
+                              {/* Running Text Bar in Preview */}
+                              {isRtVisible && runningText && (
+                                <div 
+                                  className={`absolute left-0 right-0 z-30 bg-black/60 backdrop-blur-sm border-y border-white/10 overflow-hidden flex items-center ${
+                                    rtPos === 'top' ? 'top-0' : 'bottom-0'
+                                  }`}
+                                  style={{ height: `${((rtHeight || 7) / 56.25) * 100}%` }}
+                                >
+                                  <div className="animate-marquee-seamless" style={{ animationDuration: '8s' }}>
+                                    <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtHeight || 7) / 56.25 * 100) * 0.35}cqw` }}>
+                                      {runningText.split('\n').join('  ●  ')}
+                                    </div>
+                                  </div>
                                 </div>
                               )}
                             </div>

@@ -527,15 +527,16 @@ export default function DisplayWindow() {
 
 
 
-      {/* Progress Text (Bait x dari y) */}
+      {/* Progress Text (Bait x dari y) - right above running text */}
       {progressText && (
         <div 
-          className={`absolute right-[3vw] z-40 transition-all duration-500 ${
-            rtState.isVisible && rtState.position === 'bottom' ? 'bottom-[9vw]' : 'bottom-[3vw]'
-          }`}
+          className="absolute left-0 right-0 z-40 transition-all duration-500 text-center"
+          style={{
+            bottom: rtState.isVisible && rtState.position === 'bottom' ? `${(rtState.height || 7) + 0.5}vw` : '1vw'
+          }}
         >
           <div 
-            className="text-white/80 text-[1.5vw] font-medium tracking-wider lowercase"
+            className="text-white/80 text-[1.5vw] font-medium tracking-wider lowercase inline-block"
             style={{ textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)' }}
           >
             {progressText}
