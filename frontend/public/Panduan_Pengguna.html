@@ -14,17 +14,15 @@
             padding: 40px 20px;
             background-color: #f9f9fb;
         }
-        @media (prefers-color-scheme: dark) {
-            body {
-                background-color: #282828;
-                color: #D4B872;
-            }
-            .container { background-color: #282828 !important; }
-            h1, h2, h3 { color: #C5A059 !important; border-color: rgba(255,255,255,0.1) !important; }
-            .card { background: #333333 !important; border-color: rgba(255,255,255,0.1) !important; box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important; }
-            code { background-color: #222 !important; color: #EAEAEA !important; border-color: #444 !important; }
-            .alert { background-color: transparent !important; border: 1px solid rgba(255,255,255,0.1) !important; border-left: 4px solid #C5A059 !important; }
+        body.dark {
+            background-color: #282828;
+            color: #D4B872;
         }
+        body.dark .container { background-color: #282828 !important; }
+        body.dark h1, body.dark h2, body.dark h3 { color: #C5A059 !important; border-color: rgba(255,255,255,0.1) !important; }
+        body.dark .card { background: #333333 !important; border-color: rgba(255,255,255,0.1) !important; box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important; }
+        body.dark code { background-color: #222 !important; color: #EAEAEA !important; border-color: #444 !important; }
+        body.dark .alert { background-color: transparent !important; border: 1px solid rgba(255,255,255,0.1) !important; border-left: 4px solid #C5A059 !important; }
         h1 {
             color: #1e3a8a; /* Indigo 900 */
             text-align: center;
@@ -181,5 +179,27 @@
             <p><small>Dokumen disusun secara otomatis oleh Asisten AI Antigravity.</small></p>
         </div>
     </div>
+    <script>
+        function updateTheme() {
+            if (localStorage.getItem('worship_dark_mode') !== 'false') {
+                document.body.classList.add('dark');
+            } else {
+                document.body.classList.remove('dark');
+            }
+        }
+        updateTheme();
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'worship_dark_mode') {
+                updateTheme();
+            }
+        });
+        // Listen to custom message from parent just in case
+        window.addEventListener('message', function(e) {
+            if (e.data && e.data.type === 'THEME_UPDATE') {
+                if (e.data.isDark) document.body.classList.add('dark');
+                else document.body.classList.remove('dark');
+            }
+        });
+    </script>
 </body>
 </html>
