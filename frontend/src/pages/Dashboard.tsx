@@ -1,9 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Play, Folder, Search, Settings, Loader2, Trash2, HelpCircle, X, Info, Globe, Heart } from 'lucide-react';
+import { Plus, Play, Folder, Search, Settings, Loader2, Trash2, HelpCircle, X, Info, Globe, Heart, Bell, Download, CheckCircle } from 'lucide-react';
 import { SyncButton } from '../components/SyncButton';
 import { callApi } from '../api';
 import { FooterClock } from '../components/FooterClock';
+
+const CURRENT_VERSION = '1.0.0';
+const GITHUB_RELEASES_API = 'https://api.github.com/repos/pisgahbisdac/pisgahbisdac/releases';
+const GITHUB_RELEASE_URL = 'https://github.com/pisgahbisdac/pisgahbisdac/releases/tag/Stable';
+
+function parseVersion(versionStr: string): number[] {
+  const match = versionStr.match(/(\d+\.\d+\.\d+)/);
+  if (!match) return [0, 0, 0];
+  return match[1].split('.').map(Number);
+}
+
+function isNewerVersion(remote: string, current: string): boolean {
+  const r = parseVersion(remote);
+  const c = parseVersion(current);
+  for (let i = 0; i < 3; i++) {
+    if (r[i] > c[i]) return true;
+    if (r[i] < c[i]) return false;
+  }
+  return false;
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -16,6 +36,8 @@ export default function Dashboard() {
   const [deleteError, setDeleteError] = useState('');
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<{ hasUpdate: boolean; latestVersion: string; releaseUrl: string; releaseName: string } | null>(null);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
 
   const fetchPlaylists = async () => {
     setIsLoading(true);
@@ -65,7 +87,42 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchPlaylists();
+    // Cek update di background tanpa menunggu modal dibuka
+    checkForUpdate();
   }, []);
+
+  const checkForUpdate = async () => {
+    setIsCheckingUpdate(true);
+    try {
+      const res = await fetch(GITHUB_RELEASES_API, {
+        headers: { 'Accept': 'application/vnd.github+json' }
+      });
+      if (!res.ok) return;
+      const releases = await res.json();
+      if (!Array.isArray(releases) || releases.length === 0) return;
+      // Cari release yang bukan draft dan bukan pre-release
+      const latest = releases.find((r: any) => !r.draft && !r.prerelease);
+      if (!latest) return;
+      const latestVersion = latest.name || latest.tag_name;
+      const hasUpdate = isNewerVersion(latestVersion, CURRENT_VERSION);
+      setUpdateInfo({
+        hasUpdate,
+        latestVersion,
+        releaseUrl: latest.html_url || GITHUB_RELEASE_URL,
+        releaseName: latest.name || latest.tag_name
+      });
+    } catch (e) {
+      // Gagal cek update (offline / rate limit) - diam saja
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAboutOpen) {
+      checkForUpdate();
+    }
+  }, [isAboutOpen]);
 
   return (
     <div className="min-h-full flex flex-col p-4 md:p-8 gap-4 overflow-hidden relative">
@@ -78,7 +135,12 @@ export default function Dashboard() {
         </h1>
         <div className="flex flex-wrap justify-center items-center gap-2 md:gap-4">
           <SyncButton />
-          <button onClick={() => setIsAboutOpen(true)} className="glass-button flex items-center gap-2"><Info size={18}/> Tentang</button>
+          <button onClick={() => setIsAboutOpen(true)} className="glass-button flex items-center gap-2 relative">
+            <Info size={18}/> Tentang
+            {updateInfo?.hasUpdate && (
+              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-amber-500 rounded-full border-2 border-white animate-bounce" title="Ada pembaruan tersedia!" />
+            )}
+          </button>
           <button onClick={() => setIsGuideOpen(true)} className="glass-button flex items-center gap-2 bg-indigo-100 text-indigo-900 border border-indigo-300 hover:bg-indigo-200"><HelpCircle size={18}/> Cara Penggunaan</button>
           <button onClick={() => navigate('/library')} className="glass-button flex items-center gap-2"><Folder size={18}/> Library</button>
           {localStorage.getItem('worship_role') === 'admin' && (
@@ -244,7 +306,40 @@ export default function Dashboard() {
               </div>
               
               <h2 className="text-2xl font-black text-indigo-950 dark:text-[#D4B872] mb-1 tracking-tight">Worship Presenter</h2>
-              <p className="text-indigo-600 dark:text-[#C5A059] font-bold mb-6 tracking-widest text-xs">VERSI 1.0.0 Release</p>
+              <p className="text-indigo-600 dark:text-[#C5A059] font-bold mb-3 tracking-widest text-xs">VERSI {CURRENT_VERSION} Release</p>
+
+              {/* === Update Checker Banner === */}
+              {isCheckingUpdate ? (
+                <div className="w-full flex items-center gap-3 mb-4 p-3 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 animate-pulse">
+                  <Loader2 size={18} className="animate-spin text-slate-500 flex-shrink-0" />
+                  <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">Memeriksa pembaruan...</span>
+                </div>
+              ) : updateInfo?.hasUpdate ? (
+                <div className="w-full mb-4">
+                  <div className="flex items-start gap-3 p-3.5 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-300 dark:border-amber-600">
+                    <div className="flex-shrink-0 w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center mt-0.5">
+                      <Bell size={16} className="text-white" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-bold text-amber-800 dark:text-amber-300">Pembaruan Tersedia! 🎉</p>
+                      <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">{updateInfo.releaseName}</p>
+                    </div>
+                  </div>
+                  <a
+                    href={updateInfo.releaseUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-amber-500/30 hover:-translate-y-0.5 transition-all text-sm"
+                  >
+                    <Download size={16} /> Unduh Pembaruan
+                  </a>
+                </div>
+              ) : updateInfo && !updateInfo.hasUpdate ? (
+                <div className="w-full flex items-center gap-3 mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-700">
+                  <CheckCircle size={18} className="text-green-500 flex-shrink-0" />
+                  <span className="text-sm text-green-700 dark:text-green-400 font-medium">Aplikasi Anda sudah versi terbaru ✓</span>
+                </div>
+              ) : null}
               
               <div className="bg-indigo-50 text-indigo-900 p-5 rounded-2xl mb-4 text-sm leading-relaxed border border-indigo-100 text-left dark:bg-[#333] dark:text-[#C5A059] dark:border-white/10">
                 <strong>Tentang Aplikasi Ini:</strong><br/>
