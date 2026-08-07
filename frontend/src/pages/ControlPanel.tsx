@@ -648,9 +648,22 @@ export default function ControlPanel() {
   };
 
   // Sync saat ada perubahan
+  const prevActiveItemRef = useRef<number | null>(null);
+
   useEffect(() => {
-    if (!isEditingRundown) {
-      pushStateToLive(activeItem, activeSegment, mode);
+    if (!isEditingRundown && activeItem !== null && playlist[activeItem]) {
+      let currentMode = mode;
+      if (prevActiveItemRef.current !== activeItem) {
+        if (playlist[activeItem].type === 'video') {
+          setMode('logo');
+          currentMode = 'logo';
+        } else {
+          setMode('content');
+          currentMode = 'content';
+        }
+        prevActiveItemRef.current = activeItem;
+      }
+      pushStateToLive(activeItem, activeSegment, currentMode);
     }
   }, [activeItem, activeSegment, mode, playlist, isEditingRundown]);
 
@@ -869,8 +882,9 @@ export default function ControlPanel() {
 
                 <div className="w-full flex-1 min-h-0 flex items-center justify-center relative z-10 transition-all duration-300 animate-fade-in" key={`${itemIdx}-${segIdx}-${mode}`}>
                   {mode === 'blank' ? <span className="text-indigo-900/20 dark:text-slate-200/20 text-2xl font-bold italic">Layar Kosong (Blank)</span> : (
-                    <>
-                      {(playlist[itemIdx]?.type === 'video') ? (
+                    <div className="w-full flex flex-col lg:flex-row gap-4 md:gap-6 relative text-left h-full flex-1 min-h-0">
+                      <div className="w-full lg:w-1/2 relative flex flex-col justify-center h-full min-h-0">
+                        {(playlist[itemIdx]?.type === 'video') ? (
                         <div className="flex flex-col items-center gap-5">
                           <div className="flex flex-col items-center">
                             <Monitor size={48} className="text-indigo-900/40 dark:text-slate-400 mb-2 md:mb-2" />
@@ -970,10 +984,7 @@ export default function ControlPanel() {
                             </div>
                           )}
                         </div>
-                      ) : (
-                        <div className="w-full flex flex-col lg:flex-row gap-4 md:gap-6 relative text-left h-full flex-1 min-h-0">
-                          <div className="w-full lg:w-1/2 relative flex flex-col justify-center h-full min-h-0">
-                            {isEditView ? (
+                      ) : isEditView ? (
                               <div className="w-full h-full flex flex-col relative min-h-0">
                                 {/* Toolbar Warna dipindahkan ke bawah */}
                                 <RichEditor
@@ -1185,8 +1196,7 @@ export default function ControlPanel() {
 
                           </div>
                         </div>
-                      )}
-                    </>
+                    </div>
                   )}
                 </div>
               </div>
