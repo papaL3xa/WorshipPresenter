@@ -123,7 +123,7 @@ export default function Dashboard() {
                     >
                       <Trash2 size={16} />
                     </button>
-                    <button onClick={() => navigate('/control?id=' + pl.id)} className="glass-button flex-1 md:flex-none justify-center bg-gradient-to-r from-emerald-400 to-emerald-600 text-white border-transparent shadow-lg hover:shadow-emerald-500/40 font-bold flex items-center gap-2">
+                    <button onClick={() => navigate('/control?id=' + pl.id)} className="glass-button flex-1 md:flex-none justify-center !bg-[#C5A059] hover:!bg-[#D4B872] !text-white border-transparent shadow-lg hover:shadow-[#C5A059]/40 font-bold flex items-center gap-2">
                       <Play size={16} strokeWidth={3}/> Live
                     </button>
                   </div>
