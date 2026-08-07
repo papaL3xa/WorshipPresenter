@@ -244,7 +244,7 @@ export default function Dashboard() {
               </div>
               
               <h2 className="text-2xl font-black text-indigo-950 dark:text-[#D4B872] mb-1 tracking-tight">Worship Presenter</h2>
-              <p className="text-indigo-600 dark:text-[#C5A059] font-bold mb-6 tracking-widest text-xs">VERSI 1.0.0</p>
+              <p className="text-indigo-600 dark:text-[#C5A059] font-bold mb-6 tracking-widest text-xs">VERSI 1.0.0 Release</p>
               
               <div className="bg-indigo-50 text-indigo-900 p-5 rounded-2xl mb-4 text-sm leading-relaxed border border-indigo-100 text-left dark:bg-[#333] dark:text-[#C5A059] dark:border-white/10">
                 <strong>Tentang Aplikasi Ini:</strong><br/>
