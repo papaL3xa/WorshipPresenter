@@ -107,7 +107,7 @@ export default function Dashboard() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {playlists.map((pl) => (
-                <div key={pl.id} className="p-5 rounded-2xl bg-white/30 backdrop-blur-md border border-white/40 shadow-sm hover:shadow-lg hover:bg-white/50 hover:-translate-y-1 transition-all duration-300 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group">
+                <div key={pl.id} className="p-5 rounded-2xl bg-white/30 dark:bg-transparent backdrop-blur-md border border-white/40 dark:border-white/10 shadow-sm dark:shadow-none hover:shadow-lg hover:bg-white/50 dark:hover:bg-white/5 hover:-translate-y-1 transition-all duration-300 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group">
                   <div>
                     <h3 className="font-heading font-bold text-xl text-slate-800 mb-1">{pl.name}</h3>
                     <p className="text-sm font-medium text-slate-600 flex items-center gap-2">
@@ -150,8 +150,8 @@ export default function Dashboard() {
               className="glass-input pl-12" 
             />
           </div>
-          <div className="mt-6 text-sm text-slate-600 bg-white/20 p-4 rounded-xl border border-white/30">
-            <p><strong>Tips:</strong> Anda juga bisa mencari menggunakan fitur Quick Search langsung di dalam <span className="font-semibold text-indigo-700">Control Panel</span> saat mode Live.</p>
+          <div className="mt-6 text-sm text-slate-600 dark:text-[#C5A059] bg-white/20 dark:bg-transparent p-4 rounded-xl border border-white/30 dark:border-white/10">
+            <p><strong>Tips:</strong> Anda juga bisa mencari menggunakan fitur Quick Search langsung di dalam <span className="font-semibold text-indigo-700 dark:text-[#D4B872]">Control Panel</span> saat mode Live.</p>
           </div>
         </section>
       </main>
