@@ -282,6 +282,19 @@ export default function ControlPanel() {
     }
   }, [mode, videoState]);
 
+  useEffect(() => {
+    if (!videoProgress) return;
+    const vid = document.getElementById('preview-video') as HTMLVideoElement;
+    const localVidContainer = document.getElementById('preview-video-container');
+    const localVid = localVidContainer?.querySelector('video') as HTMLVideoElement;
+    const targetVid = vid || localVid;
+    if (targetVid) {
+      if (Math.abs(targetVid.currentTime - videoProgress.currentTime) > 1.5) {
+        targetVid.currentTime = videoProgress.currentTime;
+      }
+    }
+  }, [videoProgress]);
+
   const handleVideoSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value);
     const channel = new BroadcastChannel('worship_live_sync');
@@ -999,26 +1012,29 @@ export default function ControlPanel() {
                             <span className="text-indigo-900/80 dark:text-slate-200 font-bold text-lg md:text-xl">Kontrol Video</span>
                           </div>
                           <div className="flex gap-4">
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                pushStateToLive(itemIdx, 0, 'content');
-                                setMode('content');
-                                const channel = new BroadcastChannel('worship_live_sync');
-                                channel.postMessage({ type: 'VIDEO_PLAY' });
-                                channel.close();
-                                setVideoState('play');
-                              }}
-                              className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md font-bold transition-all hover:scale-105 active:scale-95"
-                            >
-                              <Play size={20} className="fill-current" /> Mulai Tampil
-                            </button>
-                            <button 
-                              onClick={toggleVideoPlay}
-                              className={`${videoState === 'play' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-green-500 hover:bg-green-600'} text-white px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md font-bold transition-all hover:scale-105 active:scale-95`}
-                            >
-                              {videoState === 'play' ? <><Pause size={20} className="fill-current" /> Jeda</> : <><Play size={20} className="fill-current" /> Lanjut</>}
-                            </button>
+                            {mode !== 'content' ? (
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  pushStateToLive(itemIdx, 0, 'content');
+                                  setMode('content');
+                                  const channel = new BroadcastChannel('worship_live_sync');
+                                  channel.postMessage({ type: 'VIDEO_PLAY' });
+                                  channel.close();
+                                  setVideoState('play');
+                                }}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md font-bold transition-all hover:scale-105 active:scale-95"
+                              >
+                                <Play size={20} className="fill-current" /> Mulai Tampil
+                              </button>
+                            ) : (
+                              <button 
+                                onClick={toggleVideoPlay}
+                                className={`${videoState === 'play' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-green-500 hover:bg-green-600'} text-white px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md font-bold transition-all hover:scale-105 active:scale-95`}
+                              >
+                                {videoState === 'play' ? <><Pause size={20} className="fill-current" /> Jeda</> : <><Play size={20} className="fill-current" /> Lanjut</>}
+                              </button>
+                            )}
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
