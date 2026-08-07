@@ -56,6 +56,7 @@ export default function DisplayWindow() {
   const [playlistMap, setPlaylistMap] = useState<Record<string, any>>({});
   const lastUpdateRef = useRef<number>(0);
   const currentPlaylistIdRef = useRef<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     // 1. Terima update cepat via BroadcastChannel lokal
@@ -84,6 +85,10 @@ export default function DisplayWindow() {
         setLogos(msg.data.payload);
       } else if (msg.data.type === 'RUNNING_TEXT_UPDATE') {
         setRtState(msg.data.payload);
+      } else if (msg.data.type === 'VIDEO_SEEK') {
+        if (videoRef.current) {
+          videoRef.current.currentTime = msg.data.payload.time;
+        }
       }
     };
 
@@ -446,17 +451,31 @@ export default function DisplayWindow() {
                 ></iframe>
               );
             }
+            const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+              const vid = e.currentTarget;
+              const channel = new BroadcastChannel('worship_live_sync');
+              channel.postMessage({
+                type: 'VIDEO_PROGRESS',
+                payload: {
+                  currentTime: vid.currentTime,
+                  duration: vid.duration
+                }
+              });
+            };
+
             if (url.startsWith('local_vid_')) {
-              return <LocalVideoPlayer key={url} id={url} loop={isVideoLoop} autoPlay={true} muted={isVideoMuted} />;
+              return <LocalVideoPlayer ref={videoRef} key={url} id={url} loop={isVideoLoop} autoPlay={true} muted={isVideoMuted} onTimeUpdate={handleTimeUpdate} />;
             }
             return (
               <video 
+                ref={videoRef}
                 key={url}
                 className="w-full h-full object-contain animate-fade-in" 
                 src={url} 
                 autoPlay 
                 loop={isVideoLoop}
                 muted={isVideoMuted}
+                onTimeUpdate={handleTimeUpdate}
               />
             );
           })()

@@ -233,6 +233,35 @@ export default function ControlPanel() {
     return () => clearInterval(interval);
   }, [liveCountdown, playlist, activeItem, isEditingRundown]);
 
+  const [videoProgress, setVideoProgress] = useState<{currentTime: number, duration: number} | null>(null);
+
+  useEffect(() => {
+    const channel = new BroadcastChannel('worship_live_sync');
+    channel.onmessage = (msg) => {
+      if (msg.data.type === 'VIDEO_PROGRESS') {
+        setVideoProgress(msg.data.payload);
+      }
+    };
+    return () => channel.close();
+  }, []);
+
+  const handleVideoSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    const channel = new BroadcastChannel('worship_live_sync');
+    channel.postMessage({ type: 'VIDEO_SEEK', payload: { time } });
+    channel.close();
+    if (videoProgress) {
+      setVideoProgress({ ...videoProgress, currentTime: time });
+    }
+  };
+
+  const formatVideoTime = (seconds: number) => {
+    if (isNaN(seconds)) return "0:00";
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
   // Fungsi untuk push state ke GAS
   const pushStateToLive = async (itemIdx: number, segIdx: number, dispMode: string) => {
     // Jika mode blank/content, selalu broadcast meski playlist kosong
@@ -930,7 +959,6 @@ export default function ControlPanel() {
                               <Square size={20} className="fill-current" /> Hentikan
                             </button>
                           </div>
-                          
                           <label className="flex items-center gap-3 cursor-pointer mt-2 bg-white/70 dark:bg-slate-800/80 px-5 py-3 rounded-xl border border-indigo-100 dark:border-slate-700 shadow-sm transition-colors hover:bg-white dark:hover:bg-slate-700">
                             <input 
                               type="checkbox" 
@@ -945,7 +973,7 @@ export default function ControlPanel() {
                               }}
                               className="w-5 h-5 rounded border-indigo-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-slate-900" 
                             />
-                            <span className="text-indigo-950 dark:text-slate-200 font-bold select-none">Putar Berulang (Looping)</span>
+                            <span className="text-indigo-950 dark:text-slate-200 font-bold select-none">Putar berulang-ulang (Loop)</span>
                           </label>
                           <label className="flex items-center gap-3 cursor-pointer mt-2 bg-white/70 dark:bg-slate-800/80 px-5 py-3 rounded-xl border border-indigo-100 dark:border-slate-700 shadow-sm transition-colors hover:bg-white dark:hover:bg-slate-700">
                             <input 
@@ -963,6 +991,21 @@ export default function ControlPanel() {
                             />
                             <span className="text-indigo-950 dark:text-slate-200 font-bold select-none">Bisukan Suara (Mute)</span>
                           </label>
+                          {videoProgress && videoProgress.duration > 0 && !isEditView && (
+                            <div className="w-full mt-2 flex items-center gap-3 bg-white/80 dark:bg-slate-800/80 p-3 rounded-xl border border-indigo-100 dark:border-slate-700 shadow-sm">
+                              <span className="text-xs font-mono font-bold text-indigo-900/80 dark:text-slate-300">{formatVideoTime(videoProgress.currentTime)}</span>
+                              <input 
+                                type="range" 
+                                min="0" 
+                                max={videoProgress.duration} 
+                                step="0.1"
+                                value={videoProgress.currentTime}
+                                onChange={handleVideoSeek}
+                                className="flex-1 h-2 bg-indigo-200 dark:bg-slate-700 rounded-lg cursor-pointer appearance-none"
+                              />
+                              <span className="text-xs font-mono font-bold text-indigo-900/80 dark:text-slate-300">{formatVideoTime(videoProgress.duration)}</span>
+                            </div>
+                          )}
                         </div>
                       ) : (playlist[itemIdx]?.type === 'countdown') ? (
                         <div className="flex flex-col items-center w-full">
