@@ -318,12 +318,9 @@ export const searchLocalSongs = async (query: string, versionId: string, categor
   // 1. Get base version
   const baseSongs: SongData[] = (await get(`dbdata_${versionId}`)) || [];
   
-  // 2. Get synced GAS songs (only apply to default LSEB to mix them)
-  let gasSongs: SongData[] = [];
-  if (versionId === 'song_LSEB') {
-    const rawGas = await get('dbdata_song_GAS_SYNC');
-    gasSongs = Array.isArray(rawGas) ? rawGas : [];
-  }
+  // 2. Get synced GAS songs (apply to all versions to mix them)
+  const rawGas = await get('dbdata_song_GAS_SYNC');
+  const gasSongs: SongData[] = Array.isArray(rawGas) ? rawGas : [];
   
   // Merge (GAS overrides Base if same ID)
   const mergedMap = new Map<string, SongData>();
@@ -433,11 +430,8 @@ export const getLocalSongCategories = async (versionId: string): Promise<string[
   const baseSongs: SongData[] = (await get(`dbdata_${versionId}`)) || [];
   
   // 2. Get synced GAS songs
-  let gasSongs: SongData[] = [];
-  if (versionId === 'song_LSEB') {
-    const rawGas = await get('dbdata_song_GAS_SYNC');
-    gasSongs = Array.isArray(rawGas) ? rawGas : [];
-  }
+  const rawGas = await get('dbdata_song_GAS_SYNC');
+  const gasSongs: SongData[] = Array.isArray(rawGas) ? rawGas : [];
   
   const mergedMap = new Map<string, SongData>();
   baseSongs.forEach(s => mergedMap.set(s.id, s));
