@@ -34,7 +34,7 @@ export const initDefaultDatabases = async () => {
   const dbKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbinfo_')) as string[];
   const dataKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbdata_')) as string[];
 
-  const currentDbVersion = '1.0.4'; // Update this when default files change
+  const currentDbVersion = '1.0.5'; // Update this when default files change
   const savedDbVersion = localStorage.getItem('worship_db_version');
 
   const isOutdated = savedDbVersion !== currentDbVersion;
@@ -254,9 +254,9 @@ export const addCustomDatabase = async (info: DatabaseVersion, tsvContent: strin
       if (s.segment1 !== undefined) {
         let i = 1;
         while (s[`segment${i}`] !== undefined) {
-          // Lewati segmen kosong agar tidak muncul sebagai bait kosong
-          if (s[`segment${i}`].trim()) {
-            segs.push(s[`segment${i}`]);
+          const segVal = s[`segment${i}`];
+          if (segVal && segVal.trim() !== '') {
+            segs.push(segVal);
           }
           i++;
         }

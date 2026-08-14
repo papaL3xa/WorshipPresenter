@@ -21,16 +21,13 @@ export const splitLongSegments = (rawItems: any[]) => {
       
       item.segments.forEach((seg: string, idx: number) => {
         const wasVisible = !oldVisibleSegments || oldVisibleSegments.includes(idx);
-        // Untuk lagu: TIDAK dipotong otomatis, setiap bait tampil utuh dalam 1 slide
-        // Untuk Alkitab: dipotong jika terlalu panjang
-        const MAX_LEN = 220;
-        const shouldSplit = item.type === 'bible' && seg.length > MAX_LEN;
-
-        if (shouldSplit) {
+        const MAX_LEN = item.type === 'bible' ? 220 : 999999; // Prevent auto-splitting for songs
+        
+        if (seg.length > MAX_LEN) {
           let remaining = seg;
           let partIndex = 0;
           
-          const originalLabel = item.segmentLabels ? item.segmentLabels[idx] : `Ayat ${idx+1}`;
+          const originalLabel = item.segmentLabels ? item.segmentLabels[idx] : (item.type === 'bible' ? `Ayat ${idx+1}` : `Bait ${idx+1}`);
           
           while (remaining.length > 0) {
             if (remaining.length <= MAX_LEN) {
@@ -42,6 +39,7 @@ export const splitLongSegments = (rawItems: any[]) => {
             }
             
             let splitPos = -1;
+            // Prioritaskan pemotongan di baris baru (\n) untuk lagu, baru tanda baca
             const punctuationMarks = ['\n', '. ', ', ', '; ', ': ', '? ', '! '];
             
             for (let p of punctuationMarks) {
@@ -70,14 +68,12 @@ export const splitLongSegments = (rawItems: any[]) => {
             partIndex++;
           }
         } else {
-          // Tidak dipotong — segmen tampil utuh
           const newIdx = newSegments.length;
           newSegments.push(seg);
           if (wasVisible) {
             newVisibleSegments.push(newIdx);
           }
-          const defaultLabel = item.type === 'bible' ? `Ayat ${idx+1}` : `Bait ${idx+1}`;
-          newLabels.push(item.segmentLabels ? item.segmentLabels[idx] : defaultLabel);
+          newLabels.push(item.segmentLabels ? item.segmentLabels[idx] : (item.type === 'bible' ? `Ayat ${idx+1}` : `Bait ${idx+1}`));
         }
       });
       
