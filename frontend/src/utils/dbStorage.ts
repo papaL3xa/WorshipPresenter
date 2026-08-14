@@ -34,7 +34,7 @@ export const initDefaultDatabases = async () => {
   const dbKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbinfo_')) as string[];
   const dataKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbdata_')) as string[];
 
-  const currentDbVersion = '1.0.3'; // Update this when default files change
+  const currentDbVersion = '1.0.4'; // Update this when default files change
   const savedDbVersion = localStorage.getItem('worship_db_version');
 
   const isOutdated = savedDbVersion !== currentDbVersion;
@@ -63,6 +63,12 @@ export const initDefaultDatabases = async () => {
   if (isOutdated || !dbKeys.includes('dbinfo_song_KJ') || !dataKeys.includes('dbdata_song_KJ')) {
     console.log("Initializing Kidung Jemaat song database...");
     await loadDefaultFlatSongDatabase('song_KJ', 'Kidung Jemaat', 'data/Kidung_Jemaat.tsv');
+  }
+
+  // Init SDA Hymnal (SDAH)
+  if (isOutdated || !dbKeys.includes('dbinfo_song_SDAH') || !dataKeys.includes('dbdata_song_SDAH')) {
+    console.log("Initializing SDA Hymnal (SDAH) song database...");
+    await loadDefaultFlatSongDatabase('song_SDAH', 'SDA Hymnal (SDAH)', 'data/SDAH_Hymnal.tsv');
   }
 
   if (isOutdated || !dbKeys.includes('dbinfo_bible_AYT') || !dataKeys.includes('dbdata_bible_AYT')) {
