@@ -1,525 +1,527 @@
-songId	title	author	category	segmentOrder
-LSEB_1	1. Di Hadapan Hadirat-Mu	Isaac Watts	Pujian	[0, 1, 2, 3]
-LSEB_2	2. Hai Seg’Nap Ciptaan Tuhan	Francis of assisi	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_3	3. Tuhan Allah Hadir	Gerhand Tersteegen	Pujian	[0, 1, 2]
-LSEB_4	4. Puji Tuhan Allah	Joachim Neander	Lagu Sion	[0, 1, 2]
-LSEB_5	5. Kasih Surga Yang Terindah	Charles Wesley	Lagu Sion	[0, 1, 2, 3]
-LSEB_6	6. Tuhan Raja Di Sion	Fanny J. Crosby	Lagu Sion	[0, 1, 2]
-LSEB_7	7. Kita Berhimpun	Theodore Baker	Lagu Sion	[0, 1, 2]
-LSEB_8	8. Sembahlah Tuhan	J. S. B Monsell	Lagu Sion	[0, 1, 2, 3]
-LSEB_9	9. Hai Kristen Nyanyilah	Christian Henry Bateman	Lagu Sion	[0, 1, 2]
-LSEB_10	10. Betapa Teguhnya	Rippson Selection	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_11	11. Dengan Riang Kami Puji	Henry Van Dyke	Lagu Sion	[0, 1, 2]
-LSEB_12	12. Nyanyikanlah Kidung Yang Baru	Erik Routey	Lagu Sion	[0, 1, 2]
-LSEB_13	13. Suci, Suci, Suci	Reginald Heber	Lagu Sion	[0, 1, 2, 3]
-LSEB_14	14. Jika Kiranya Lidahku	Samuel Medley	Lagu Sion	[0, 1, 2, 3]
-LSEB_15	15. Aku Senang Menc'Ritakan	Elisabeth Mills	Lagu Sion	[0, 1, 2, 3]
-LSEB_16	16. Tuhan Bertakhta Di Surga	Oliver Wandell Holmes	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_17	17. Tuhan Lindungilah Kami	E. Halstead	Lagu Sion	[0]
-LSEB_18	18. Pujilah Allah	Henry W. Baker	Lagu Sion	[0, 1, 2, 3]
-LSEB_19	19. Hati Yesus Penuh	Alice Pugh	Lagu Sion	[0, 1, 2, 3]
-LSEB_20	20. Kidung Yang Baru	Scotis Psalter	Lagu Sion	[0, 1, 2, 3]
-LSEB_21	21. Pada-Mu Allah Ku Puji	William Kethe	Lagu Sion	[0]
-LSEB_22	22. Hai Jiwaku Bangun Seg'Ra	Philip Doddridge	Lagu Sion	[0, 1, 2, 3]
-LSEB_23	23. Allah Yang Abadi	Walter Chalmer Smith	Lagu Sion	[0, 1, 2, 3]
-LSEB_24	24. Dengar Lonceng Berdentang	K. E. Roberts	Lagu Sion	[0, 1, 2]
-LSEB_25	25. Puji Tuhan Yang Mulia	Henry Francis Lyte	Lagu Sion	[0, 1, 2]
-LSEB_26	26. Puji Tuhan Hai Manusia	Edward Osler	Lagu Sion	[0, 1, 2]
-LSEB_27	27. Mari Umat Allah		Lagu Sion	[0, 1, 2, 1, 3, 1, 4, 1, 5, 1]
-LSEB_28	28. Kami Mau Lihat Yesus Juruselamat	Anna B. Werner	Lagu Sion	[0, 1, 2, 3]
-LSEB_29	29. Puji Allah Yang Bertakhta	Johann J. Schutz	Lagu Sion	[0, 1, 2, 3]
-LSEB_30	30. Kuduslah Nama Tuhan	German 18th Century	Lagu Sion	[0, 1, 2]
-LSEB_31	31. C’Ritakan Keagungan Tuhanmu	Timothy Dudley-Smith	Lagu Sion	[0, 1, 2, 3]
-LSEB_32	32. Sembah Sujudlah Umatnya	Isaac Watts	Lagu Sion	[0, 1, 2, 3]
-LSEB_33	33. Nyanyikan Dengan Gembira	W. F. Sherwin	Lagu Sion	[0, 1, 2, 1, 3, 1]
-LSEB_34	34. Semua Makhluk Puji Tuhan	Katherine K. Davis	Lagu Sion	[0, 1]
-LSEB_35	35. Yesus Bagaikan Gembala	William Bradbury	Lagu Sion	[0, 1, 2]
-LSEB_36	36. Menyanyilah Hai Jiwaku	Julius Krohn	Lagu Sion	[0, 1, 2]
-LSEB_37	37. Waktu Pagi Ya Tuhanku	Isaac Watts	Lagu Sion	[0, 1, 2, 3]
-LSEB_38	38. Mari Puji Nama Yesus	Edward Perronet	Lagu Sion	[0, 1, 2, 3]
-LSEB_39	39. Puji Syukur Bagi-Nya	John Milton	Pujian	[0, 1, 2, 3]
-LSEB_40	40. Tuhan Pimpinlah Aku	Frank M. Davis	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_41	41. Sambutlah Sabat Tuhan	Ada Cross	Lagu Sion	[0, 1, 2, 3]
-LSEB_43	43. S'Lamat Malam	F. E. Belden	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_44	44. Allah Khalik Langit Bumi	Reginal Heber (1983-18260)	Lagu Sion	[0, 1, 2, 3]
-LSEB_45	45. T'Lah Hampir Malam	Henry F. Lyte	Lagu Sion	[0, 1, 2, 3]
-LSEB_46	46. Matahari Terbenam	Mary A. Lathbury	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_47	47. Dengan Lembut T'Rang Siang	George W. Doanne	Lagu Sion	[0, 1]
-LSEB_48	48. Siang Sudah Lalu	Sabine Baring-Gould	Lagu Sion	[0, 1, 2]
-LSEB_49	49. Yesus Berkati Kami	James Edmesion	Lagu Sion	[0, 1, 2, 3]
-LSEB_50	50. Yesus Gembala Dengarlah\	Mrs. Mary Duncan	Lagu Sion	[0, 1]
-LSEB_51	51. Di Sini Yehovah Hadir	Fred Pratt Green	Lagu Sion	[0, 1, 2, 3]
-LSEB_52	52. Betapa Indah Rumah-Mu	Scotish Psalter	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_53	53. Kita Berkumpul Bersatu	Fred Pratt Green	Lagu Sion	[0, 1, 2, 3]
-LSEB_54	54. Harap Allah Beserta Kamu	Jeremiah E. Rankin	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_55	55. Ya Allah Berkati Kami	John Fawcen	Lagu Sion	[0, 1]
-LSEB_56	56. Ya Tuhan, Iringlah Kami	J. Ellerto	Lagu Sion	[0, 1, 2]
-LSEB_57	57. Muliakan Tuhan Allah	H. W. Greatorex	Lagu Sion	[0]
-LSEB_58	58. Majulah Berjalan	J. S. B Monsel	Pujian	[0, 1, 2, 1]
-LSEB_59	59. Tuhan Jadikanlah Kami	American Negro Spritual	Pujian	[0, 1, 2, 3]
-LSEB_60	60. Pada Akhir Kebaktian	John Ellerton	Lagu Sion	[0, 1, 2]
-LSEB_61	61. Ya Tuhanku, Tuntun Aku Berjalan	Harry Armstrong	Lagu Sion	[0, 1, 2, 3]
-LSEB_62	62. Lebih Besar Dari Kasih Ibu	Alfred H. Ackley	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_63	63. Sembilan Puluh Sembilan	Elizabeth C. Clephane	Lagu Sion	[0, 1, 2, 3]
-LSEB_64	64. Tiada Lain Pelindung S’Perti Yesus	C. F Weigle	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_65	65. Pujilah Bapa	Elizabeth Rundle Charles	Lagu Sion	[0, 1, 2]
-LSEB_66	66. Itu Nyata Di Hatiku	Arthur Slater	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_67	67. Lama T’Lah Dirindu	E. A. H	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_68	68. Bapa Kami Datang	F. E. Belden	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_69	69. Ku Mendengar Suara Tuhan	Horatius Bonar	Lagu Sion	[0, 1, 2]
-LSEB_70	70. Sempurna Dan Mulia	Frances R. Havergal	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_71	71. Ajaiblah Terbenamnya Mentari	George Beverly Shea	Pujian	[0, 1, 2, 1]
-LSEB_72	72. Besar Kasihmu, Ya Allah	George Matheson	Lagu Sion	[0, 1, 2, 3]
-LSEB_73	73. Kasih Allah	Claudia Lehman Mays	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_74	74. Kar’Na Demikian Besar Kasih-Nya	August D. Rische	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_75	75. Bersukacitalah, Tuhan Raja Surga	Charles Wesley	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_76	76. Bapa Kekal Yang S’Lamatkan	William Whiting	Lagu Sion	[0, 1, 2, 3]
-LSEB_77	77. Ya Tuhanku, Sungguh Ku Terpesona	Stuart K. Hine	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_78	78. Tuhan Atas S’Gala Bangsa	Olive Wise Spannus	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_79	79. Ku Puji Tuhan Yang Ciptakan	Issac Watts	Lagu Sion	[0, 1, 2]
-LSEB_80	80. Seg’Nap Bumi Bersoraklah	Isaac Watts	Lagu Sion	[0, 1, 2]
-LSEB_81	81. Hai M’Laikat Suci Di Surga	Athestan Riley	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_82	82. Hai, Dengarlah Kisah Ajaib	James M. Gray	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_83	83. Alam Indah Cemerlang	Cecil F. Alexander	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_84	84. Musim Semi T’Lah Datang	Oxford Book of Carols	Lagu Sion	[0, 1, 2]
-LSEB_85	85. Sungguh Luas Cakrawala	Joseph Addison	Lagu Sion	[0, 1, 2]
-LSEB_86	86. Sembahlah Allah Yang Maha Mulia	Robert Grant	Lagu Sion	[0, 1, 2]
-LSEB_87	87. Dapatkah Kau Hitung Semua Bintang	Wilhelm Hey	Lagu Sion	[0, 1, 2]
-LSEB_88	88. Tuhan P’Liharakan	Civilla D. Martin	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_89	89. Besarlah Ya Tuhan, Kasih Setia-Mu	Thomas O.Chisolm	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_90	90. Umat Allah Yang Pengasih	Carolina Sandel Berg	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_91	91. Gembalaku Penolongku	Isaac Watts	Lagu Sion	[0, 1, 2]
-LSEB_92	92. Besarlah Anug’Rah Tuhan	Frederick W. Faber	Lagu Sion	[0, 1, 2, 3]
-LSEB_93	93. Rahmat Tuhan	Julia H.Johnston	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_94	94. Oh Tuhan Perteduhanku	Isaac Watts	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_95	95. Fajar Harapan Seg’Ra Menjelang	S. J. Graham	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_96	96. Limpah Rahmat Allah	William W. How	Lagu Sion	[0, 1, 2, 3]
-LSEB_97	97. Betapa Manisnya Kabar Yesus	John .R. Thomas	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_98	98. Sungguh Ajaib Anug’Rah-Mu	I Chron	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_99	99. Bapaku Mahakuasa	John W.Peterson	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_100	100. Marilah Bersukacita	Fanny J. Crosby	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_101	101. O Datanglah Imanuel	John M. Neale (1818-1866)	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_102	102. Ada Lagu Merdu	Josia G. Holland	Lagu Sion	[0, 1, 2, 3]
-LSEB_103	103. Malam Natal	Trad Enlish Carol C	Pujian	[0, 1, 2, 1, 3, 1, 4, 1, 5, 1]
-LSEB_104	104. Kedatangan Tuhan	Charles Coffin	Lagu Sion	[0, 1, 2, 3]
-LSEB_105	105. Dengan Malaikat Nyanyi	Charles Wesley	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_106	106. Hai Malaikat Surga Mulia	James Monigomery	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_107	107. Pergilah Dan Kabarkan	American Negro Spritual	Pujian	[0, 1, 2, 3]
-LSEB_108	108. Di Dalam Palungan	Little Children's Book	Lagu Sion	[0, 1, 2]
-LSEB_109	109. Di Malam Cerah Bergema	Edmund H. Sears	Lagu Sion	[0, 1, 2]
-LSEB_110	110. Pandanglah Bunga Mawar	Theodore Baker	Lagu Sion	[0, 1]
-LSEB_111	111. Mari Umat Tuhan	Frederick Oakeley	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_112	112. T’Lah Lahir Yesus Yang Kudus	Traditional French Carol	Pujian	[0, 1, 2]
-LSEB_113	113. Tiga Raja Dari Timur	John H. Hopkins	Pujian	[0, 1, 2, 1, 3, 1, 4, 1, 5, 1]
-LSEB_114	114. Kesukaan Bagi Dunia	Isaac Watts	Lagu Sion	[0, 1, 2, 3]
-LSEB_115	115. Hai Betlehem Yang Senyap	Philips Brooks	Lagu Sion	[0, 1, 2, 3]
-LSEB_116	116. Kau Tinggalkan Tahta Surga	Emily E. S. Elliot	Pujian	[0, 1, 2, 1, 3, 1, 4, 1, 5, 1]
-LSEB_117	117. Dengar Suara Malaikat	Adapt. by Earl Marlatt	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_118	118. Kala Gembala Menjaga	Nahum Tate	Lagu Sion	[0, 1, 2, 3, 4, 5]
-LSEB_119	119. Siapa Bayi Yang Berbaring	William C. Dix	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_120	120. Malam Kudus, Sunyi Senyap	Joseph Mohr	Lagu Sion	[0, 1, 2]
-LSEB_121	121. Siapa Dia Nun Di Sana	Benyamin R. Hanby	Pujian	[0, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1]
-LSEB_122	122. Bila Kurenungkan	Jemima Luke	Lagu Sion	[0, 1, 2]
-LSEB_123	123. C’Ritakan Kisah Yesus	Fanny J. Crosby	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_124	124. Yesus Berjalan Sendiri	American White Spritual	Lagu Sion	[0, 1, 2]
-LSEB_125	125. Dahulu Di Kota Daud	Cecil Frances Alexander	Lagu Sion	[0, 1, 2, 3]
-LSEB_126	126. Kepalamu Yang Luka	Bernard of Clairvaux	Lagu Sion	[0, 1, 2]
-LSEB_127	127. Salib Di Bukit Golgota	George Bennard	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_128	128. Aku Mau Hidup Bagi Yesusku	T. O. Chisholm	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_129	129. Aku T’Lah Mati Bersama Yesus	Frances Ridley Havergal	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_130	130. Bila Kupandang Salib-Mu	Isaac Watts	Lagu Sion	[0, 1, 2, 3]
-LSEB_131	131. Renungkanlah Tuhan	American Negro Spiritual	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_132	132. Penebus Bangkit Sudah	Charles Wesley	Lagu Sion	[0, 1, 2, 3]
-LSEB_133	133. Pandanglah Penebus Kita	Thomas Kelly	Lagu Sion	[0, 1, 2, 3]
-LSEB_134	134. Kebenaran-Mu, Darah-Mu	Nicolaus L. Von Zinzerdorf	Lagu Sion	[0, 1, 2, 3]
-LSEB_135	135. Haleluya! Puji Yesus	William C. Dix	Lagu Sion	[0, 1, 2]
-LSEB_136	136. Sungguh Mulia Dan Cemerlang	Howard C. Robbins	Lagu Sion	[0, 1]
-LSEB_137	137. Yesus T’Lah Menang	Edmond Budry	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_138	138. Tidur Tenang Dalam Yesus	Margaret Mackay	Lagu Sion	[0, 1, 2, 3]
-LSEB_139	139. Marilah Yang Setiawan	John M. Neale	Lagu Sion	[0, 1, 2]
-LSEB_140	140. Takkan Lama Lagi	Horatius Bonar	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_141	141. Perjuangan Sudah Berakhir	Francis Pott	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_142	142. Sambutlah Kebangkitan-Nya	Charles Wesley	Lagu Sion	[0, 1, 2, 3]
-LSEB_143	143. Tirai T’Lah Dibuka-Nya	N. B. Herrel	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_144	144. Adakah Yesus Lindung Aku	Frank E. Graceff	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_145	145. Ku Akan Menyanyikan	F. E. Belden	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_146	146. Tuhanku Berkata	Mrs. Elvina M. Hall	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_147	147. Yesus Harta Yang Terindah	Will L. Thompson	Lagu Sion	[0, 1, 2, 3]
-LSEB_148	148. Padaku Ada Sahabat	J. G. Small	Lagu Sion	[0, 1, 2, 3]
-LSEB_149	149. Siapa Yang Dapat Menghibur	Thoro Harris	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_150	150. Seg’Ra Datang Hujan Berkat	Daniel W. Whittle	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_151	151. Gembala Agung Engkau Miliki	Herbert Work	Lagu Sion	[0, 1, 2]
-LSEB_152	152. Kristus Hidup, Bernyanyilah	Brian Wren	Lagu Sion	[0, 1, 2, 3]
-LSEB_153	153. Tuhan Terangku	James Nicholson	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_154	154. Jaga Sedia	S. M. H	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_155	155. Dapatkah Aku Disucikan	Charles Wesley	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_156	156. Kasih Yesus Padaku	Anna B. Warner	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_157	157. Tuhan ‘Kan Datang Segera	Mary A. Steward	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_158	158. Kristus Datang Seg’Ra	John R. Mac Duff	Lagu Sion	[0, 1, 2]
-LSEB_159	159. Tak Lama Lagi Masuk Surga	Eliza E. Hewitt	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_160	160. Mungkin Saja Saat Fajar Merekah	H. L. Tuner	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_161	161. Ku Mau Sedia	Harold A. Miller	Lagu Sion	[0, 1]
-LSEB_162	162. Muka Dengan Muka Nanti	Mrs. Frank A. Breck	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_163	163. Angkat Nafiri	Jessie E. Strout	Pujian	[0, 1, 2, 1, 3, 1, 4, 1, 5, 1]
-LSEB_164	164. Tiada Lagi Lembah Kegelapan	William O. Cushing	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_165	165. Tiga Kebenaran	Fred Pratt Green	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_166	166. Kedatangan Tuhan T’Lah Dekat	G. W. Sederquist	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_167	167. Hari Yang Mulia Akan Tiba	A. H. Ackley	Lagu Sion	[0, 1]
-LSEB_168	168. Kita Memiliki Pengharapan	Wayne Hooper	Lagu Sion	[0, 1]
-LSEB_169	169. Bila Trompet Allah Berbunyi	J. M. Black	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_170	170. Akan Berkumpulkah Kita	Robert Lowry	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_171	171. Kita Akan Dijamu Raja	J. E. Landor	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_172	172. Di Seluruh Dunia Nyatalah	W. C Cage	Pujian	[0, 1, 2, 3]
-LSEB_173	173. Pada Waktu Penuaian	L. D Santee	Lagu Sion	[0, 1, 2, 3]
-LSEB_174	174. Kristus T’Lah Ada Dipintu	F. E. Belden	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_175	175. Yesuslah Penyembuh Agung	William Hunter	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_176	176. Kasih Allah, Benar Dan Teguh	Horatius Bonar	Lagu Sion	[0, 1, 2, 3]
-LSEB_177	177. Hormat Dan Pujian Bagimu	Theodulph of Orleans	Lagu Sion	[0, 1, 2]
-LSEB_178	178. Ku Kasih Pada-Mu, Ya Yesus Tuhanku	Ingall's Christian Harmony	Lagu Sion	[0, 1, 2, 3]
-LSEB_179	179. Yesus Terindah	Gesangbuch, munster	Lagu Sion	[0, 1, 2]
-LSEB_180	180. Jika Ku Mengenang Tuhan	Bernard of Clairvaux	Lagu Sion	[0, 1, 2, 3]
-LSEB_181	181. Di Salib Kristus Ku Puji	John Bowring	Lagu Sion	[0, 1, 2, 3]
-LSEB_182	182. Kunyanyikan Hal Yesus	Fanny J. Crosby	Lagu Sion	[0, 1, 2]
-LSEB_183	183. Ku Ingin Tahu Kasih Yesus	Eliza E. Hewitt	Pujian	[0, 1, 2, 3]
-LSEB_184	184. Layaklah Domba Allah	Anonymous	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_185	185. Oh, Ku Kasih Yesus	Frederick Whitfield	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_186	186. Puji Dia, Yesus Jurus’Lamat Kita	Fanny J. Crosby	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_187	187. Beribu Lidah Menyanyi	Charles Wesley	Lagu Sion	[0, 1, 2, 3, 4, 5]
-LSEB_188	188. Ku Sembah Jurus’Lamat	Alfred H. Akley	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_189	189. Pandanglah Yesus, Ya Bapaku	F. E Belden	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_190	190. Nyanyikanlah Lagu Surga	James Montgomery	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_191	191. Tiada Nama S’Perti Yesus	F. E. Belden	Pujian	[0, 1]
-LSEB_192	192. Ya Roh Suci Yang Benar	M. M Wells	Lagu Sion	[0, 1, 2]
-LSEB_193	193. Roh Suci Tuntunlah Aku	Elwood H. Stokes	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_194	194. Ya Roh Kudus Isilah Hatiku	George Croly	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_195	195. Sungguh Indah Roh Suci	Doris Akers	Pujian	[0, 1, 2, 1]
-LSEB_196	196. O, Nyala Api Roh Kudus	William H. Bathurst	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_197	197. Aku Dengar Hujan Berkat	Elizabeth Codner	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_198	198. B’Rilah Roh-Mu Tuhan	Edwin Hatch	Lagu Sion	[0, 1, 2, 3]
-LSEB_199	199. Roh Kudus, Terang Allah	Andrew Reed	Lagu Sion	[0, 1, 2, 3]
-LSEB_200	200. B’Rilah Padaku Alkitab Yang Suci	Priscilla J. Owens	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_201	201. Tuhan, Kupilih Firman-Mu	Isaac Watts	Lagu Sion	[0, 1, 2, 3]
-LSEB_202	202. Walau Ku Berbahasa Malaikat	Fred Pratt Green	Lagu Sion	[0, 1, 2]
-LSEB_203	203. Firman-Mu Pelita	Wihla Hutson	Lagu Sion	[0]
-LSEB_204	204. B’Rikanlah Ya Tuhan	Mary A. Lathbury	Lagu Sion	[0, 1, 2]
-LSEB_205	205. Apakah Engkau Susah	Helen H. Lemmel	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_206	206. Marilah Orang Berdosa	J. H. Stockton	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_207	207. Kus’Rahkan Hidupku	Frances, Ridley H.	Lagu Sion	[0, 1, 2]
-LSEB_208	208. Suara-Mu Kudengar	L. Hartsough	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_209	209. Yesus Sedang Berdiri	William Walshaham	Lagu Sion	[0, 1, 2]
-LSEB_210	210. Padaku Ada Jurus’Lamat	Samuel O'Malley Chiff	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_211	211. Aku Mau Turut Ya Tuhan	James Lawson	Pujian	[0, 1, 2, 1, 3, 1, 4, 1, 5, 1]
-LSEB_212	212. Sabda Hidup Kekal	P. P. Bliss	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_213	213. Dengan Lembut Dan Merdu	Will L. Thompson	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_214	214. Yesus Menunggu	Ralph Garmichael	Pujian	[0, 1, 2, 1]
-LSEB_215	215. Ya Tuhan, Engkau T’Lah Mati	Sylvanus D. Phelps	Lagu Sion	[0, 1, 2, 3]
-LSEB_216	216. Yesus Panggil Engkau Pulang	Fanny J. Crosby	Pujian	[0, 1, 2, 3]
-LSEB_217	217. Ya Yesus Yang Penuh Kasih	Annie R. Smith	Lagu Sion	[0, 1, 2, 3]
-LSEB_218	218. Lenyap Nafsu Dunia	Mrs. Catherine J. Bonar	Lagu Sion	[0, 1, 2, 3]
-LSEB_219	219. Yesus Batu Zaman	William O. Cushing	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_220	220. Haruskah Yesus Sendiri	Thomas Shepherd	Lagu Sion	[0, 1, 2]
-LSEB_221	221. Aku Datang S’Karang Yesus	W. T. Sleeper	Lagu Sion	[0, 1, 2, 3]
-LSEB_222	222. Kuasa Dalam Darah-Nya	Lewis. E Jones	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_223	223. Yesus Panggil, Aku Ikut	Howard L. Brown	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_224	224. Apa Kita Hidup Dekat Yesus	Mrs. C. H. Morris	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_225	225. Hampir Percaya	P. P Bliss	Lagu Sion	[0, 1, 2]
-LSEB_226	226. S’Karang Ku Pulang	William J. Kirkpatrick	Pujian	[0, 1, 2, 1, 3, 1, 4, 1, 5, 1]
-LSEB_227	227. Yesus Yang Penuh Kasih	Joseph P. Holbrook	Lagu Sion	[0, 1, 2, 3]
-LSEB_228	228. Ku Bawa Pada Yesus	Horatius Bonar	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_229	229. Janganlah Bersedih	LS. Edisi Baru	Lagu Sion	[0, 1, 2]
-LSEB_230	230. Ajaiblah Yesus Jurus’Lamatku	Fanny J. Crosby	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_231	231. Meski Aku Durhaka	McComb	Lagu Sion	[0, 1, 2]
-LSEB_232	232. Di Tempat Yang Lebih Tinggi	Johnson Oatman, Jr.	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_233	233. Ku Datang Hampir Kepada-Mu	Mrs. C. H. Morris	Lagu Sion	[0, 1, 2, 3]
-LSEB_234	234. Raja Kekal, Pimpinlah	Ernest W. Shurtleff	Lagu Sion	[0, 1, 2]
-LSEB_235	235. Di Bawah Salib Yesus	Elizabeth C. Clephane	Lagu Sion	[0, 1, 2]
-LSEB_236	236. Iman Orang Saleh Kekal	Frederick W. Feeber	Lagu Sion	[0, 1, 2]
-LSEB_237	237. Jadikan Aku Milik-Mu Tuhan	Fanny J. Crosby	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_238	238. Ke Salib Aku Datang	William McDonald	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_239	239. Aku Mau Jadi Milik-Mu	F. E. Belden	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_240	240. Berserah Kepada Yesus	J. W. Van De Venter	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_241	241. Ku Mau Dekat Pada Yesus	Robert Harkness	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_242	242. Ku Mau S’Perti Yesus	James Rowe	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_243	243. Tarik Aku Ya Yesus	Fanny J. Crosby	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_244	244. Hiduplah Dalam Aku	Francess Ridley Havergal	Lagu Sion	[0, 1, 2, 3]
-LSEB_245	245. Pimpinku Ke Salib	Jennie E. Hussey	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_246	246. Yesus, Aku Rindu Jadi Suci	James Nicholson	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_247	247. Aku Mau Jadi Kristen	American Negro Spiritual	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_248	248. Ku Kasih Pada-Mu	William Ralf Featherstone	Lagu Sion	[0, 1, 2, 3]
-LSEB_249	249. Tiada Yang Lain	Charles A. Tindley	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_250	250. Yesus, Kupikul Salibku	Henry F. Lyte	Lagu Sion	[0, 1, 2, 3]
-LSEB_251	251. Buka Mataku Ya Tuhan	Clara H. Scott	Lagu Sion	[0, 1, 2]
-LSEB_252	252. Ku Memilih Yesus	Rhea F. Miller	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_253	253. Aku Tak Akan Tinggalkan	Anonymous	Lagu Sion	[0, 1, 2, 3]
-LSEB_254	254. Dalam Hatiku Ada Lagu	Elton M. Roth	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_255	255. Buangkan Dunia T’Rima Yesus	Fanny J. Crosby	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_256	256. Ku Lihat Darah Mengalir	Mrs. Phoebe Palmer	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_257	257. Aku Dengan Yesus Panggil	E. W. Blandly	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_258	258. Janganlah Tawar Hatimu	Frances Ridley Havergal	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_259	259. Sebagaimana Ku Ada	Charlotte Elliot	Lagu Sion	[0, 1, 2, 3, 4, 5]
-LSEB_260	260. Bawa Persembahanmu	M.G.L	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_261	261. Hati Yang Memuji Allah	Charles Wesley	Lagu Sion	[0, 1, 2, 3]
-LSEB_262	262. Hai Saudara Mengapa	LS. Edisi Baru	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_263	263. Bila Selesai Tugas Kerjaku	Charles H. Gabriel	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_264	264. Aku Tak Cinta Dunia	M.A.K	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_265	265. Kami Datang Pada-Mu	Frances Ridley Havergal	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_266	266. Bawa S’Gala Persepuluhanmu	Helen. E. Rasmussen	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_267	267. Tarik Jiwa Satu	Ira D. Sankey	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_268	268. Pada Saat Berdoa	Fanny J. Crosby	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_269	269. Berjalan Di Dalam T’Rang	Bernard Barton	Lagu Sion	[0, 1, 2, 3]
-LSEB_270	270. Dosamu Dihapuskan	Fanny J. Crosby	Lagu Sion	[0, 1, 2, 3]
-LSEB_271	271. Jadilah Tuhan Kehendak-Mu	Adeleide Pollard	Lagu Sion	[0, 1, 2, 3]
-LSEB_272	272. Bahagia Hari Itu	Philip Doddrige	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_273	273. Dengar Lonceng Surga	Rev. W. O. Cushing	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_274	274. Mengapa Darahmu, Yesus	Isaac Watts	Pujian	[0, 1, 2, 1, 3, 1, 4, 1, 5, 1]
-LSEB_275	275. Tolonglah Aku Ya Allah	Robert Robinson	Lagu Sion	[0, 1, 2]
-LSEB_276	276. Darah Yesus T’Lah Tertumpah	William Cowper	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_277	277. Betapa S’Nang Aku Kabarkan	Fanny Crosby	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_278	278. Di Tepian Sungai Yordan	Samuel Stennett	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_279	279. Kristus T’Lah S’Lamatkan	Priscilla J. Owens	Lagu Sion	[0, 1, 2, 3]
-LSEB_280	280. Muliakan Allah	Fanny J. Crosby	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_281	281. Bila Pandang Salib Yesus	William Brickey	Lagu Sion	[0, 1, 2, 3]
-LSEB_282	282. Hai S’Kalian Orang	Isaac Watts	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_283	283. Siapa Yang Mendengar, Serukanlah	P. P Bliss	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_284	284. Eden Taman Yang Terindah	W. O. Chusing	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_285	285. Ku Dengar Lagu Yang Merdu	P. P Bilhorn	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_286	286. Bila Yesus Akan Mengumpulkan	Harriet B. M. Keever	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_287	287. Satu Saja Ku Ingini	Walter C. Smith	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_288	288. Aku Puji Penebusku	Philip P. Bliss	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_289	289. B’Rani Hati Kar’Na Benar	G. Lansing Taylor	Pujian	[0, 1, 2]
-LSEB_290	290. Duduk Dekat Kaki Yesus	J. H	Lagu Sion	[0, 1, 2]
-LSEB_291	291. Siapa Masuk Pintu Gerbang	G. M. J	Lagu Sion	[0, 1, 2, 3]
-LSEB_292	292. Bila Laut Kehidupanmu Berg’Lombang	Johnson Oatman, Jr.	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_293	293. Perhubungan Kita	John Fawcett	Lagu Sion	[0, 1, 2, 3]
-LSEB_294	294. Ku Yakin Bapa Tahu	S. M. I Henry	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_295	295. Sahabat, Teman, Pemimpin	Arthur W. Spalding	Lagu Sion	[0, 1, 2]
-LSEB_296	296. Nama Yesus Amat Indah	W. C Martin	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_297	297. Ada Satu Pintu Gerbang	Lilian Baxter	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_298	298. S’Lamat Di Lengan Yesus	Fanny J. Crosby	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_299	299. Ku Lihat Yesus	A. H. Ackley	Lagu Sion	[0, 1]
-LSEB_300	300. Di Surga Tempat Yang Baka	W. H. Bellamy	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_301	301. Senang Berbakti Di Sini	Fred Pratt Green	Lagu Sion	[0, 1]
-LSEB_302	302. Pertahankan Benteng	P. P Bliss	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_303	303. Dalam Naung-Nya	W. O Cusing	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_304	304. Dengarlah Suara Yesus	Daniel March	Lagu Sion	[0, 1, 2, 3]
-LSEB_305	305. Putra Sion Kerjakan Tugasmu	Mary A. Thompson	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_306	306. Angkat Dia Hingga Nyata	May E. Warren	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_307	307. Penjaga, Bunyikan Trompet	H. L. Gilmour	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_308	308. Biarkan Aku Pergi	I Baltzell	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_309	309. Betapa Merdu Suara	William J. Kirkpatrick	Pujian	[0, 1, 2, 1, 3, 1, 4, 1, 5, 1]
-LSEB_310	310. Tariklah Aku Ya Bapaku	Mrs. E. W. Chapman	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_311	311. Aku Kasih Tuhan Lebih	Francess Ridley Havergal	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_312	312. Ku Bersuka Sebab Bapa Kita	P. P Bliss	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_313	313. Aku Mau Yesus Sertaku	Lizzie Edwards Durt	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_314	314. Dalam Sibuk Kehidupan Kita	Frank M. North	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_315	315. Orang Asing Di Pintu	J. B. Atchinson	Lagu Sion	[0, 1, 2, 3]
-LSEB_316	316. Bawalah Yang Hilang	Alexcenah Thomas	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_317	317. Aku Pengembara	Tomas R. Taylor	Lagu Sion	[0, 1, 2]
-LSEB_318	318. Jangan Ditaklukkan	Horatio R. Palmer	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_319	319. Mari Kita Kerja Bagi Tuhan	LS. Edisi Baru	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_320	320. Rahmat Bapa Bercahaya	P. P Bliss	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_321	321. Jauh Dan Dekat, Tampak Sudah	J. O. Thompson	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_322	322. Dari Timur Dan Barat	Reginald Heber	Lagu Sion	[0, 1, 2, 3]
-LSEB_323	323. Tolonglah Yang Sesat	Fanny J. Crosby	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_324	324. Betapa Indahnya	Isaac Watts	Lagu Sion	[0, 1, 2, 3]
-LSEB_325	325. Hai Mana Penyabit	Eben E. Rexford	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_326	326. Berusahalah Kamu	Mrs. Anna L. Coghill	Lagu Sion	[0, 1, 2]
-LSEB_327	327. Tabur Waktu Pagi	Knowless Shaw	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_328	328. Aku Mau Membagikan Imanku	J. H. H	Lagu Sion	[0]
-LSEB_329	329. Kerjalah, Kerjalah	Fanny J. Crosby	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_330	330. S’Bagai Pohon Tanaman Roh	Timothy Dudley Smith	Lagu Sion	[0, 1, 2, 3]
-LSEB_331	331. Ada Kisah Kami Mau C’Ritakan	Coling Sterne	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_332	332. Masyhurkanlah Yesus	Samuel Wolcott	Lagu Sion	[0, 1, 2]
-LSEB_333	333. C’Ritakanlah Padaku	Katherine Hankey	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_334	334. Roh Kudus S’Lalu Ada	Brian Wren	Lagu Sion	[0, 1, 2, 3, 4, 5, 6]
-LSEB_335	335. Dalam Kerja Rajaku	A. H. Ackley	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_336	336. Yesus Sahabat Manusia	J. Wilbur Chapman	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_337	337. Maju Serta Yesus	G. B. Timms	Lagu Sion	[0, 1, 2]
-LSEB_338	338. Rumah Yang Bahagia	Henry Ware, the younger	Lagu Sion	[0, 1, 2, 3]
-LSEB_339	339. Milik Tuhan, Bukan Aku	John Greenleaf Whittier	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_340	340. Sabat Hari Perhentian	L. E. C. Joers	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_341	341. Hari Perhentian Allah	F. E. Belden	Pujian	[0, 1, 2, 1, 3, 1, 4, 1, 5, 1]
-LSEB_342	342. Ku Suka Sabat-Mu	Myrtle H. Dorland	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_343	343. Enam Hari Sudah Lalu	S. Stennett	Lagu Sion	[0, 1, 2, 3]
-LSEB_344	344. Sabat Tuhan Yang P’Nuh Berkat	Frederick M. A. Venue	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_345	345. Oh Hari Perhentian	Christopher Wordsworth	Lagu Sion	[0, 1, 2]
-LSEB_346	346. Bagaikan Burung Terbang Ke Sarangnya	David Levy	Lagu Sion	[0, 1, 2, 3]
-LSEB_347	347. Ingat Hari Sabat	Fanny J. Crosby	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_348	348. T’Rang Besar Bercahaya	Benjamin Schmolck	Lagu Sion	[0, 1, 2]
-LSEB_349	349. Datang Lagi Hari Yang Suci	William Mason	Lagu Sion	[0, 1, 2, 3]
-LSEB_350	350. Satu Minggu Yang Lalu	John Newton	Lagu Sion	[0, 1, 2, 3]
-LSEB_351	351. Selamat Datang	John Dobell's Selection	Lagu Sion	[0, 1, 2]
-LSEB_352	352. Hebat Hari Penghukuman	John Newton	Lagu Sion	[0, 1, 2, 3]
-LSEB_353	353. Engkau Tahu Tuhan Pemurah	C. A. Alington	Lagu Sion	[0, 1, 2]
-LSEB_354	354. Bapa, Pimpinlah Kami	John P. Hopps	Lagu Sion	[0, 1, 2, 3]
-LSEB_355	355. Dengarkanlah Sabda-Nya	Georger Wallace Briggs	Lagu Sion	[0, 1, 2]
-LSEB_356	356. Tuhan, Kasihani Kami Ini	George J. Elvey	Lagu Sion	[0]
-LSEB_357	357. Kasih Yang Bahagiakan	F. E. Belden	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_358	358. Pada-Mu Batu Zaman	Augustus M. Toplady	Lagu Sion	[0, 1, 2, 3]
-LSEB_359	359. Aku Perlu Yesus	George O. Webster	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_360	360. Ada Neg’Ri Amat Indah	Edgar Page	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_361	361. Sesudah Malam	Virgil P. Brock	Lagu Sion	[0, 1, 2, 3]
-LSEB_362	362. Aku Pikirkan S’Karang	E. E Hewitt	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_363	363. Yerusalem, Oh, Rumahku	Annabel M. Buchanan	Lagu Sion	[0, 1, 2, 3]
-LSEB_364	364. Bukit-Bukit Yang Permai	J. G. C	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_365	365. Yerusalem Yang Mulia	John M. Neale	Lagu Sion	[0, 1, 2, 3]
-LSEB_366	366. Lebih Dekat, Lebih Indah	Jesse P. Tompkins	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_367	367. Di Pantai Nan Indah	S. F. Bennet	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_368	368. Di Neg’Ri Yang Cemerlang	John R. Clements	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_369	369. Di Kota Allah Yang Indah	William Hunter	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_370	370. Oh B’Rapa Jauh Dari Rumah	Annie R. Smith	Lagu Sion	[0, 1, 2, 3]
-LSEB_371	371. Aku K’Lak Pandang Raja Di Surga	W. C Poole	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_372	372. Seb’Rang Langit Biru	A. B. S	Lagu Sion	[0, 1]
-LSEB_373	373. Ya Di Sana	H. de. F	Pujian	[0, 1, 2, 1, 3, 1, 4, 1, 5, 1]
-LSEB_374	374. Aku Mau Pulang	Warner Cole	Lagu Sion	[0]
-LSEB_375	375. Sudah Dekatlah Rumah Di Surga	C. P Whitford	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_376	376. Suci, Suci, Malaikat Memuji	Johnson Oatman, Jr	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_377	377. Rumah Kekal	Hugh R. Haweis	Lagu Sion	[0, 1, 2]
-LSEB_378	378. Rumahku Indah Di Surga	William Hunter	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_379	379. Lihatlah Rajamu Datang	Thomas Hastings	Lagu Sion	[0, 1, 2]
-LSEB_380	380. Bersabdalah Ya Tuhan	Tobias Clausnitzer	Lagu Sion	[0, 1, 2]
-LSEB_381	381. Kita Takkan Tahu	F. E. Belden	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_382	382. Atas Gunung Mengembara	Annie R. Smiyh	Lagu Sion	[0, 1, 2, 3]
-LSEB_383	383. Hai Angkatlah Kepalamu	George Weissel	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_384	384. Ku Berkelana	Mary S. B. Dana	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_385	385. Kita Hidup S’Karang Ini	Arthur C. Coxe	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_386	386. Tak ‘Kan Berpisah Lagi	Isaac Watts	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_387	387. Mari Hidup Rukun, Damai	Millenia Harp	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_388	388. Betapa Indahnya Lagu Surgawi	James White	Lagu Sion	[0, 1, 2]
-LSEB_389	389. Satu Masa Yang Tertentu	Fanny J. Crosby	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_390	390. Angkat Nafiri	Jessie E. Strout	Pujian	[0, 1, 2, 1]
-LSEB_391	391. Aku Suka C’Ritakan	Katherine Hankey	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_392	392. Lebih Kasih Tuhan Kepada-Mu	Mrs. E. Prentiss	Lagu Sion	[0, 1, 2, 3]
-LSEB_393	393. Aku Ada Sahabat	Mrs L. Shorey	Lagu Sion	[0, 1, 2, 3]
-LSEB_394	394. Hai Jiwaku, Tuhan Di Sisimu	Katharina Von Schlegel	Lagu Sion	[0, 1, 2]
-LSEB_395	395. Damai, Damai Ajaib	W. D. Cornell	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_396	396. Raja Damai Turunlah	Melvin West	Lagu Sion	[0, 1, 2]
-LSEB_397	397. Betapa Teguh Persatuannya	E. A. Hoffman	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_398	398. Kalau Kamu Mau Senang	J. D. C	Lagu Sion	[0, 1]
-LSEB_399	399. Ada Sinar Dalam Jiwaku	E. E. Hewitt	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_400	400. Bukalah Hatimu	LS. Edisi Baru	Lagu Sion	[0, 1]
-LSEB_401	401. Bapaku Kaya, Rumah Dan Tanah	Hattie E. Buel	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_402	402. Ingat S’Lalu Nama Yesus	Lilian Baxter	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_403	403. Sering Kudengar Lagu	E. E. Rexford	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_404	404. Ya Allah, Aku Mau Datang Dekat	Sarah F. Adams	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_405	405. Ada Balsem Di Gilead	American Negro Spiritual	Pujian	[0, 1, 2]
-LSEB_406	406. Beban Terangkat Di Kalvari	John M. Moore	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_407	407. Duka	Francess Ridley Havergal	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_408	408. Berdiam, Berdiam	Fanny J. Crosby	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_409	409. Ku ‘Kan C’Ritakan Kepada Yesus	Elisha A. Hoffman	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_410	410. Ya Matahari Jiwaku	John Keble	Lagu Sion	[0, 1, 2, 3]
-LSEB_411	411. Aku Masuk Dalam Taman	C. Austin Miles	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_412	412. Kami Sembah Sujud Allah	L. E. Froom	Lagu Sion	[0]
-LSEB_413	413. Yesus Yang Penuh Kasih	Charles Wesley	Lagu Sion	[0, 1, 2, 3]
-LSEB_414	414. Kupercaya	Charles Wesley	Lagu Sion	[0, 1, 2, 3, 4, 5]
-LSEB_415	415. Ku Harap Pada-Mu	Annie S. Hawks	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_416	416. Ku Perlu Engkau Yesus	Frederick Whitfield	Lagu Sion	[0, 1, 2]
-LSEB_417	417. ‘Bak Wanita Di Sumur	Richard Blanchard	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_418	418. Semua Milik-Mu Tuhan	Christ in Song	Lagu Sion	[0]
-LSEB_419	419. Bapa, Ajarlah Aku	James Montgomery	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_420	420. Tuhan, Biarlah Hamba-Mu	Ernest E. Ryden	Lagu Sion	[0, 1]
-LSEB_421	421. Ada Tempat Tenang Teduh	C. B. McAfee	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_422	422. Yesus Sahabat Terindah	John M. Scriven	Lagu Sion	[0, 1, 2]
-LSEB_423	423. Sucikan Hatimu	W. D Longstaff	Lagu Sion	[0, 1, 2, 3]
-LSEB_424	424. Ku Perlu Doa Kasihku	James D. Vaughan	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_425	425. Bersabdalah Ya Yesus	Frances Ridley Havergal	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_426	426. Pertama Ku Mohon	Mrs E. D. Cheney	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_427	427. Kuperlu Pada-Mu Tuhan	F. E. Belden	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_428	428. Taman Tempat Berdoa	Eleanor Allen Schroll	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_429	429. Berjagalah S’Karang	LS. Edisi Baru	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_430	430. Bisik Doa Waktu Pagi	Frances Rudley Havergal	Lagu Sion	[0, 1, 2]
-LSEB_431	431. Ya Yesus Ku Berjanji	John E. Bode	Lagu Sion	[0, 1, 2]
-LSEB_432	432. Saat Penghakiman	James Montgomery	Lagu Sion	[0, 1, 2]
-LSEB_433	433. Inilah Jam Kuberdoa	William W. Walford	Lagu Sion	[0, 1, 2]
-LSEB_434	434. Ya Allah Kota Yang Teguh	Marthin Luther	Lagu Sion	[0, 1, 2]
-LSEB_435	435. Jalan Serta Yesus S’Lalu Sejaht’Ra	Jessie H. Brown	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_436	436. Bila Ku Perlu Yesus Dekat	William Poole	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_437	437. Ia Allah Takkan Gagal	C. E. Mason Jr	Lagu Sion	[0, 1]
-LSEB_438	438. Tuhan S’Lalu Pimpin Aku	Fanny J. Crosby	Lagu Sion	[0, 1, 2]
-LSEB_439	439. Ku Percaya Engkau	Ray Palmer	Lagu Sion	[0, 1, 2]
-LSEB_440	440. Pegang Teguh Janji Kristus	R. Kelso Carter	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_441	441. Setiap Saat Dalam Kasih-Nya	Daniel W. Whittle	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_442	442. Tak Ku Mengerti Rahmat-Nya	Daniel W. Whittle	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_443	443. Aku Membangun Harapan	Edward Mote	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_444	444. Ku Alaskan Percayaku	Lidie H. Edmunds	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_445	445. Percaya Yang Menang	John H. Yates	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_446	446. Allah Utus Putra-Nya	Gloria Gaither	Pujian	[0, 1, 2, 1]
-LSEB_447	447. Baik Berharap Pada Yesus	Louisa M. R. Stead	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_448	448. Tuhan Batu Karang Kita	Vermon J. Charlesworth	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_449	449. Tiap Hari Aku S’Lalu Berjalan	Carolina Sandell Berg	Lagu Sion	[0, 1, 2]
-LSEB_450	450. B’Ri Kuberjalan Dengan-Mu	Washington Gladden	Lagu Sion	[0, 1, 2, 3]
-LSEB_451	451. Apakah Jangkarmu Akan Tahan	Priscilla J. Owens	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_452	452. Yesus Tak Pernah Gagal	A. A. Luther	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_453	453. Rindu Pada Yesus	H. de. F	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_454	454. Hatiku Rindu	Dorothy Masters	Lagu Sion	[0, 1]
-LSEB_455	455. Pada Saat Damai Perjalananku	Horatio G. Spafford	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_456	456. Kita Membangun Di Batu Karang	F. E. Belden	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_457	457. Tuhan Pimpin S’Panjang Jalan	J. H. Gilmore	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_458	458. Laskar Kristus Bangun	Charles Wesley	Lagu Sion	[0, 1, 2]
-LSEB_459	459. B’Ri Aku Jalan Serta-Mu	Mrs. L. D. Avery Shuttle	Lagu Sion	[0, 1, 2]
-LSEB_460	460. Yesus Kemudikanlah	Edward Hopper	Lagu Sion	[0, 1, 2]
-LSEB_461	461. Tuhan Adalah Gembalaku	Scottish Psalter	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_462	462. Ku Mencari Jurus’Lamat	Mrs. L.M. B Bateman	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_463	463. Kalau Serta Tuhan	J. H. Sammis	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_464	464. Jaminan Berkat Tuhan Janji	Fanny J. Crosby	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_465	465. Kar’Na Bumi Ini Indah	Folliot S. Pierpoint	Lagu Sion	[0, 1, 2]
-LSEB_466	466. Mari Puji Allah	Martin Rinkart	Lagu Sion	[0, 1, 2]
-LSEB_467	467. Janganlah Liwatkan Aku	Fanny J. Crosby	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_468	468. Hanya Kristus	A. A. F	Lagu Sion	[0, 1, 2, 3]
-LSEB_469	469. B’Ri Yang Terbaik Untuk Tuhan	Howard B. Grose	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_470	470. Ke Manapun Ku Mau Pergi, Tuhan	Mary Brown	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_471	471. Berdiri Kar’Na Yesus	George Dufield	Lagu Sion	[0, 1, 2]
-LSEB_472	472. Tuhan Mengutus Engkau	E. Margaret Clarkson	Lagu Sion	[0, 1, 2, 3]
-LSEB_473	473. Pada Masa Seperti S’Karang	Ruth Caye Jones	Lagu Sion	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_474	474. Tuhan, Di Hadirat-Mu Ku Bersuka	Joseph Swain	Lagu Sion	[0, 1, 2, 3]
-LSEB_475	475. Perhatikan Tanda Akhir Zaman	F. E. Belden	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_476	476. Akukah Laskar Salibnya	Isaac Watts	Lagu Sion	[0, 1, 2, 3, 4, 5]
-LSEB_477	477. Hai Waris Surga	Lowell Mason	Lagu Sion	[0, 1, 2, 3]
-LSEB_478	478. Biarlah Lampumu Makin T’Rang	F. E. Belden	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_479	479. Hai Kristen Jaga	Fanny J. Crosby	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_480	480. Bangun Umat Allah	William P. Merill	Lagu Sion	[0, 1, 2, 3]
-LSEB_481	481. Jagalah Hai Umat Allah	Mrs. Phoebe Palmer	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_482	482. Bergembiralah Kamu	Laurentius Laurenti	Lagu Sion	[0, 1, 2, 3]
-LSEB_483	483. Sorakkanlah P’Rang	William F. Sherwin	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_484	484. Aku Senang Dan Girang Selalu	S. W. G	Lagu Sion	[0]
-LSEB_485	485. Maju Laskar Kristus	Sabine Baring-Gould	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_486	486. Tuhan, Ini Persembahan Kami	Alberth F. Bayly	Lagu Sion	[0, 1, 2]
-LSEB_487	487. Maha Besar Allah	Daniel C. Roberts	Lagu Sion	[0, 1, 2, 3]
-LSEB_488	488. Khalik Dan Rajaku	Anne Steele	Lagu Sion	[0, 1, 2, 3]
-LSEB_489	489. Mataku T’Lah Melihat Kemuliaan Tuhan	Julia Ward Howe	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_490	490. Betapa Bahagianya Di Rumah Tangga	John H. McNaughton	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_491	491. Di Rumah	Jacob Breiter	Lagu Sion	[0, 1, 2, 3, 4]
-LSEB_492	492. Kasih-Mu Allah	Dorothy Blomfield Gurney	Lagu Sion	[0, 1, 2]
-LSEB_493	493. Doa Ibu	W. Van De Venter	Lagu Sion	[0, 1, 2, 1, 3, 1, 4, 1, 5, 1]
-LSEB_494	494. Di Dalam Sengsara Dan Keluhanku	John Howard Payne	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_495	495. Sungguh Senang Hatiku	A. H. Ackley	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_496	496. Yesus Sahabat Terindah	Joseph Scriven	Lagu Sion	[0, 1, 2]
-LSEB_497	497. Mari Puji Raja Surga	Henry Francis Lyle	Lagu Sion	[0, 1, 2, 3]
-LSEB_498	498. Pemuda S’Kalian	C. Harold Lowden	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_499	499. T’Rang Dari Surga	Charles E. Fuller	Lagu Sion	[0, 1]
-LSEB_500	500. Pemuda, Majulah	A. W. Spalding	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_501	501. Kumpulan Orang Muda	C. Lester Bond	Pujian	[0, 1, 2, 1, 3, 1, 4, 1]
-LSEB_502	502. Kar’Na Allah Kasih	C. Austin Miles	Lagu Sion	[0, 1]
-LSEB_503	503. Pandu-Pandu	Henry T. Bergh	Lagu Sion	[0, 1]
-LSEB_504	504. Tiada Sahabat Seperti Yesus	Johnson Oatman	Pujian	[0, 1, 2, 1, 3, 1]
-LSEB_505	505. Kita Maju Bersama	John H. Hancock	Lagu Sion	[0]
-LSEB_506	506. Semua Orang Harus Tau	Harry Dicxon Loes	Lagu Sion	[0, 1]
-LSEB_507	507. Ku Ta’U Nama Yesus Terindah	Lela Long	Lagu Sion	[0, 1]
-LSEB_508	508. Tuhan B’Ri Kami Setia S’Lalu	Henry de Fluiter	Lagu Sion	[0, 1]
-LSEB_509	509. Dalam Hati	Harry D. Clarke	Lagu Sion	[0, 1, 2, 3]
-LSEB_510	510. Lebar S’Perti Lautan	C. Austin Miles	Lagu Sion	[0, 1]
-LSEB_511	511. Ajaib Engkau, Ya Yesus	Benyamin A. Baur	Lagu Sion	[0, 1]
-LSEB_512	512. Apa Yang Dunia Perlu	Benjamin A. Baur	Lagu Sion	[0, 1]
-LSEB_513	513. Sabat Diciptakan Allah	Isaac Watts	Lagu Sion	[0]
-LSEB_514	514. Kami Persembahkan Berkat-Mu	William Walsham How	Lagu Sion	[0]
-LSEB_515	515. Tuhan Ada Dalam Bait Allah	George F. Root	Lagu Sion	[0]
-LSEB_516	516. Dengar Ya Tuhan	George Whelpton	Lagu Sion	[0]
-LSEB_517	517. Dengar Ya Tuhan Kami Berdoa	Frederick A. Jackson	Lagu Sion	[0]
-LSEB_518	518. Sucilah Tuhan	John Philip Neuman	Lagu Sion	[0, 1]
-LSEB_519	519. Tuhan Memberkati Dan Melindungimu	Peter C. Lutkin	Lagu Sion	[0]
-LSEB_520	520. Sekarang Ya Tuhan	Ralph Carmichael	Lagu Sion	[0]
-LSEB_521	521. Kiranya Allah Dalam Pikiranku	Sarum Primer	Lagu Sion	[0]
-LSEB_522	522. Curahkan Berkat-Mu Ya Tuhan	L. E. Froom	Lagu Sion	[0]
-LSEB_523	523. Tuhan Dengar Doa Kami	Felix Mendelssohn	Lagu Sion	[0]
-LSEB_524	524. Datanglah Ya Roh Allah	Daniel Iverson	Lagu Sion	[0]
-LSEB_525	525. Masyhurkan Karunia-Nya	Bruce Ashton	Lagu Sion	[0, 1]
+songId	title	author	category	key	beat	version
+LSEB_1	1. Di Hadapan Hadirat-Mu	Isaac Watts	PUJIAN	D	4/4	Lagu Sion Edisi Lengkap (LSEB)
+LSEB_2	2. Hai Seg’Nap Ciptaan Tuhan	Francis of assisi		D	3/2	Lagu Sion Edisi Lengkap (LSEB)
+LSEB_3	3. Tuhan Allah Hadir	Gerhand Tersteegen		G	2/2	Lagu Sion Edisi Lengkap (LSEB)
+LSEB_4	4. Puji Tuhan Allah	Joachim Neander		F	3/4	Lagu Sion Edisi Lengkap (LSEB)
+LSEB_5	5. Kasih Surga Yang Terindah	Charles Wesley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_6	6. Tuhan Raja Di Sion	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_7	7. Kita Berhimpun	Theodore Baker				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_8	8. Sembahlah Tuhan	J. S. B Monsell				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_9	9. Hai Kristen Nyanyilah	Christian Henry Bateman				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_10	10. Betapa Teguhnya	Rippson Selection				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_11	11. Dengan Riang Kami Puji	Henry Van Dyke				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_12	12. Nyanyikanlah Kidung Yang Baru	Erik Routey				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_13	13. Suci, Suci, Suci	Reginald Heber				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_14	14. Jika Kiranya Lidahku	Samuel Medley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_15	15. Aku Senang Menc'Ritakan	Elisabeth Mills				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_16	16. Tuhan Bertakhta Di Surga	Oliver Wandell Holmes				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_17	17. Tuhan Lindungilah Kami	E. Halstead				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_18	18. Pujilah Allah	Henry W. Baker				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_19	19. Hati Yesus Penuh	Alice Pugh				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_20	20. Kidung Yang Baru	Scotis Psalter				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_21	21. Pada-Mu Allah Ku Puji	William Kethe				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_22	22. Hai Jiwaku Bangun Seg'Ra	Philip Doddridge				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_23	23. Allah Yang Abadi	Walter Chalmer Smith				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_24	24. Dengar Lonceng Berdentang	K. E. Roberts				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_25	25. Puji Tuhan Yang Mulia	Henry Francis Lyte				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_26	26. Puji Tuhan Hai Manusia	Edward Osler				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_27	27. Mari Umat Allah	Edward H. Plumptre		F		Lagu Sion Edisi Lengkap (LSEB)
+LSEB_28	28. Kami Mau Lihat Yesus Juruselamat	Anna B. Werner				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_29	29. Puji Allah Yang Bertakhta	Johann J. Schutz				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_30	30. Kuduslah Nama Tuhan	German 18th Century				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_31	31. C’Ritakan Keagungan Tuhanmu	Timothy Dudley-Smith				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_32	32. Sembah Sujudlah Umatnya	Isaac Watts				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_33	33. Nyanyikan Dengan Gembira	W. F. Sherwin				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_34	34. Semua Makhluk Puji Tuhan	Katherine K. Davis				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_35	35. Yesus Bagaikan Gembala	William Bradbury				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_36	36. Menyanyilah Hai Jiwaku	Julius Krohn				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_37	37. Waktu Pagi Ya Tuhanku	Isaac Watts				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_38	38. Mari Puji Nama Yesus	Edward Perronet				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_39	39. Puji Syukur Bagi-Nya	John Milton				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_40	40. Tuhan Pimpinlah Aku	Frank M. Davis				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_41	41. Sambutlah Sabat Tuhan	Ada Cross				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_43	43. S'Lamat Malam	F. E. Belden				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_44	44. Allah Khalik Langit Bumi	Reginal Heber (1983-18260)				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_45	45. T'Lah Hampir Malam	Henry F. Lyte				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_46	46. Matahari Terbenam	Mary A. Lathbury				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_47	47. Dengan Lembut T'Rang Siang	George W. Doanne				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_48	48. Siang Sudah Lalu	Sabine Baring-Gould				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_49	49. Yesus Berkati Kami	James Edmesion				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_50	50. Yesus Gembala Dengarlah\	Mrs. Mary Duncan				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_51	51. Di Sini Yehovah Hadir	Fred Pratt Green				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_52	52. Betapa Indah Rumah-Mu	Scotish Psalter				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_53	53. Kita Berkumpul Bersatu	Fred Pratt Green				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_54	54. Harap Allah Beserta Kamu	Jeremiah E. Rankin				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_55	55. Ya Allah Berkati Kami	John Fawcen				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_56	56. Ya Tuhan, Iringlah Kami	J. Ellerto				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_57	57. Muliakan Tuhan Allah	H. W. Greatorex				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_58	58. Majulah Berjalan	J. S. B Monsel				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_59	59. Tuhan Jadikanlah Kami	American Negro Spritual				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_60	60. Pada Akhir Kebaktian	John Ellerton				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_61	61. Ya Tuhanku, Tuntun Aku Berjalan	Harry Armstrong				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_62	62. Lebih Besar Dari Kasih Ibu	Alfred H. Ackley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_63	63. Sembilan Puluh Sembilan	Elizabeth C. Clephane				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_64	64. Tiada Lain Pelindung S’Perti Yesus	C. F Weigle				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_65	65. Pujilah Bapa	Elizabeth Rundle Charles				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_66	66. Itu Nyata Di Hatiku	Arthur Slater				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_67	67. Lama T’Lah Dirindu	E. A. H				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_68	68. Bapa Kami Datang	F. E. Belden				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_69	69. Ku Mendengar Suara Tuhan	Horatius Bonar				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_70	70. Sempurna Dan Mulia	Frances R. Havergal				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_71	71. Ajaiblah Terbenamnya Mentari	George Beverly Shea				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_72	72. Besar Kasihmu, Ya Allah	George Matheson				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_73	73. Kasih Allah	Claudia Lehman Mays				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_74	74. Kar’Na Demikian Besar Kasih-Nya	August D. Rische				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_75	75. Bersukacitalah, Tuhan Raja Surga	Charles Wesley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_76	76. Bapa Kekal Yang S’Lamatkan	William Whiting				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_77	77. Ya Tuhanku, Sungguh Ku Terpesona	Stuart K. Hine				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_78	78. Tuhan Atas S’Gala Bangsa	Olive Wise Spannus				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_79	79. Ku Puji Tuhan Yang Ciptakan	Issac Watts				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_80	80. Seg’Nap Bumi Bersoraklah	Isaac Watts				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_81	81. Hai M’Laikat Suci Di Surga	Athestan Riley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_82	82. Hai, Dengarlah Kisah Ajaib	James M. Gray				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_83	83. Alam Indah Cemerlang	Cecil F. Alexander				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_84	84. Musim Semi T’Lah Datang	Oxford Book of Carols				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_85	85. Sungguh Luas Cakrawala	Joseph Addison				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_86	86. Sembahlah Allah Yang Maha Mulia	Robert Grant				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_87	87. Dapatkah Kau Hitung Semua Bintang	Wilhelm Hey				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_88	88. Tuhan P’Liharakan	Civilla D. Martin				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_89	89. Besarlah Ya Tuhan, Kasih Setia-Mu	Thomas O.Chisolm				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_90	90. Umat Allah Yang Pengasih	Carolina Sandel Berg				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_91	91. Gembalaku Penolongku	Isaac Watts				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_92	92. Besarlah Anug’Rah Tuhan	Frederick W. Faber				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_93	93. Rahmat Tuhan	Julia H.Johnston				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_94	94. Oh Tuhan Perteduhanku	Isaac Watts				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_95	95. Fajar Harapan Seg’Ra Menjelang	S. J. Graham				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_96	96. Limpah Rahmat Allah	William W. How				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_97	97. Betapa Manisnya Kabar Yesus	John .R. Thomas				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_98	98. Sungguh Ajaib Anug’Rah-Mu	I Chron				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_99	99. Bapaku Mahakuasa	John W.Peterson				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_100	100. Marilah Bersukacita	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_101	101. O Datanglah Imanuel	John M. Neale (1818-1866)				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_102	102. Ada Lagu Merdu	Josia G. Holland				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_103	103. Malam Natal	Trad Enlish Carol C				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_104	104. Kedatangan Tuhan	Charles Coffin				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_105	105. Dengan Malaikat Nyanyi	Charles Wesley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_106	106. Hai Malaikat Surga Mulia	James Monigomery				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_107	107. Pergilah Dan Kabarkan	American Negro Spritual				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_108	108. Di Dalam Palungan	Little Children's Book				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_109	109. Di Malam Cerah Bergema	Edmund H. Sears				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_110	110. Pandanglah Bunga Mawar	Theodore Baker				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_111	111. Mari Umat Tuhan	Frederick Oakeley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_112	112. T’Lah Lahir Yesus Yang Kudus	Traditional French Carol				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_113	113. Tiga Raja Dari Timur	John H. Hopkins				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_114	114. Kesukaan Bagi Dunia	Isaac Watts				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_115	115. Hai Betlehem Yang Senyap	Philips Brooks				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_116	116. Kau Tinggalkan Tahta Surga	Emily E. S. Elliot				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_117	117. Dengar Suara Malaikat	Adapt. by Earl Marlatt				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_118	118. Kala Gembala Menjaga	Nahum Tate				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_119	119. Siapa Bayi Yang Berbaring	William C. Dix				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_120	120. Malam Kudus, Sunyi Senyap	Joseph Mohr				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_121	121. Siapa Dia Nun Di Sana	Benyamin R. Hanby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_122	122. Bila Kurenungkan	Jemima Luke				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_123	123. C’Ritakan Kisah Yesus	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_124	124. Yesus Berjalan Sendiri	American White Spritual				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_125	125. Dahulu Di Kota Daud	Cecil Frances Alexander				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_126	126. Kepalamu Yang Luka	Bernard of Clairvaux				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_127	127. Salib Di Bukit Golgota	George Bennard				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_128	128. Aku Mau Hidup Bagi Yesusku	T. O. Chisholm				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_129	129. Aku T’Lah Mati Bersama Yesus	Frances Ridley Havergal				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_130	130. Bila Kupandang Salib-Mu	Isaac Watts				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_131	131. Renungkanlah Tuhan	American Negro Spiritual				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_132	132. Penebus Bangkit Sudah	Charles Wesley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_133	133. Pandanglah Penebus Kita	Thomas Kelly				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_134	134. Kebenaran-Mu, Darah-Mu	Nicolaus L. Von Zinzerdorf				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_135	135. Haleluya! Puji Yesus	William C. Dix				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_136	136. Sungguh Mulia Dan Cemerlang	Howard C. Robbins				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_137	137. Yesus T’Lah Menang	Edmond Budry				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_138	138. Tidur Tenang Dalam Yesus	Margaret Mackay				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_139	139. Marilah Yang Setiawan	John M. Neale				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_140	140. Takkan Lama Lagi	Horatius Bonar				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_141	141. Perjuangan Sudah Berakhir	Francis Pott				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_142	142. Sambutlah Kebangkitan-Nya	Charles Wesley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_143	143. Tirai T’Lah Dibuka-Nya	N. B. Herrel				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_144	144. Adakah Yesus Lindung Aku	Frank E. Graceff				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_145	145. Ku Akan Menyanyikan	F. E. Belden				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_146	146. Tuhanku Berkata	Mrs. Elvina M. Hall				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_147	147. Yesus Harta Yang Terindah	Will L. Thompson				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_148	148. Padaku Ada Sahabat	J. G. Small				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_149	149. Siapa Yang Dapat Menghibur	Thoro Harris				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_150	150. Seg’Ra Datang Hujan Berkat	Daniel W. Whittle				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_151	151. Gembala Agung Engkau Miliki	Herbert Work				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_152	152. Kristus Hidup, Bernyanyilah	Brian Wren				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_153	153. Tuhan Terangku	James Nicholson				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_154	154. Jaga Sedia	S. M. H				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_155	155. Dapatkah Aku Disucikan	Charles Wesley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_156	156. Kasih Yesus Padaku	Anna B. Warner				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_157	157. Tuhan ‘Kan Datang Segera	Mary A. Steward				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_158	158. Kristus Datang Seg’Ra	John R. Mac Duff				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_159	159. Tak Lama Lagi Masuk Surga	Eliza E. Hewitt				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_160	160. Mungkin Saja Saat Fajar Merekah	H. L. Tuner				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_161	161. Ku Mau Sedia	Harold A. Miller				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_162	162. Muka Dengan Muka Nanti	Mrs. Frank A. Breck				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_163	163. Angkat Nafiri	Jessie E. Strout				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_164	164. Tiada Lagi Lembah Kegelapan	William O. Cushing				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_165	165. Tiga Kebenaran	Fred Pratt Green				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_166	166. Kedatangan Tuhan T’Lah Dekat	G. W. Sederquist				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_167	167. Hari Yang Mulia Akan Tiba	A. H. Ackley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_168	168. Kita Memiliki Pengharapan	Wayne Hooper				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_169	169. Bila Trompet Allah Berbunyi	J. M. Black				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_170	170. Akan Berkumpulkah Kita	Robert Lowry				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_171	171. Kita Akan Dijamu Raja	J. E. Landor				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_172	172. Di Seluruh Dunia Nyatalah	W. C Cage				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_173	173. Pada Waktu Penuaian	L. D Santee				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_174	174. Kristus T’Lah Ada Dipintu	F. E. Belden				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_175	175. Yesuslah Penyembuh Agung	William Hunter				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_176	176. Kasih Allah, Benar Dan Teguh	Horatius Bonar				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_177	177. Hormat Dan Pujian Bagimu	Theodulph of Orleans				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_178	178. Ku Kasih Pada-Mu, Ya Yesus Tuhanku	Ingall's Christian Harmony				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_179	179. Yesus Terindah	Gesangbuch, munster				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_180	180. Jika Ku Mengenang Tuhan	Bernard of Clairvaux				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_181	181. Di Salib Kristus Ku Puji	John Bowring				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_182	182. Kunyanyikan Hal Yesus	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_183	183. Ku Ingin Tahu Kasih Yesus	Eliza E. Hewitt				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_184	184. Layaklah Domba Allah	Anonymous				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_185	185. Oh, Ku Kasih Yesus	Frederick Whitfield				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_186	186. Puji Dia, Yesus Jurus’Lamat Kita	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_187	187. Beribu Lidah Menyanyi	Charles Wesley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_188	188. Ku Sembah Jurus’Lamat	Alfred H. Akley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_189	189. Pandanglah Yesus, Ya Bapaku	F. E Belden				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_190	190. Nyanyikanlah Lagu Surga	James Montgomery				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_191	191. Tiada Nama S’Perti Yesus	F. E. Belden				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_192	192. Ya Roh Suci Yang Benar	M. M Wells				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_193	193. Roh Suci Tuntunlah Aku	Elwood H. Stokes				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_194	194. Ya Roh Kudus Isilah Hatiku	George Croly				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_195	195. Sungguh Indah Roh Suci	Doris Akers				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_196	196. O, Nyala Api Roh Kudus	William H. Bathurst				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_197	197. Aku Dengar Hujan Berkat	Elizabeth Codner				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_198	198. B’Rilah Roh-Mu Tuhan	Edwin Hatch				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_199	199. Roh Kudus, Terang Allah	Andrew Reed				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_200	200. B’Rilah Padaku Alkitab Yang Suci	Priscilla J. Owens				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_201	201. Tuhan, Kupilih Firman-Mu	Isaac Watts				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_202	202. Walau Ku Berbahasa Malaikat	Fred Pratt Green				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_203	203. Firman-Mu Pelita	Wihla Hutson				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_204	204. B’Rikanlah Ya Tuhan	Mary A. Lathbury				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_205	205. Apakah Engkau Susah	Helen H. Lemmel				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_206	206. Marilah Orang Berdosa	J. H. Stockton				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_207	207. Kus’Rahkan Hidupku	Frances, Ridley H.				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_208	208. Suara-Mu Kudengar	L. Hartsough				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_209	209. Yesus Sedang Berdiri	William Walshaham				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_210	210. Padaku Ada Jurus’Lamat	Samuel O'Malley Chiff				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_211	211. Aku Mau Turut Ya Tuhan	James Lawson				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_212	212. Sabda Hidup Kekal	P. P. Bliss				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_213	213. Dengan Lembut Dan Merdu	Will L. Thompson				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_214	214. Yesus Menunggu	Ralph Garmichael				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_215	215. Ya Tuhan, Engkau T’Lah Mati	Sylvanus D. Phelps				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_216	216. Yesus Panggil Engkau Pulang	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_217	217. Ya Yesus Yang Penuh Kasih	Annie R. Smith				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_218	218. Lenyap Nafsu Dunia	Mrs. Catherine J. Bonar				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_219	219. Yesus Batu Zaman	William O. Cushing				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_220	220. Haruskah Yesus Sendiri	Thomas Shepherd				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_221	221. Aku Datang S’Karang Yesus	W. T. Sleeper				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_222	222. Kuasa Dalam Darah-Nya	Lewis. E Jones				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_223	223. Yesus Panggil, Aku Ikut	Howard L. Brown				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_224	224. Apa Kita Hidup Dekat Yesus	Mrs. C. H. Morris				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_225	225. Hampir Percaya	P. P Bliss				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_226	226. S’Karang Ku Pulang	William J. Kirkpatrick				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_227	227. Yesus Yang Penuh Kasih	Joseph P. Holbrook				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_228	228. Ku Bawa Pada Yesus	Horatius Bonar				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_229	229. Janganlah Bersedih	LS. Edisi Baru				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_230	230. Ajaiblah Yesus Jurus’Lamatku	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_231	231. Meski Aku Durhaka	McComb				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_232	232. Di Tempat Yang Lebih Tinggi	Johnson Oatman, Jr.				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_233	233. Ku Datang Hampir Kepada-Mu	Mrs. C. H. Morris				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_234	234. Raja Kekal, Pimpinlah	Ernest W. Shurtleff				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_235	235. Di Bawah Salib Yesus	Elizabeth C. Clephane				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_236	236. Iman Orang Saleh Kekal	Frederick W. Feeber				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_237	237. Jadikan Aku Milik-Mu Tuhan	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_238	238. Ke Salib Aku Datang	William McDonald				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_239	239. Aku Mau Jadi Milik-Mu	F. E. Belden				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_240	240. Berserah Kepada Yesus	J. W. Van De Venter				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_241	241. Ku Mau Dekat Pada Yesus	Robert Harkness				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_242	242. Ku Mau S’Perti Yesus	James Rowe				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_243	243. Tarik Aku Ya Yesus	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_244	244. Hiduplah Dalam Aku	Francess Ridley Havergal				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_245	245. Pimpinku Ke Salib	Jennie E. Hussey				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_246	246. Yesus, Aku Rindu Jadi Suci	James Nicholson				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_247	247. Aku Mau Jadi Kristen	American Negro Spiritual				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_248	248. Ku Kasih Pada-Mu	William Ralf Featherstone				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_249	249. Tiada Yang Lain	Charles A. Tindley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_250	250. Yesus, Kupikul Salibku	Henry F. Lyte				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_251	251. Buka Mataku Ya Tuhan	Clara H. Scott				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_252	252. Ku Memilih Yesus	Rhea F. Miller				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_253	253. Aku Tak Akan Tinggalkan	Anonymous				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_254	254. Dalam Hatiku Ada Lagu	Elton M. Roth				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_255	255. Buangkan Dunia T’Rima Yesus	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_256	256. Ku Lihat Darah Mengalir	Mrs. Phoebe Palmer				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_257	257. Aku Dengan Yesus Panggil	E. W. Blandly				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_258	258. Janganlah Tawar Hatimu	Frances Ridley Havergal				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_259	259. Sebagaimana Ku Ada	Charlotte Elliot				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_260	260. Bawa Persembahanmu	M.G.L				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_261	261. Hati Yang Memuji Allah	Charles Wesley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_262	262. Hai Saudara Mengapa	LS. Edisi Baru				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_263	263. Bila Selesai Tugas Kerjaku	Charles H. Gabriel				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_264	264. Aku Tak Cinta Dunia	M.A.K				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_265	265. Kami Datang Pada-Mu	Frances Ridley Havergal				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_266	266. Bawa S’Gala Persepuluhanmu	Helen. E. Rasmussen				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_267	267. Tarik Jiwa Satu	Ira D. Sankey				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_268	268. Pada Saat Berdoa	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_269	269. Berjalan Di Dalam T’Rang	Bernard Barton				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_270	270. Dosamu Dihapuskan	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_271	271. Jadilah Tuhan Kehendak-Mu	Adeleide Pollard				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_272	272. Bahagia Hari Itu	Philip Doddrige				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_273	273. Dengar Lonceng Surga	Rev. W. O. Cushing				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_274	274. Mengapa Darahmu, Yesus	Isaac Watts				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_275	275. Tolonglah Aku Ya Allah	Robert Robinson				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_276	276. Darah Yesus T’Lah Tertumpah	William Cowper				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_277	277. Betapa S’Nang Aku Kabarkan	Fanny Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_278	278. Di Tepian Sungai Yordan	Samuel Stennett				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_279	279. Kristus T’Lah S’Lamatkan	Priscilla J. Owens				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_280	280. Muliakan Allah	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_281	281. Bila Pandang Salib Yesus	William Brickey				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_282	282. Hai S’Kalian Orang	Isaac Watts				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_283	283. Siapa Yang Mendengar, Serukanlah	P. P Bliss				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_284	284. Eden Taman Yang Terindah	W. O. Chusing				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_285	285. Ku Dengar Lagu Yang Merdu	P. P Bilhorn				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_286	286. Bila Yesus Akan Mengumpulkan	Harriet B. M. Keever				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_287	287. Satu Saja Ku Ingini	Walter C. Smith				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_288	288. Aku Puji Penebusku	Philip P. Bliss				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_289	289. B’Rani Hati Kar’Na Benar	G. Lansing Taylor				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_290	290. Duduk Dekat Kaki Yesus	J. H				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_291	291. Siapa Masuk Pintu Gerbang	G. M. J				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_292	292. Bila Laut Kehidupanmu Berg’Lombang	Johnson Oatman, Jr.				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_293	293. Perhubungan Kita	John Fawcett				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_294	294. Ku Yakin Bapa Tahu	S. M. I Henry				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_295	295. Sahabat, Teman, Pemimpin	Arthur W. Spalding				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_296	296. Nama Yesus Amat Indah	W. C Martin				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_297	297. Ada Satu Pintu Gerbang	Lilian Baxter				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_298	298. S’Lamat Di Lengan Yesus	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_299	299. Ku Lihat Yesus	A. H. Ackley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_300	300. Di Surga Tempat Yang Baka	W. H. Bellamy				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_301	301. Senang Berbakti Di Sini	Fred Pratt Green				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_302	302. Pertahankan Benteng	P. P Bliss				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_303	303. Dalam Naung-Nya	W. O Cusing				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_304	304. Dengarlah Suara Yesus	Daniel March				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_305	305. Putra Sion Kerjakan Tugasmu	Mary A. Thompson				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_306	306. Angkat Dia Hingga Nyata	May E. Warren				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_307	307. Penjaga, Bunyikan Trompet	H. L. Gilmour				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_308	308. Biarkan Aku Pergi	I Baltzell				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_309	309. Betapa Merdu Suara	William J. Kirkpatrick				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_310	310. Tariklah Aku Ya Bapaku	Mrs. E. W. Chapman				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_311	311. Aku Kasih Tuhan Lebih	Francess Ridley Havergal				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_312	312. Ku Bersuka Sebab Bapa Kita	P. P Bliss				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_313	313. Aku Mau Yesus Sertaku	Lizzie Edwards Durt				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_314	314. Dalam Sibuk Kehidupan Kita	Frank M. North				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_315	315. Orang Asing Di Pintu	J. B. Atchinson				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_316	316. Bawalah Yang Hilang	Alexcenah Thomas				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_317	317. Aku Pengembara	Tomas R. Taylor				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_318	318. Jangan Ditaklukkan	Horatio R. Palmer				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_319	319. Mari Kita Kerja Bagi Tuhan	LS. Edisi Baru				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_320	320. Rahmat Bapa Bercahaya	P. P Bliss				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_321	321. Jauh Dan Dekat, Tampak Sudah	J. O. Thompson				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_322	322. Dari Timur Dan Barat	Reginald Heber				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_323	323. Tolonglah Yang Sesat	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_324	324. Betapa Indahnya	Isaac Watts				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_325	325. Hai Mana Penyabit	Eben E. Rexford				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_326	326. Berusahalah Kamu	Mrs. Anna L. Coghill				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_327	327. Tabur Waktu Pagi	Knowless Shaw				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_328	328. Aku Mau Membagikan Imanku	J. H. H				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_329	329. Kerjalah, Kerjalah	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_330	330. S’Bagai Pohon Tanaman Roh	Timothy Dudley Smith				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_331	331. Ada Kisah Kami Mau C’Ritakan	Coling Sterne				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_332	332. Masyhurkanlah Yesus	Samuel Wolcott				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_333	333. C’Ritakanlah Padaku	Katherine Hankey				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_334	334. Roh Kudus S’Lalu Ada	Brian Wren				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_335	335. Dalam Kerja Rajaku	A. H. Ackley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_336	336. Yesus Sahabat Manusia	J. Wilbur Chapman				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_337	337. Maju Serta Yesus	G. B. Timms				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_338	338. Rumah Yang Bahagia	Henry Ware, the younger				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_339	339. Milik Tuhan, Bukan Aku	John Greenleaf Whittier				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_340	340. Sabat Hari Perhentian	L. E. C. Joers				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_341	341. Hari Perhentian Allah	F. E. Belden				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_342	342. Ku Suka Sabat-Mu	Myrtle H. Dorland				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_343	343. Enam Hari Sudah Lalu	S. Stennett				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_344	344. Sabat Tuhan Yang P’Nuh Berkat	Frederick M. A. Venue				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_345	345. Oh Hari Perhentian	Christopher Wordsworth				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_346	346. Bagaikan Burung Terbang Ke Sarangnya	David Levy				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_347	347. Ingat Hari Sabat	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_348	348. T’Rang Besar Bercahaya	Benjamin Schmolck				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_349	349. Datang Lagi Hari Yang Suci	William Mason				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_350	350. Satu Minggu Yang Lalu	John Newton				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_351	351. Selamat Datang	John Dobell's Selection				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_352	352. Hebat Hari Penghukuman	John Newton				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_353	353. Engkau Tahu Tuhan Pemurah	C. A. Alington				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_354	354. Bapa, Pimpinlah Kami	John P. Hopps				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_355	355. Dengarkanlah Sabda-Nya	Georger Wallace Briggs				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_356	356. Tuhan, Kasihani Kami Ini	George J. Elvey				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_357	357. Kasih Yang Bahagiakan	F. E. Belden				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_358	358. Pada-Mu Batu Zaman	Augustus M. Toplady				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_359	359. Aku Perlu Yesus	George O. Webster				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_360	360. Ada Neg’Ri Amat Indah	Edgar Page				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_361	361. Sesudah Malam	Virgil P. Brock				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_362	362. Aku Pikirkan S’Karang	E. E Hewitt				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_363	363. Yerusalem, Oh, Rumahku	Annabel M. Buchanan				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_364	364. Bukit-Bukit Yang Permai	J. G. C				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_365	365. Yerusalem Yang Mulia	John M. Neale				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_366	366. Lebih Dekat, Lebih Indah	Jesse P. Tompkins				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_367	367. Di Pantai Nan Indah	S. F. Bennet				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_368	368. Di Neg’Ri Yang Cemerlang	John R. Clements				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_369	369. Di Kota Allah Yang Indah	William Hunter				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_370	370. Oh B’Rapa Jauh Dari Rumah	Annie R. Smith				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_371	371. Aku K’Lak Pandang Raja Di Surga	W. C Poole				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_372	372. Seb’Rang Langit Biru	A. B. S				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_373	373. Ya Di Sana	H. de. F				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_374	374. Aku Mau Pulang	Warner Cole				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_375	375. Sudah Dekatlah Rumah Di Surga	C. P Whitford				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_376	376. Suci, Suci, Malaikat Memuji	Johnson Oatman, Jr				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_377	377. Rumah Kekal	Hugh R. Haweis				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_378	378. Rumahku Indah Di Surga	William Hunter				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_379	379. Lihatlah Rajamu Datang	Thomas Hastings				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_380	380. Bersabdalah Ya Tuhan	Tobias Clausnitzer				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_381	381. Kita Takkan Tahu	F. E. Belden				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_382	382. Atas Gunung Mengembara	Annie R. Smiyh				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_383	383. Hai Angkatlah Kepalamu	George Weissel				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_384	384. Ku Berkelana	Mary S. B. Dana				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_385	385. Kita Hidup S’Karang Ini	Arthur C. Coxe				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_386	386. Tak ‘Kan Berpisah Lagi	Isaac Watts				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_387	387. Mari Hidup Rukun, Damai	Millenia Harp				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_388	388. Betapa Indahnya Lagu Surgawi	James White				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_389	389. Satu Masa Yang Tertentu	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_390	390. Angkat Nafiri	Jessie E. Strout				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_391	391. Aku Suka C’Ritakan	Katherine Hankey				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_392	392. Lebih Kasih Tuhan Kepada-Mu	Mrs. E. Prentiss				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_393	393. Aku Ada Sahabat	Mrs L. Shorey				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_394	394. Hai Jiwaku, Tuhan Di Sisimu	Katharina Von Schlegel				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_395	395. Damai, Damai Ajaib	W. D. Cornell				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_396	396. Raja Damai Turunlah	Melvin West				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_397	397. Betapa Teguh Persatuannya	E. A. Hoffman				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_398	398. Kalau Kamu Mau Senang	J. D. C				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_399	399. Ada Sinar Dalam Jiwaku	E. E. Hewitt				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_400	400. Bukalah Hatimu	LS. Edisi Baru				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_401	401. Bapaku Kaya, Rumah Dan Tanah	Hattie E. Buel				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_402	402. Ingat S’Lalu Nama Yesus	Lilian Baxter				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_403	403. Sering Kudengar Lagu	E. E. Rexford				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_404	404. Ya Allah, Aku Mau Datang Dekat	Sarah F. Adams				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_405	405. Ada Balsem Di Gilead	American Negro Spiritual				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_406	406. Beban Terangkat Di Kalvari	John M. Moore				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_407	407. Duka	Francess Ridley Havergal				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_408	408. Berdiam, Berdiam	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_409	409. Ku ‘Kan C’Ritakan Kepada Yesus	Elisha A. Hoffman				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_410	410. Ya Matahari Jiwaku	John Keble				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_411	411. Aku Masuk Dalam Taman	C. Austin Miles				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_412	412. Kami Sembah Sujud Allah	L. E. Froom				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_413	413. Yesus Yang Penuh Kasih	Charles Wesley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_414	414. Kupercaya	Charles Wesley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_415	415. Ku Harap Pada-Mu	Annie S. Hawks				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_416	416. Ku Perlu Engkau Yesus	Frederick Whitfield				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_417	417. ‘Bak Wanita Di Sumur	Richard Blanchard				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_418	418. Semua Milik-Mu Tuhan	Christ in Song				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_419	419. Bapa, Ajarlah Aku	James Montgomery				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_420	420. Tuhan, Biarlah Hamba-Mu	Ernest E. Ryden				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_421	421. Ada Tempat Tenang Teduh	C. B. McAfee				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_422	422. Yesus Sahabat Terindah	John M. Scriven				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_423	423. Sucikan Hatimu	W. D Longstaff				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_424	424. Ku Perlu Doa Kasihku	James D. Vaughan				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_425	425. Bersabdalah Ya Yesus	Frances Ridley Havergal				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_426	426. Pertama Ku Mohon	Mrs E. D. Cheney				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_427	427. Kuperlu Pada-Mu Tuhan	F. E. Belden				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_428	428. Taman Tempat Berdoa	Eleanor Allen Schroll				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_429	429. Berjagalah S’Karang	LS. Edisi Baru				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_430	430. Bisik Doa Waktu Pagi	Frances Rudley Havergal				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_431	431. Ya Yesus Ku Berjanji	John E. Bode				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_432	432. Saat Penghakiman	James Montgomery				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_433	433. Inilah Jam Kuberdoa	William W. Walford				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_434	434. Ya Allah Kota Yang Teguh	Marthin Luther				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_435	435. Jalan Serta Yesus S’Lalu Sejaht’Ra	Jessie H. Brown				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_436	436. Bila Ku Perlu Yesus Dekat	William Poole				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_437	437. Ia Allah Takkan Gagal	C. E. Mason Jr				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_438	438. Tuhan S’Lalu Pimpin Aku	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_439	439. Ku Percaya Engkau	Ray Palmer				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_440	440. Pegang Teguh Janji Kristus	R. Kelso Carter				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_441	441. Setiap Saat Dalam Kasih-Nya	Daniel W. Whittle				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_442	442. Tak Ku Mengerti Rahmat-Nya	Daniel W. Whittle				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_443	443. Aku Membangun Harapan	Edward Mote				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_444	444. Ku Alaskan Percayaku	Lidie H. Edmunds				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_445	445. Percaya Yang Menang	John H. Yates				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_446	446. Allah Utus Putra-Nya	Gloria Gaither				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_447	447. Baik Berharap Pada Yesus	Louisa M. R. Stead				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_448	448. Tuhan Batu Karang Kita	Vermon J. Charlesworth				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_449	449. Tiap Hari Aku S’Lalu Berjalan	Carolina Sandell Berg				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_450	450. B’Ri Kuberjalan Dengan-Mu	Washington Gladden				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_451	451. Apakah Jangkarmu Akan Tahan	Priscilla J. Owens				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_452	452. Yesus Tak Pernah Gagal	A. A. Luther				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_453	453. Rindu Pada Yesus	H. de. F				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_454	454. Hatiku Rindu	Dorothy Masters				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_455	455. Pada Saat Damai Perjalananku	Horatio G. Spafford				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_456	456. Kita Membangun Di Batu Karang	F. E. Belden				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_457	457. Tuhan Pimpin S’Panjang Jalan	J. H. Gilmore				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_458	458. Laskar Kristus Bangun	Charles Wesley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_459	459. B’Ri Aku Jalan Serta-Mu	Mrs. L. D. Avery Shuttle				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_460	460. Yesus Kemudikanlah	Edward Hopper				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_461	461. Tuhan Adalah Gembalaku	Scottish Psalter				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_462	462. Ku Mencari Jurus’Lamat	Mrs. L.M. B Bateman				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_463	463. Kalau Serta Tuhan	J. H. Sammis				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_464	464. Jaminan Berkat Tuhan Janji	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_465	465. Kar’Na Bumi Ini Indah	Folliot S. Pierpoint				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_466	466. Mari Puji Allah	Martin Rinkart				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_467	467. Janganlah Liwatkan Aku	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_468	468. Hanya Kristus	A. A. F				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_469	469. B’Ri Yang Terbaik Untuk Tuhan	Howard B. Grose				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_470	470. Ke Manapun Ku Mau Pergi, Tuhan	Mary Brown				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_471	471. Berdiri Kar’Na Yesus	George Dufield				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_472	472. Tuhan Mengutus Engkau	E. Margaret Clarkson				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_473	473. Pada Masa Seperti S’Karang	Ruth Caye Jones				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_474	474. Tuhan, Di Hadirat-Mu Ku Bersuka	Joseph Swain				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_475	475. Perhatikan Tanda Akhir Zaman	F. E. Belden				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_476	476. Akukah Laskar Salibnya	Isaac Watts				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_477	477. Hai Waris Surga	Lowell Mason				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_478	478. Biarlah Lampumu Makin T’Rang	F. E. Belden				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_479	479. Hai Kristen Jaga	Fanny J. Crosby				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_480	480. Bangun Umat Allah	William P. Merill				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_481	481. Jagalah Hai Umat Allah	Mrs. Phoebe Palmer				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_482	482. Bergembiralah Kamu	Laurentius Laurenti				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_483	483. Sorakkanlah P’Rang	William F. Sherwin				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_484	484. Aku Senang Dan Girang Selalu	S. W. G				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_485	485. Maju Laskar Kristus	Sabine Baring-Gould				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_486	486. Tuhan, Ini Persembahan Kami	Alberth F. Bayly				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_487	487. Maha Besar Allah	Daniel C. Roberts				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_488	488. Khalik Dan Rajaku	Anne Steele				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_489	489. Mataku T’Lah Melihat Kemuliaan Tuhan	Julia Ward Howe				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_490	490. Betapa Bahagianya Di Rumah Tangga	John H. McNaughton				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_491	491. Di Rumah	Jacob Breiter				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_492	492. Kasih-Mu Allah	Dorothy Blomfield Gurney				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_493	493. Doa Ibu	W. Van De Venter				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_494	494. Di Dalam Sengsara Dan Keluhanku	John Howard Payne				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_495	495. Sungguh Senang Hatiku	A. H. Ackley				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_496	496. Yesus Sahabat Terindah	Joseph Scriven				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_497	497. Mari Puji Raja Surga	Henry Francis Lyle				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_498	498. Pemuda S’Kalian	C. Harold Lowden				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_499	499. T’Rang Dari Surga	Charles E. Fuller				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_500	500. Pemuda, Majulah	A. W. Spalding				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_501	501. Kumpulan Orang Muda	C. Lester Bond				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_502	502. Kar’Na Allah Kasih	C. Austin Miles				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_503	503. Pandu-Pandu	Henry T. Bergh				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_504	504. Tiada Sahabat Seperti Yesus	Johnson Oatman				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_505	505. Kita Maju Bersama	John H. Hancock				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_506	506. Semua Orang Harus Tau	Harry Dicxon Loes				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_507	507. Ku Ta’U Nama Yesus Terindah	Lela Long				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_508	508. Tuhan B’Ri Kami Setia S’Lalu	Henry de Fluiter				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_509	509. Dalam Hati	Harry D. Clarke				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_510	510. Lebar S’Perti Lautan	C. Austin Miles				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_511	511. Ajaib Engkau, Ya Yesus	Benyamin A. Baur				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_512	512. Apa Yang Dunia Perlu	Benjamin A. Baur				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_513	513. Sabat Diciptakan Allah	Isaac Watts				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_514	514. Kami Persembahkan Berkat-Mu	William Walsham How				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_515	515. Tuhan Ada Dalam Bait Allah	George F. Root				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_516	516. Dengar Ya Tuhan	George Whelpton				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_517	517. Dengar Ya Tuhan Kami Berdoa	Frederick A. Jackson				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_518	518. Sucilah Tuhan	John Philip Neuman				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_519	519. Tuhan Memberkati Dan Melindungimu	Peter C. Lutkin				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_520	520. Sekarang Ya Tuhan	Ralph Carmichael				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_521	521. Kiranya Allah Dalam Pikiranku	Sarum Primer				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_522	522. Curahkan Berkat-Mu Ya Tuhan	L. E. Froom				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_523	523. Tuhan Dengar Doa Kami	Felix Mendelssohn				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_524	524. Datanglah Ya Roh Allah	Daniel Iverson				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_525	525. Masyhurkan Karunia-Nya	Bruce Ashton				Lagu Sion Edisi Lengkap (LSEB)
+LSEB_1787129577065	Misi Kita	Jader Santos Diterjemahkan oleh Pdt. J. A. Mamahit	LAGU TEMA 2026			Lagu Sion Edisi Lengkap (LSEB)
+LSEB_1787130029834	Misi Kita	Santoso Supadi	LAGU TEMA ANAK 2026			Lagu Sion Edisi Lengkap (LSEB)

@@ -1,34 +1,70 @@
 import { get, set, del, keys } from 'idb-keyval';
 
 export const saveSlideBackground = async (id: string, base64DataUrl: string) => {
-  await set(`slide_bg_${id}`, base64DataUrl);
+  try {
+    await set(`slide_bg_${id}`, base64DataUrl);
+  } catch (e) {
+    console.warn("IndexedDB save failed:", e);
+    throw new Error("Browser memblokir penyimpanan lokal (mungkin mode Private/Incognito).");
+  }
+};
+
+export const saveVideoBackground = async (id: string, fileBlob: Blob) => {
+  try {
+    if (id.startsWith('slide_bg_vid_')) {
+      await set(id, fileBlob);
+    } else {
+      await set(`slide_bg_vid_${id}`, fileBlob);
+    }
+  } catch (e) {
+    console.warn("IndexedDB save failed:", e);
+    throw new Error("Browser memblokir penyimpanan lokal (mungkin mode Private/Incognito).");
+  }
 };
 
 export const getSlideBackground = async (id: string) => {
-  if (id.startsWith('slide_bg_')) {
-    return await get(id);
+  try {
+    if (id.startsWith('slide_bg_vid_') || id.startsWith('slide_bg_')) {
+      return await get(id);
+    }
+    return await get(`slide_bg_${id}`);
+  } catch (e) {
+    console.warn("IndexedDB get failed:", e);
+    return undefined;
   }
-  return await get(`slide_bg_${id}`);
 };
 
 export const removeSlideBackground = async (id: string) => {
-  if (id.startsWith('slide_bg_')) {
-    await del(id);
-  } else {
-    await del(`slide_bg_${id}`);
+  try {
+    if (id.startsWith('slide_bg_vid_') || id.startsWith('slide_bg_')) {
+      await del(id);
+    } else {
+      await del(`slide_bg_${id}`);
+    }
+  } catch (e) {
+    console.warn("IndexedDB delete failed:", e);
   }
 };
 
 export const getAllSlideBackgrounds = async () => {
-  const allKeys = await keys();
-  const bgKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith('slide_bg_')) as string[];
-  
-  const results = [];
-  for (const k of bgKeys) {
-    const dataUrl = await get(k);
-    results.push({ id: k, url: dataUrl });
+  try {
+    const allKeys = await keys();
+    const bgKeys = allKeys.filter(k => typeof k === 'string' && (k.startsWith('slide_bg_') || k.startsWith('slide_bg_vid_'))) as string[];
+    
+    const results = [];
+    for (const k of bgKeys) {
+      const data = await get(k);
+      if (k.startsWith('slide_bg_vid_') && data instanceof Blob) {
+        results.push({ id: k, url: URL.createObjectURL(data), type: 'video' });
+      } else {
+        results.push({ id: k, url: data as string, type: 'image' });
+      }
+    }
+    return results;
+  } catch (e) {
+    console.warn("IndexedDB not available or failed:", e);
+    return [];
   }
-  return results;
 };
 
 // Helper untuk kompresi gambar sebelum disimpan agar IndexedDB tidak terlalu besar

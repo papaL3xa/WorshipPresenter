@@ -127,12 +127,15 @@ export default function Dashboard() {
   return (
     <div className="min-h-full flex flex-col p-4 md:p-8 gap-4 overflow-hidden relative">
       <header className="glass-panel p-5 flex flex-col md:flex-row justify-between items-center gap-4">
-        <h1 className="text-3xl font-heading font-extrabold text-indigo-950 dark:text-white drop-shadow-md tracking-tight flex items-center gap-3">
-          <div className="bg-indigo-600/10 dark:bg-white/90 p-1.5 rounded-xl backdrop-blur-sm border border-indigo-600/20 dark:border-white/30 overflow-hidden w-10 h-10 flex items-center justify-center shadow-sm">
-            <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Logo" className="w-full h-full object-contain" />
-          </div>
-          WorshipPresenter
-        </h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-heading font-extrabold text-indigo-950 dark:text-white drop-shadow-md tracking-tight flex items-center gap-3">
+            <div className="bg-indigo-600/10 dark:bg-white/90 p-1.5 rounded-xl backdrop-blur-sm border border-indigo-600/20 dark:border-white/30 overflow-hidden w-10 h-10 flex items-center justify-center shadow-sm">
+              <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Logo" className="w-full h-full object-contain" />
+            </div>
+            WorshipPresenter
+          </h1>
+          <FooterClock />
+        </div>
         <div className="flex flex-wrap justify-center items-center gap-2 md:gap-4">
           <SyncButton />
           <button onClick={() => setIsAboutOpen(true)} className="glass-button flex items-center gap-2 relative">
@@ -148,8 +151,6 @@ export default function Dashboard() {
           )}
         </div>
       </header>
-      
-      <FooterClock />
       
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 overflow-y-auto mb-6">
         <section className="glass-panel p-6 lg:col-span-8">

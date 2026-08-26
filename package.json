@@ -1,4 +1,7 @@
 {
+  "name": "worship-presenter",
+  "version": "1.0.0",
+  "main": "main.js",
   "dependencies": {
     "papaparse": "^5.5.4"
   }

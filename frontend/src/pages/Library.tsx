@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Loader2, Music, BookOpen, Edit, Save, Trash2, X, ArrowLeft, ArrowRight, Monitor, Star, Copy, Settings, Download } from 'lucide-react';
 import { callApi } from '../api';
+import { useBackgrounds } from '../hooks/useBackgrounds';
 import { FooterClock } from '../components/FooterClock';
-import { splitLongSegments } from '../utils/textSplitter';
+
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useFavorites } from '../hooks/useFavorites';
 import { SyncButton } from '../components/SyncButton';
@@ -30,6 +31,8 @@ export default function Library() {
   
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [searchType, setSearchType] = useState<'song'|'bible'>('song');
+  const [customBg] = useState(localStorage.getItem('custom_bg') || '');
+  const { getBgUrl } = useBackgrounds();
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SearchResult | null>(null);
@@ -231,7 +234,7 @@ export default function Library() {
         }));
       }
       
-      let processedData = splitLongSegments(resultsData);
+      let processedData = resultsData;
       if (showFavorites) {
         processedData = processedData.filter((item: any) => isFavorite(item.id));
       }
@@ -269,7 +272,7 @@ export default function Library() {
       const res = await searchLocalSongs(id, selectedSongVersion);
       if (res && res.length > 0) {
         const exact = res.find((s: any) => s.id == id) || res[0];
-        const processed = splitLongSegments([{...exact, type: 'song'}])[0];
+        const processed = {...exact, type: 'song'};
         setSelectedItem(JSON.parse(JSON.stringify(processed)));
         setSelectedResultIds([processed.id]);
       }
@@ -427,7 +430,10 @@ export default function Library() {
           <button onClick={() => navigate('/dashboard')} className="glass-button text-indigo-900 flex items-center gap-2">
             <ArrowLeft size={16}/> Kembali
           </button>
-          <h1 className="text-xl font-bold text-indigo-900 ml-2">Library (Database)</h1>
+          <h1 className="text-xl font-heading font-extrabold text-indigo-900 tracking-tight drop-shadow-sm flex items-center">
+            Library (Database)
+            <FooterClock />
+          </h1>
         </div>
         <div className="flex items-center gap-3">
           <SyncButton />
@@ -444,8 +450,6 @@ export default function Library() {
           </button>
         </div>
       </header>
-      
-      <FooterClock />
       
       <main className="flex-1 flex flex-col md:flex-row gap-4 min-h-0">
         <section className="w-full h-[45%] md:h-auto md:w-1/3 glass-panel p-4 flex flex-col">
@@ -474,7 +478,7 @@ export default function Library() {
           </div>
           
           <div className="flex gap-2 mb-2">
-            <button onClick={() => {setSearchType('song'); setResults([]); setSelectedItem(null); setSelectedResultIds([]);}} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'song' ? 'bg-indigo-600 dark:!bg-[#C5A059] text-white shadow-md dark:shadow-none' : 'bg-white/30 dark:bg-transparent text-indigo-900 dark:text-[#C5A059] dark:border dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/5'}`}><Music size={16}/> Lagu</button>
+            <button onClick={() => {setSearchType('song'); setResults([]); setSelectedItem(null); setSelectedResultIds([]); setSearchQuery('');}} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'song' ? 'bg-indigo-600 dark:!bg-[#C5A059] text-white shadow-md dark:shadow-none' : 'bg-white/30 dark:bg-transparent text-indigo-900 dark:text-[#C5A059] dark:border dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/5'}`}><Music size={16}/> Lagu</button>
             <button onClick={() => {
               setSearchType('bible'); 
               setResults([]); 
@@ -482,6 +486,7 @@ export default function Library() {
               setSelectedResultIds([]);
               setSelectedBibleBook(null);
               setSelectedBibleChapter(null);
+              setSearchQuery('');
             }} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition ${searchType === 'bible' ? 'bg-indigo-600 dark:!bg-[#C5A059] text-white shadow-md dark:shadow-none' : 'bg-white/30 dark:bg-transparent text-indigo-900 dark:text-[#C5A059] dark:border dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/5'}`}><BookOpen size={16}/> Alkitab</button>
           </div>
           
@@ -546,9 +551,10 @@ export default function Library() {
                     setSearchQuery('');
                     document.getElementById('searchInputBox')?.focus();
                   }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-900/40 hover:text-indigo-900 transition"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full text-indigo-900/50 hover:text-indigo-900 hover:bg-indigo-900/10 dark:text-slate-500 dark:hover:text-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
+                  title="Hapus Pencarian"
                 >
-                  <X size={16} />
+                  <span className="font-extrabold text-sm font-sans">X</span>
                 </button>
               )}
             </div>
@@ -676,8 +682,13 @@ export default function Library() {
                             <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded text-xs min-w-[32px] text-center shrink-0 dark:bg-[#444] dark:text-[#D4B872]">{song.id}</span>
                             <div className="flex flex-col flex-1 truncate text-left">
                               <span className="line-clamp-1 break-all">{song.title}</span>
-                              {song.category && song.category !== 'Custom' && (
-                                <span className="text-[10px] text-indigo-500 font-medium uppercase tracking-wider dark:text-[#9C8346]">{song.category}</span>
+                              {(song.author || song.key || song.beat || song.category) && (
+                                <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5 text-[9px] text-indigo-600/80 dark:text-slate-400">
+                                  {song.author && <span className="truncate max-w-[100px]" title={song.author}>👤 {song.author}</span>}
+                                  {song.key && <span title="Nada Dasar">🎵 {song.key}</span>}
+                                  {song.beat && <span title="Ketukan">⏱ {song.beat}</span>}
+                                  {song.category && <span title="Kategori">🏷️ {song.category}</span>}
+                                </div>
                               )}
                             </div>
                           </button>
@@ -838,8 +849,22 @@ export default function Library() {
                             type="text" 
                             value={selectedItem.author || ''}
                             onChange={(e) => setSelectedItem({...selectedItem, author: e.target.value})}
-                            className="w-2/4 text-sm font-semibold text-indigo-900/60 bg-transparent border border-indigo-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-[#9C8346] dark:border-white/20 dark:focus:ring-[#C5A059]"
-                            placeholder="Pencipta Lagu"
+                            className="w-1/4 text-sm font-semibold text-indigo-900/60 bg-transparent border border-indigo-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-[#9C8346] dark:border-white/20 dark:focus:ring-[#C5A059]"
+                            placeholder="Pencipta"
+                          />
+                          <input 
+                            type="text" 
+                            value={selectedItem.key || ''}
+                            onChange={(e) => setSelectedItem({...selectedItem, key: e.target.value})}
+                            className="w-1/6 text-sm font-semibold text-indigo-900/60 bg-transparent border border-indigo-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-[#9C8346] dark:border-white/20 dark:focus:ring-[#C5A059]"
+                            placeholder="Nada (C)"
+                          />
+                          <input 
+                            type="text" 
+                            value={selectedItem.beat || ''}
+                            onChange={(e) => setSelectedItem({...selectedItem, beat: e.target.value})}
+                            className="w-1/6 text-sm font-semibold text-indigo-900/60 bg-transparent border border-indigo-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-[#9C8346] dark:border-white/20 dark:focus:ring-[#C5A059]"
+                            placeholder="Ketuk (4/4)"
                           />
                         </div>
                       )}
@@ -860,7 +885,19 @@ export default function Library() {
                         {selectedItem.category && selectedItem.category !== 'Semua' && (
                           <div className="text-sm font-semibold text-indigo-900/60 dark:text-[#9C8346] flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-indigo-300 dark:bg-[#9C8346]"></span>
-                            {selectedItem.category}
+                            🏷️ {selectedItem.category}
+                          </div>
+                        )}
+                        {selectedItem.key && (
+                          <div className="text-sm font-semibold text-indigo-900/60 dark:text-[#9C8346] flex items-center gap-2" title="Nada Dasar">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-300 dark:bg-[#9C8346]"></span>
+                            🎵 {selectedItem.key}
+                          </div>
+                        )}
+                        {selectedItem.beat && (
+                          <div className="text-sm font-semibold text-indigo-900/60 dark:text-[#9C8346] flex items-center gap-2" title="Ketukan">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-300 dark:bg-[#9C8346]"></span>
+                            ⏱ {selectedItem.beat}
                           </div>
                         )}
                       </div>
@@ -1025,13 +1062,24 @@ export default function Library() {
               </h3>
               <div 
                 className="w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg flex items-center justify-center p-4 md:p-6 border-[4px] md:border-[6px] border-slate-800"
-                style={{
-                  backgroundImage: localStorage.getItem('custom_bg') ? `url('${localStorage.getItem('custom_bg')}')` : 'none',
+                style={getBgUrl(customBg)?.type === 'image' ? {
+                  backgroundImage: getBgUrl(customBg)?.url ? `url('${getBgUrl(customBg)?.url}')` : 'none',
                   backgroundSize: 'cover',
                   backgroundPosition: 'center'
-                }}
+                } : undefined}
               >
-                <p className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl text-lg md:text-xl lg:text-2xl" 
+                {getBgUrl(customBg)?.type === 'video' && (
+                  <video 
+                    src={getBgUrl(customBg)?.url} 
+                    autoPlay 
+                    loop 
+                    muted 
+                    playsInline 
+                    className="absolute inset-0 w-full h-full object-cover z-0"
+                  />
+                )}
+                <div className="absolute inset-0 bg-black/40 z-0 pointer-events-none"></div>
+                <p className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl text-lg md:text-xl lg:text-2xl relative z-10" 
                    style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.8)' }}>
                   {activeSegment !== null ? selectedItem.segments[activeSegment] : "Pilih slide..."}
                 </p>

@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Monitor, Square, Play, Pause, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock } from 'lucide-react';
+import { Monitor, Square, Play, Pause, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock, Layout, Power, FileText, Repeat, Volume2, VolumeX } from 'lucide-react';
 import { callApi } from '../api';
 import { SyncButton } from '../components/SyncButton';
-import { BackgroundPickerModal } from '../components/BackgroundPickerModal';
+import { useBackgrounds } from '../hooks/useBackgrounds';
+import YouTube from 'react-youtube';
+import { BackgroundPickerModal, BackgroundPickerInline } from '../components/BackgroundPickerModal';
 import { saveLocalVideo } from '../utils/imageStorage';
 import { FooterClock } from '../components/FooterClock';
 import { RichEditor, RichEditorRef } from '../components/RichEditor';
@@ -21,7 +23,7 @@ const processText = (raw: string) => {
   return t;
 };
 
-import { splitLongSegments } from '../utils/textSplitter';
+
 import { useLocation, useNavigate } from 'react-router-dom';
 import { globalDisplayWindow, globalIsDisplayOpen, setGlobalDisplayWindow, setGlobalIsDisplayOpen } from '../utils/displayState';
 
@@ -33,6 +35,7 @@ export default function ControlPanel() {
   
   const [playlistId] = useState<string | null>(urlId === 'new' ? 'pl_' + Date.now() : urlId);
   const [playlistDate, setPlaylistDate] = useState(new Date().toISOString().split('T')[0]);
+  const [localVidLoaded, setLocalVidLoaded] = useState(false);
 
   const [playlist, setPlaylist] = useState<any[]>([]);
   const [playlistName, setPlaylistName] = useState('Memuat...');
@@ -46,6 +49,7 @@ export default function ControlPanel() {
   const [isBgModalOpen, setIsBgModalOpen] = useState(false);
   const [isBgPickerOpen, setIsBgPickerOpen] = useState(false);
   const [isLogoModalOpen, setIsLogoModalOpen] = useState(false);
+  const [displayPanelTab, setDisplayPanelTab] = useState<'rt'|'logo'>('rt');
   const [isRunningTextModalOpen, setIsRunningTextModalOpen] = useState(false);
   const [isCountdownModalOpen, setIsCountdownModalOpen] = useState(false);
   const [countdownInputValue, setCountdownInputValue] = useState('5');
@@ -81,12 +85,14 @@ export default function ControlPanel() {
   
   const [liveCountdown, setLiveCountdown] = useState<{id: string, start: number, duration: number} | null>(null);
   const [previewCountdown, setPreviewCountdown] = useState<number | null>(null);
+  const [tempLiveItem, setTempLiveItem] = useState<any>(null);
   
   const [dbList, setDbList] = useState<DatabaseVersion[]>([]);
   const [selectedSongVersion, setSelectedSongVersion] = useState('song_LSEB');
   const [selectedBibleVersion, setSelectedBibleVersion] = useState('bible_TB');
   
   const [currentBg, setCurrentBg] = useState(localStorage.getItem('custom_bg') || '');
+  const { getBgUrl, refreshBackgrounds } = useBackgrounds();
 
   // Initialize DBs on mount
   useEffect(() => {
@@ -98,6 +104,8 @@ export default function ControlPanel() {
 
   // Segment Edit State
   const [isSegmentModalOpen, setIsSegmentModalOpen] = useState(false);
+  const [editItemIndex, setEditItemIndex] = useState<number | null>(null);
+  const [editSegmentIndex, setEditSegmentIndex] = useState<number>(0);
   const [segmentEditIndex, setSegmentEditIndex] = useState<number | null>(null);
   const [tempVisibleSegments, setTempVisibleSegments] = useState<number[]>([]);
 
@@ -112,20 +120,24 @@ export default function ControlPanel() {
   // Add Item States
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchType, setSearchType] = useState<'song'|'bible'>('song');
+  const [searchType, setSearchType] = useState<'song'|'bible'|'announcement'>('song');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [currentBibleBooks, setCurrentBibleBooks] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [annTitle, setAnnTitle] = useState('');
+  const [annSegments, setAnnSegments] = useState<string[]>(['']);
+  const [annActiveSegment, setAnnActiveSegment] = useState(0);
 
   const [isDisplayOpen, setIsDisplayOpen] = useState(globalIsDisplayOpen);
   const displayWindowRef = useRef<Window | null>(globalDisplayWindow);
+  const ytPlayerRef = useRef<any>(null);
 
   useEffect(() => {
     setGlobalDisplayWindow(displayWindowRef.current);
     setGlobalIsDisplayOpen(isDisplayOpen);
   }, [isDisplayOpen]);
 
-  // Broadcast running text on mount so DisplayWindow gets the specific playlist's text
+  // Broadcast running text whenever its state changes
   useEffect(() => {
     const channel = new BroadcastChannel('worship_live_sync');
     channel.postMessage({ 
@@ -133,7 +145,7 @@ export default function ControlPanel() {
       payload: { text: runningText, position: rtPos, speed: rtSpeed, isVisible: isRtVisible, height: rtHeight } 
     });
     channel.close();
-  }, [playlistId]);
+  }, [playlistId, runningText, rtPos, rtSpeed, isRtVisible, rtHeight]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -148,7 +160,7 @@ export default function ControlPanel() {
   }, []);
 
   useEffect(() => {
-    if (isAddItemModalOpen) {
+    if (isRunningTextModalOpen && displayPanelTab === 'add') {
       if (searchType === 'song') {
         getAllLocalSongTitles(selectedSongVersion).then(res => {
           if (Array.isArray(res)) setAllSongTitles(res);
@@ -159,18 +171,9 @@ export default function ControlPanel() {
         }).catch(err => console.error("Gagal memuat daftar kitab", err));
       }
     }
-  }, [isAddItemModalOpen, searchType, selectedSongVersion, selectedBibleVersion]);
+  }, [isRunningTextModalOpen, displayPanelTab, searchType, selectedSongVersion, selectedBibleVersion]);
 
   
-  const [isAutoSplitEnabled, setIsAutoSplitEnabled] = useState(
-    localStorage.getItem('worship_auto_split') !== 'false'
-  );
-  const toggleAutoSplit = () => {
-    const newVal = !isAutoSplitEnabled;
-    setIsAutoSplitEnabled(newVal);
-    localStorage.setItem('worship_auto_split', String(newVal));
-  };
-
   // Debounce ref to prevent spamming the API
   const syncTimeout = useRef<NodeJS.Timeout | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -207,8 +210,7 @@ export default function ControlPanel() {
             }
             return item;
           });
-          const processedItems = splitLongSegments(itemsWithVisibleSegments);
-          setPlaylist(processedItems);
+          setPlaylist(itemsWithVisibleSegments);
         } else {
           setErrorMsg('Playlist kosong atau tidak ditemukan.');
         }
@@ -244,7 +246,7 @@ export default function ControlPanel() {
   }, [liveCountdown, playlist, activeItem, isEditingRundown]);
 
   const [videoProgress, setVideoProgress] = useState<{currentTime: number, duration: number} | null>(null);
-  const [videoState, setVideoState] = useState<'play'|'pause'>('play');
+  const [videoState, setVideoState] = useState<'play'|'pause'>('pause');
 
   useEffect(() => {
     const channel = new BroadcastChannel('worship_live_sync');
@@ -266,21 +268,21 @@ export default function ControlPanel() {
     const targetVid = vid || localVid;
     if (targetVid) {
       if (mode === 'content' && videoState === 'play') {
-        targetVid.play().catch(() => {});
+        targetVid.play().catch(e => console.error("ControlPanel play error:", e));
       } else {
         targetVid.pause();
       }
     }
     
     // Sync preview YouTube iframe state
-    const frame = document.getElementById('preview-youtube') as HTMLIFrameElement;
-    if (frame && frame.contentWindow) {
-      frame.contentWindow.postMessage(JSON.stringify({
-        event: 'command',
-        func: (mode === 'content' && videoState === 'play') ? 'playVideo' : 'pauseVideo'
-      }), '*');
+    if (ytPlayerRef.current) {
+      if (mode === 'content' && videoState === 'play') {
+        ytPlayerRef.current.playVideo?.();
+      } else {
+        ytPlayerRef.current.pauseVideo?.();
+      }
     }
-  }, [mode, videoState]);
+  }, [mode, videoState, localVidLoaded]);
 
   useEffect(() => {
     if (!videoProgress) return;
@@ -292,6 +294,11 @@ export default function ControlPanel() {
       if (Math.abs(targetVid.currentTime - videoProgress.currentTime) > 1.5) {
         targetVid.currentTime = videoProgress.currentTime;
       }
+    }
+    
+    // Sync YouTube iframe
+    if (ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === 'function' && Math.abs(ytPlayerRef.current.getCurrentTime() - videoProgress.currentTime) > 1.5) {
+      ytPlayerRef.current.seekTo?.(videoProgress.currentTime, true);
     }
   }, [videoProgress]);
 
@@ -310,13 +317,8 @@ export default function ControlPanel() {
       targetVid.currentTime = time;
     }
     
-    const frame = document.getElementById('preview-youtube') as HTMLIFrameElement;
-    if (frame && frame.contentWindow) {
-      frame.contentWindow.postMessage(JSON.stringify({
-        event: 'command',
-        func: 'seekTo',
-        args: [time, true]
-      }), '*');
+    if (ytPlayerRef.current) {
+      ytPlayerRef.current.seekTo?.(time, true);
     }
   };
 
@@ -333,15 +335,106 @@ export default function ControlPanel() {
     channel.close();
   };
 
+  const toggleVideoLoop = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (activeItem < 0 || activeItem >= playlist.length) return;
+    const item = playlist[activeItem];
+    if (item.type !== 'video') return;
+    
+    const newVal = !(item.loop);
+    const updatedItem = { ...item, loop: newVal };
+    
+    const newPlaylist = [...playlist];
+    newPlaylist[activeItem] = updatedItem;
+    setPlaylist(newPlaylist);
+    
+    if (activeItem === liveItem) {
+      const stateObj = {
+        playlistId,
+        currentItemId: updatedItem.id,
+        segmentIndex: liveSegment,
+        displayMode: mode,
+        item: updatedItem,
+        updatedAt: Date.now()
+      };
+      const channel = new BroadcastChannel('worship_live_sync');
+      channel.postMessage({ type: 'STATE_UPDATE', state: stateObj });
+      channel.close();
+      
+      if (syncTimeout.current) clearTimeout(syncTimeout.current);
+      syncTimeout.current = setTimeout(async () => {
+        try { await callApi('setLiveState', {}, { method: 'POST', payload: stateObj }); } catch (err) {}
+      }, 200);
+    }
+  };
+
+  const toggleVideoMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (activeItem < 0 || activeItem >= playlist.length) return;
+    const item = playlist[activeItem];
+    if (item.type !== 'video') return;
+    
+    const newVal = !(item.muted);
+    const updatedItem = { ...item, muted: newVal };
+    
+    const newPlaylist = [...playlist];
+    newPlaylist[activeItem] = updatedItem;
+    setPlaylist(newPlaylist);
+    
+    if (activeItem === liveItem) {
+      const stateObj = {
+        playlistId,
+        currentItemId: updatedItem.id,
+        segmentIndex: liveSegment,
+        displayMode: mode,
+        item: updatedItem,
+        updatedAt: Date.now()
+      };
+      const channel = new BroadcastChannel('worship_live_sync');
+      channel.postMessage({ type: 'STATE_UPDATE', state: stateObj });
+      channel.close();
+      
+      if (syncTimeout.current) clearTimeout(syncTimeout.current);
+      syncTimeout.current = setTimeout(async () => {
+        try { await callApi('setLiveState', {}, { method: 'POST', payload: stateObj }); } catch (err) {}
+      }, 200);
+    }
+  };
+
   const formatVideoTime = (seconds: number) => {
     if (isNaN(seconds)) return "0:00";
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
+  // Fungsi push ke Live tapi sementara (tanpa masuk rundown)
+  const pushTempToLive = (item: any, segIdx: number = 0) => {
+    if (!item.type) item.type = item.book ? 'bible' : 'song';
+    const processedItem = item;
+    
+    setTempLiveItem(processedItem);
+    setLiveSegment(segIdx);
+    const dispMode = processedItem.type === 'video' ? 'logo' : 'content';
+    setMode(dispMode);
+    
+    const stateObj = {
+      playlistId: playlistId,
+      currentItemId: processedItem.id || ('temp-' + Date.now()),
+      segmentIndex: segIdx,
+      displayMode: dispMode,
+      item: processedItem,
+      updatedAt: Date.now()
+    };
+    
+    const channel = new BroadcastChannel('worship_live_sync');
+    channel.postMessage({ type: 'STATE_UPDATE', state: stateObj });
+    channel.close();
+  };
+
 
   // Fungsi untuk push state ke GAS
   const pushStateToLive = async (itemIdx: number, segIdx: number, dispMode: string) => {
+    setTempLiveItem(null);
     // Jika mode blank/content, selalu broadcast meski playlist kosong
     if (playlist.length === 0) {
       // Hanya broadcast displayMode saja (tanpa item)
@@ -354,6 +447,8 @@ export default function ControlPanel() {
     setIsSyncing(true);
     setLiveItem(itemIdx);
     setLiveSegment(segIdx);
+    setActiveItem(itemIdx);
+    setActiveSegment(segIdx);
     setErrorMsg('');
     const stateObj = {
       playlistId: playlistId,
@@ -372,6 +467,10 @@ export default function ControlPanel() {
       });
     } else {
       setLiveCountdown(null);
+    }
+
+    if (playlist[itemIdx].type === 'video') {
+      setVideoState('pause');
     }
 
     // 1. Broadcast secara lokal (seketika)
@@ -429,6 +528,7 @@ export default function ControlPanel() {
   const [videoUrlInput, setVideoUrlInput] = useState('');
   const [isVideoUploading, setIsVideoUploading] = useState(false);
   const [isVideoLoop, setIsVideoLoop] = useState(false);
+  const [isVideoMuted, setIsVideoMuted] = useState(false);
 
   const openVideoModal = (index: number | null = null) => {
     if (index !== null) {
@@ -436,13 +536,16 @@ export default function ControlPanel() {
       if (playlist[index]?.type === 'video') {
         setVideoUrlInput(playlist[index].segments[0] || '');
         setIsVideoLoop(!!playlist[index].loop);
+        setIsVideoMuted(!!playlist[index].muted);
       } else {
         setVideoUrlInput('');
         setIsVideoLoop(false);
+        setIsVideoMuted(false);
       }
     } else {
       setVideoUrlInput('');
       setIsVideoLoop(false);
+      setIsVideoMuted(false);
     }
     setIsVideoModalOpen(true);
   };
@@ -454,24 +557,54 @@ export default function ControlPanel() {
       type: 'video',
       title: 'Video / Multimedia',
       segments: [videoUrlInput.trim()],
-      loop: isVideoLoop
+      loop: isVideoLoop,
+      muted: isVideoMuted
     } as any;
     
     let finalPlaylist = [];
+    let targetIdx = 0;
     if (replaceIndex !== null) {
       finalPlaylist = [...playlist];
       finalPlaylist[replaceIndex] = newItem;
+      targetIdx = replaceIndex;
       setPlaylist(finalPlaylist);
       setActiveItem(replaceIndex);
       setReplaceIndex(null);
     } else {
       finalPlaylist = [...playlist, newItem];
+      targetIdx = playlist.length;
       setPlaylist(finalPlaylist);
-      setActiveItem(finalPlaylist.length);
+      setActiveItem(targetIdx);
     }
+    
     setIsVideoModalOpen(false);
     setIsAddItemModalOpen(false);
-    setIsEditingRundown(true);
+    setIsEditingRundown(false); // Selesai edit agar bisa langsung diklik item lain
+
+    // Langsung tampilkan ke layar jemaat dan control panel
+    setMode('content');
+    setLiveItem(targetIdx);
+    setLiveSegment(0);
+    setActiveSegment(0);
+    setVideoState('pause');
+    
+    const stateObj = {
+      playlistId,
+      currentItemId: newItem.id,
+      segmentIndex: 0,
+      displayMode: 'content',
+      item: newItem,
+      updatedAt: Date.now()
+    };
+    
+    const channel = new BroadcastChannel('worship_live_sync');
+    channel.postMessage({ type: 'STATE_UPDATE', state: stateObj });
+    channel.close();
+    
+    if (syncTimeout.current) clearTimeout(syncTimeout.current);
+    syncTimeout.current = setTimeout(async () => {
+      try { await callApi('setLiveState', {}, { method: 'POST', payload: stateObj }); } catch (err) {}
+    }, 200);
   };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -593,7 +726,8 @@ export default function ControlPanel() {
           author: 'Alkitab',
           category: 'Alkitab',
           segments: item.isRange ? item.segments : [item.text],
-          segmentOrder: item.isRange ? item.segments.map((_:any, i:number) => i) : [0]
+          segmentOrder: item.isRange ? item.segments.map((_:any, i:number) => i) : [0],
+          segmentLabels: item.isRange ? item.segmentLabels : [`Ayat ${item.verse}`]
         }));
         setSearchResults(formattedResults);
       }
@@ -621,20 +755,22 @@ export default function ControlPanel() {
     performSearch(searchQuery, searchType);
   };
 
-  const addToRundown = (item: any) => {
+  const addToRundown = (item: any, playLive: boolean = false) => {
     // Add type if missing
     if (!item.type) {
       item.type = item.book ? 'bible' : 'song';
     }
     
     // Process segments for long texts
-    const processedItem = isAutoSplitEnabled ? splitLongSegments([item])[0] : item;
+    const processedItem = item;
     
     const newItem = { ...processedItem, localId: Math.random().toString(36).substr(2, 9) };
+    let targetIndex = 0;
     if (replaceIndex !== null) {
       const finalPlaylist = [...playlist];
       finalPlaylist[replaceIndex] = newItem;
       setPlaylist(finalPlaylist);
+      targetIndex = replaceIndex;
       setReplaceIndex(null);
     } else {
       const finalPlaylist = [...playlist];
@@ -645,15 +781,25 @@ export default function ControlPanel() {
       } else {
         finalPlaylist.push(newItem);
       }
+      targetIndex = newIndex;
       setPlaylist(finalPlaylist);
-      setActiveItem(newIndex);
-      setActiveSegment(0);
     }
+    
+    setActiveItem(targetIndex);
+    setActiveSegment(0);
     setIsAddItemModalOpen(false);
     setIsEditingRundown(true);
+    
+    if (playLive) {
+      const newMode = item.type === 'video' ? 'logo' : 'content';
+      setMode(newMode);
+      setTimeout(() => {
+        pushStateToLive(targetIndex, 0, newMode);
+      }, 50);
+    }
   };
 
-  const handleQuickAddSong = async (id: string) => {
+  const handleQuickAddSong = async (id: string, playLive: boolean = false) => {
     try {
       setIsSearching(true);
       const res = await searchLocalSongs(id, selectedSongVersion);
@@ -661,39 +807,16 @@ export default function ControlPanel() {
         // Find exact match just in case
         const exact = res.find((s: any) => s.id == id) || res[0];
         exact.type = 'song'; // Ensure type is explicitly set
-        const processed = isAutoSplitEnabled ? splitLongSegments([exact])[0] : exact;
+        const processed = exact;
         
-        // Add to rundown
-        let newIndex = playlist.length;
-        if (replaceIndex !== null) {
-          newIndex = replaceIndex;
-        } else if (activeItem !== null && activeItem >= 0 && activeItem < playlist.length) {
-          newIndex = activeItem + 1;
+        if (playLive) {
+          pushTempToLive(processed);
+        } else {
+          addToRundown(processed);
         }
-
-        setPlaylist(prev => {
-          let newPlaylist = [...prev];
-          if (replaceIndex !== null) {
-            newPlaylist[replaceIndex] = processed;
-          } else {
-            if (activeItem !== null && activeItem >= 0 && activeItem < newPlaylist.length) {
-              newPlaylist.splice(newIndex, 0, processed);
-            } else {
-              newPlaylist.push(processed);
-            }
-          }
-          return newPlaylist;
-        });
         
-        setReplaceIndex(null);
-        setIsAddItemModalOpen(false);
         setSearchQuery('');
         setSearchResults([]);
-        
-        // Make it active immediately
-        setActiveItem(newIndex);
-        setActiveSegment(0);
-        setIsEditingRundown(true);
       }
     } catch (err) {
       console.error(err);
@@ -768,15 +891,8 @@ export default function ControlPanel() {
 
   useEffect(() => {
     if (!isEditingRundown && activeItem !== null && playlist[activeItem]) {
-      let currentMode = mode;
       if (prevActiveItemRef.current !== activeItem) {
-        if (playlist[activeItem].type === 'video') {
-          setMode('logo');
-          currentMode = 'logo';
-        } else {
-          setMode('content');
-          currentMode = 'content';
-        }
+        setMode('content');
         prevActiveItemRef.current = activeItem;
       }
       
@@ -784,8 +900,6 @@ export default function ControlPanel() {
         isInitialMount.current = false;
         return;
       }
-
-      pushStateToLive(activeItem, activeSegment, currentMode);
     }
   }, [activeItem, activeSegment, mode, playlist, isEditingRundown]);
 
@@ -820,10 +934,38 @@ export default function ControlPanel() {
       // Sinkronisasi data ke display yang baru dibuka setelah delay singkat
       setTimeout(() => {
         const channel = new BroadcastChannel('worship_live_sync');
+        
+        // 1. Sync State
+        const activeItemData = tempLiveItem ? tempLiveItem : playlist[liveItem];
+        if (activeItemData) {
+          const stateObj = {
+            playlistId: playlistId,
+            currentItemId: activeItemData.id || ('temp-' + Date.now()),
+            segmentIndex: liveSegment,
+            displayMode: mode,
+            item: activeItemData,
+            updatedAt: Date.now()
+          };
+          channel.postMessage({ type: 'STATE_UPDATE', state: stateObj });
+        }
+
+        // 2. Sync Running Text
         channel.postMessage({ 
           type: 'RUNNING_TEXT_UPDATE', 
           payload: { text: runningText, position: rtPos, speed: rtSpeed, isVisible: isRtVisible, height: rtHeight } 
         });
+
+        // 3. Sync Background
+        channel.postMessage({ type: 'BG_UPDATE', bg: currentBg || '' });
+
+        // 4. Sync Logos
+        const savedLogos = localStorage.getItem('worship_logos_array');
+        if (savedLogos) {
+          try {
+            channel.postMessage({ type: 'LOGOS_UPDATE', payload: JSON.parse(savedLogos) });
+          } catch(e) {}
+        }
+
         channel.close();
       }, 1500);
     }
@@ -834,9 +976,11 @@ export default function ControlPanel() {
       if (bgUrl === null) {
         localStorage.removeItem('custom_bg');
         setCurrentBg('');
+        refreshBackgrounds();
       } else {
         localStorage.setItem('custom_bg', bgUrl);
         setCurrentBg(bgUrl);
+        refreshBackgrounds();
       }
       
       // Broadcast custom background
@@ -860,14 +1004,14 @@ export default function ControlPanel() {
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert('Ukuran file logo terlalu besar. Maksimal 2MB.');
+      if (file.size > 3.5 * 1024 * 1024) {
+        alert('Ukuran file logo terlalu besar. Maksimal 3.5MB.');
         return;
       }
       const reader = new FileReader();
       reader.onload = (event) => {
         const base64 = event.target?.result as string;
-        const newLogo = { id: 'logo-' + Date.now(), url: base64, x: 50, y: 50, scale: 1 };
+        const newLogo = { id: 'logo-' + Date.now(), url: base64, x: 50, y: 50, scale: 1, enabled: true };
         const newLogos = [...logos, newLogo];
         setLogos(newLogos);
         broadcastLogos(newLogos);
@@ -903,35 +1047,84 @@ export default function ControlPanel() {
     channel.close();
   };
 
-  const handleNext = () => {
-    if (playlist.length === 0) return;
+  const getNextSlideInfo = () => {
+    if (tempLiveItem) {
+      const segs = tempLiveItem.segments || [];
+      if (liveSegment < segs.length - 1) {
+        return { item: -2, segment: liveSegment + 1 };
+      }
+      return { item: -1, segment: -1 };
+    }
+    if (playlist.length === 0) return { item: -1, segment: -1 };
     const item = playlist[activeItem];
+    if (!item) return { item: -1, segment: -1 };
     const visible = item.visibleSegments || [...Array(item.segments?.length || 1).keys()];
     const currentIdx = visible.indexOf(activeSegment);
 
     if (currentIdx !== -1 && currentIdx < visible.length - 1) {
-      setActiveSegment(visible[currentIdx + 1]);
+      return { item: activeItem, segment: visible[currentIdx + 1] };
     } else if (activeItem < playlist.length - 1) {
-      setActiveItem(i => i + 1);
-      const nextItem = playlist[activeItem + 1];
+      const nextItemIdx = activeItem + 1;
+      const nextItem = playlist[nextItemIdx];
       const nextVisible = nextItem.visibleSegments || [...Array(nextItem.segments?.length || 1).keys()];
-      setActiveSegment(nextVisible.length > 0 ? nextVisible[0] : 0);
+      const nextSeg = nextVisible.length > 0 ? nextVisible[0] : 0;
+      return { item: nextItemIdx, segment: nextSeg };
+    }
+    return { item: -1, segment: -1 };
+  };
+
+  const handleNext = () => {
+    if (tempLiveItem) {
+      const segs = tempLiveItem.segments || [];
+      if (liveSegment < segs.length - 1) {
+        pushTempToLive(tempLiveItem, liveSegment + 1);
+      }
+      return;
+    }
+    if (playlist.length === 0) return;
+    const item = playlist[activeItem];
+    const visible = item?.visibleSegments || [...Array(item?.segments?.length || 1).keys()];
+    const currentIdx = visible.indexOf(activeSegment);
+
+    if (currentIdx !== -1 && currentIdx < visible.length - 1) {
+      const nextSeg = visible[currentIdx + 1];
+      setActiveSegment(nextSeg);
+      pushStateToLive(activeItem, nextSeg, mode);
+    } else if (activeItem < playlist.length - 1) {
+      const nextItemIdx = activeItem + 1;
+      setActiveItem(nextItemIdx);
+      const nextItem = playlist[nextItemIdx];
+      const nextVisible = nextItem?.visibleSegments || [...Array(nextItem?.segments?.length || 1).keys()];
+      const nextSeg = nextVisible.length > 0 ? nextVisible[0] : 0;
+      setActiveSegment(nextSeg);
+      pushStateToLive(nextItemIdx, nextSeg, 'content');
     }
   };
 
   const handlePrev = () => {
+    if (tempLiveItem) {
+      if (liveSegment > 0) {
+        pushTempToLive(tempLiveItem, liveSegment - 1);
+      }
+      return;
+    }
     if (playlist.length === 0) return;
     const item = playlist[activeItem];
-    const visible = item.visibleSegments || [...Array(item.segments?.length || 1).keys()];
+    const visible = item?.visibleSegments || [...Array(item?.segments?.length || 1).keys()];
     const currentIdx = visible.indexOf(activeSegment);
 
     if (currentIdx > 0) {
-      setActiveSegment(visible[currentIdx - 1]);
+      const prevSeg = visible[currentIdx - 1];
+      setActiveSegment(prevSeg);
+      pushStateToLive(activeItem, prevSeg, mode);
     } else if (activeItem > 0) {
-      setActiveItem(i => i - 1);
-      const prevItem = playlist[activeItem - 1];
-      const prevVisible = prevItem.visibleSegments || [...Array(prevItem.segments?.length || 1).keys()];
-      setActiveSegment(prevVisible.length > 0 ? prevVisible[prevVisible.length - 1] : 0);
+      const prevItemIdx = activeItem - 1;
+      setActiveItem(prevItemIdx);
+      const prevItem = playlist[prevItemIdx];
+      const prevVisible = prevItem?.visibleSegments || [...Array(prevItem?.segments?.length || 1).keys()];
+      const prevSeg = prevVisible.length > 0 ? prevVisible[prevVisible.length - 1] : 0;
+      setActiveSegment(prevSeg);
+      pushStateToLive(prevItemIdx, prevSeg, 'content');
     }
   };
 
@@ -988,478 +1181,728 @@ export default function ControlPanel() {
 
 
   const renderDisplayBox = (itemIdx: number, segIdx: number, isLiveBox: boolean) => {
-    const isEditView = !isLiveBox && isEditingRundown;
+    const itemData = ((isLiveBox && tempLiveItem) || itemIdx === -2) ? tempLiveItem : playlist[itemIdx];
+    if (!itemData) return <div className="w-full h-full bg-black rounded-xl overflow-hidden relative flex flex-col items-center justify-center pointer-events-none"></div>;
     return (
-      <div className={`glass-panel flex-1 p-4 md:p-6 flex flex-col items-center justify-center relative shadow-lg overflow-hidden border-white/50 ${isLiveBox ? 'bg-gradient-to-br from-red-500/10 to-transparent border-red-500/30' : 'bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/30'}`}>
-        {isEditingRundown && (
-           <div className={`absolute top-2 left-3 text-white text-xs px-2 py-0.5 rounded font-bold uppercase tracking-wider shadow-sm z-50 ${isLiveBox ? 'bg-red-500' : 'bg-blue-500'}`}>
-             {isLiveBox ? '🔴 Live Screen' : '✏️ Preview & Edit'}
-           </div>
+      <div className="w-full h-full bg-black rounded-xl overflow-hidden relative flex flex-col items-center justify-center pointer-events-none"
+        style={getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.type === 'image' ? { 
+          containerType: 'inline-size',
+          backgroundImage: getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.url ? `url('${getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.url}')` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        } : { containerType: 'inline-size' }}
+      >
+        {getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.type === 'video' && (
+          <video 
+            src={getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.url} 
+            autoPlay 
+            loop 
+            muted 
+            playsInline 
+            className="absolute inset-0 w-full h-full object-cover z-0"
+          />
         )}
-              <div className="text-center w-full flex flex-col items-center h-full max-h-full overflow-hidden">
-                {((playlist[itemIdx]?.type === 'announcement' || playlist[itemIdx]?.type === 'countdown') && isEditView) ? (
-                  <input 
-                    className="text-xl md:text-3xl font-heading font-bold text-indigo-950 mb-4 md:mb-6 drop-shadow-sm bg-white border-2 border-indigo-300 rounded-full px-4 py-1.5 md:px-6 md:py-2 shadow-inner text-center w-full max-w-xl focus:outline-none focus:border-indigo-500"
-                    value={playlist[itemIdx]?.title || ''}
-                    onChange={(e) => {
-                      setPlaylist(prev => {
-                        const newPlaylist = [...prev];
-                        newPlaylist[itemIdx] = { ...newPlaylist[itemIdx], title: e.target.value };
-                        return newPlaylist;
-                      });
-                    }}
-                    placeholder="Judul Pengumuman / Teks Bebas"
-                  />
-                ) : (
-                  <h3 className="text-xl md:text-3xl font-heading font-bold text-indigo-950 mb-3 md:mb-4 drop-shadow-sm bg-white/30 inline-block px-4 py-1.5 md:px-6 md:py-2 rounded-full border border-white/40">{playlist[itemIdx]?.title}</h3>
-                )}
+        <div className="absolute inset-0 bg-black/40 z-0"></div>
+
+        {/* Video Preview */}
+        {mode === 'content' && itemData?.type === 'video' && itemData?.segments[segIdx] && (
+          <div className="absolute inset-0 z-[5] bg-black flex items-center justify-center">
+            {(() => {
+              const url = itemData.segments[segIdx];
+              const isPlay = mode === 'content';
+              let videoId = '';
+              if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                  if (url.includes('v=')) {
+                    videoId = url.split('v=')[1].split('&')[0];
+                  } else if (url.includes('youtu.be/')) {
+                    videoId = url.split('youtu.be/')[1].split('?')[0];
+                  } else if (url.includes('youtube.com/embed/') || url.includes('youtube-nocookie.com/embed/')) {
+                    videoId = url.split('embed/')[1].split('?')[0];
+                  }
                 
-                {/* Segment buttons moved to bottom bar */}
+                if (videoId) {
+                  return (
+                    <YouTube
+                      videoId={videoId}
+                      opts={{
+                        height: '100%',
+                        width: '100%',
+                        playerVars: { autoplay: isPlay ? 1 : 0, mute: 1, controls: 0, disablekb: 1, enablejsapi: 1, loop: itemData.loop ? 1 : 0, playlist: itemData.loop ? videoId : undefined }
+                      }}
+                      className="w-full h-full object-contain"
+                      onReady={(e: any) => ytPlayerRef.current = e.target}
+                    />
+                  );
+                }
+                return <iframe id="preview-youtube" key={url} className="w-full h-full object-contain" src={url} allow="autoplay; encrypted-media" tabIndex={-1} />;
+              }
+              if (url.startsWith('local_vid_')) {
+                return (
+                  <div id="preview-video-container" className="w-full h-full">
+                    <LocalVideoPlayer key={`${url}-${mode}`} id={url} loop={itemData.loop || false} autoPlay={false} muted={true} onLoadedData={() => setLocalVidLoaded(v => !v)} />
+                  </div>
+                );
+              }
+              return <video id="preview-video" key={`${url}-${mode}`} className="w-full h-full object-contain" src={url} muted={true} autoPlay={false} loop={itemData.loop || false} />;
+            })()}
+          </div>
+        )}
+        
+        {/* Safe Area Container untuk Logo, Judul, dan Teks agar tidak tertimpa Running Text */}
+        <div 
+          className="absolute left-0 right-0 z-20 flex flex-col items-center justify-center pointer-events-none transition-all duration-500"
+          style={{
+            top: isRtVisible && rtPos === 'top' ? `${((rtHeight || 7) / 56.25 * 100)}%` : '0',
+            bottom: isRtVisible && rtPos === 'bottom' ? `${((rtHeight || 7) / 56.25 * 100)}%` : '0'
+          }}
+        >
+        
+        {/* Multi-Logos */}
+        {logos.length > 0 && itemData?.type !== 'countdown' && (
+          <div className="absolute inset-0 pointer-events-none z-[60]">
+            {logos.filter(l => l.enabled !== false).map(logo => (
+              <img 
+                key={logo.id}
+                src={logo.url} 
+                style={{ 
+                  width: `${8 * logo.scale}%`,
+                  ...(logo.x < 50 ? { left: `${logo.x}%` } : { right: `${100 - logo.x}%` }),
+                  ...(logo.y < 50 ? { top: `${logo.y}%` } : { bottom: `${100 - logo.y}%` }),
+                }}
+                className="absolute h-auto opacity-70 z-10"
+                alt="Logo" 
+              />
+            ))}
+          </div>
+        )}
 
-                <div className="w-full flex-1 min-h-0 flex items-center justify-center relative z-10 transition-all duration-300 animate-fade-in" key={`${itemIdx}-${segIdx}-${mode}`}>
-                  {mode === 'blank' ? <span className="text-indigo-900/20 dark:text-slate-200/20 text-2xl font-bold italic">Layar Kosong (Blank)</span> : (
-                    <div className="w-full flex flex-col lg:flex-row gap-4 md:gap-6 relative text-left h-full flex-1 min-h-0">
-                      <div className="w-full lg:w-1/2 relative flex flex-col justify-center h-full min-h-0">
-                        {(playlist[itemIdx]?.type === 'video') ? (
-                        <div className="flex flex-col items-center gap-5">
-                          <div className="flex flex-col items-center">
-                            <Monitor size={48} className="text-indigo-900/40 dark:text-slate-400 mb-2 md:mb-2" />
-                            <span className="text-indigo-900/80 dark:text-slate-200 font-bold text-lg md:text-xl">Kontrol Video</span>
-                          </div>
-                          <div className="flex gap-4">
-                            {mode !== 'content' ? (
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  pushStateToLive(itemIdx, 0, 'content');
-                                  setMode('content');
-                                  const channel = new BroadcastChannel('worship_live_sync');
-                                  channel.postMessage({ type: 'VIDEO_PLAY' });
-                                  channel.close();
-                                  setVideoState('play');
-                                }}
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md font-bold transition-all hover:scale-105 active:scale-95"
-                              >
-                                <Play size={20} className="fill-current" /> Mulai Tampil
-                              </button>
-                            ) : (
-                              <button 
-                                onClick={toggleVideoPlay}
-                                className={`${videoState === 'play' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-green-500 hover:bg-green-600'} text-white px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md font-bold transition-all hover:scale-105 active:scale-95`}
-                              >
-                                {videoState === 'play' ? <><Pause size={20} className="fill-current" /> Jeda</> : <><Play size={20} className="fill-current" /> Lanjut</>}
-                              </button>
-                            )}
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMode('logo');
-                              }}
-                              className="bg-rose-500 hover:bg-rose-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md font-bold transition-all hover:scale-105 active:scale-95"
-                            >
-                              <Square size={20} className="fill-current" /> Hentikan
-                            </button>
-                          </div>
-                          <label className="flex items-center gap-3 cursor-pointer mt-2 bg-white/70 dark:bg-slate-800/80 px-5 py-3 rounded-xl border border-indigo-100 dark:border-slate-700 shadow-sm transition-colors hover:bg-white dark:hover:bg-slate-700">
-                            <input 
-                              type="checkbox" 
-                              checked={!!playlist[itemIdx]?.loop} 
-                              onChange={(e) => {
-                                const val = e.target.checked;
-                                setPlaylist(prev => {
-                                  const newPl = [...prev];
-                                  newPl[itemIdx] = { ...newPl[itemIdx], loop: val };
-                                  return newPl;
-                                });
-                              }}
-                              className="w-5 h-5 rounded border-indigo-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-slate-900" 
-                            />
-                            <span className="text-indigo-950 dark:text-slate-200 font-bold select-none">Putar berulang-ulang (Loop)</span>
-                          </label>
-                          <label className="flex items-center gap-3 cursor-pointer mt-2 bg-white/70 dark:bg-slate-800/80 px-5 py-3 rounded-xl border border-indigo-100 dark:border-slate-700 shadow-sm transition-colors hover:bg-white dark:hover:bg-slate-700">
-                            <input 
-                              type="checkbox" 
-                              checked={!!playlist[itemIdx]?.muted} 
-                              onChange={(e) => {
-                                const val = e.target.checked;
-                                setPlaylist(prev => {
-                                  const newPl = [...prev];
-                                  newPl[itemIdx] = { ...newPl[itemIdx], muted: val };
-                                  return newPl;
-                                });
-                              }}
-                              className="w-5 h-5 rounded border-indigo-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-slate-900" 
-                            />
-                            <span className="text-indigo-950 dark:text-slate-200 font-bold select-none">Bisukan Suara (Mute)</span>
-                          </label>
-                          {videoProgress && videoProgress.duration > 0 && !isEditView && (
-                            <div className="w-full mt-2 flex items-center gap-3 bg-white/80 dark:bg-slate-800/80 p-3 rounded-xl border border-indigo-100 dark:border-slate-700 shadow-sm">
-                              <span className="text-xs font-mono font-bold text-indigo-900/80 dark:text-slate-300">{formatVideoTime(videoProgress.currentTime)}</span>
-                              <input 
-                                type="range" 
-                                min="0" 
-                                max={videoProgress.duration} 
-                                step="0.1"
-                                value={videoProgress.currentTime}
-                                onChange={handleVideoSeek}
-                                className="flex-1 h-2 bg-indigo-200 dark:bg-slate-700 rounded-lg cursor-pointer appearance-none"
-                              />
-                              <span className="text-xs font-mono font-bold text-indigo-900/80 dark:text-slate-300">{formatVideoTime(videoProgress.duration)}</span>
-                            </div>
-                          )}
-                        </div>
-                      ) : (playlist[itemIdx]?.type === 'countdown') ? (
-                        <div className="flex flex-col items-center w-full">
-                          {isEditView ? (
-                            <div className="flex gap-4 items-center justify-center">
-                              <div className="flex flex-col items-center">
-                                <input 
-                                  type="number"
-                                  className="w-full text-center bg-white/80 backdrop-blur-md border-2 border-indigo-300 rounded-2xl p-3 md:p-4 text-3xl md:text-4xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 shadow-inner font-medium text-slate-800 transition-all max-w-[120px]"
-                                  value={Math.floor(parseInt(playlist[itemIdx]?.segments[segIdx] || '0') / 60)}
-                                  onChange={(e) => {
-                                    setPlaylist(prev => {
-                                      const newPlaylist = [...prev];
-                                      newPlaylist[itemIdx] = {
-                                        ...newPlaylist[itemIdx],
-                                        segments: [...newPlaylist[itemIdx].segments]
-                                      };
-                                      const currentSec = parseInt(newPlaylist[itemIdx].segments[segIdx] || '0') % 60;
-                                      newPlaylist[itemIdx].segments[segIdx] = String(Number(e.target.value) * 60 + currentSec);
-                                      return newPlaylist;
-                                    });
-                                  }}
-                                />
-                                <span className="text-indigo-900/60 mt-2 text-xs md:text-sm font-bold uppercase tracking-wider">Menit</span>
-                              </div>
-                              <div className="text-4xl font-bold text-indigo-900/40 pb-6">:</div>
-                              <div className="flex flex-col items-center">
-                                <input 
-                                  type="number"
-                                  className="w-full text-center bg-white/80 backdrop-blur-md border-2 border-indigo-300 rounded-2xl p-3 md:p-4 text-3xl md:text-4xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 shadow-inner font-medium text-slate-800 transition-all max-w-[120px]"
-                                  value={parseInt(playlist[itemIdx]?.segments[segIdx] || '0') % 60}
-                                  onChange={(e) => {
-                                    setPlaylist(prev => {
-                                      const newPlaylist = [...prev];
-                                      newPlaylist[itemIdx] = {
-                                        ...newPlaylist[itemIdx],
-                                        segments: [...newPlaylist[itemIdx].segments]
-                                      };
-                                      const currentMin = Math.floor(parseInt(playlist[itemIdx].segments[segIdx] || '0') / 60);
-                                      newPlaylist[itemIdx].segments[segIdx] = String(currentMin * 60 + Number(e.target.value));
-                                      return newPlaylist;
-                                    });
-                                  }}
-                                />
-                                <span className="text-indigo-900/60 mt-2 text-xs md:text-sm font-bold uppercase tracking-wider">Detik</span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="text-6xl font-mono text-indigo-900 bg-white/50 px-10 py-6 rounded-3xl border border-indigo-200 shadow-inner">
-                              {(() => {
-                                const displaySecs = previewCountdown !== null ? previewCountdown : parseInt(playlist[itemIdx]?.segments[0] || '0');
-                                return `${Math.floor(displaySecs / 60).toString().padStart(2, '0')}:${(displaySecs % 60).toString().padStart(2, '0')}`;
-                              })()}
-                            </div>
-                          )}
-                        </div>
-                      ) : isEditView ? (
-                              <div className="w-full h-full flex flex-col relative min-h-0">
-                                {/* Toolbar Warna dipindahkan ke bawah */}
-                                <RichEditor
-                                  ref={editorRef}
-                                  className="w-full flex-1 bg-white/80 backdrop-blur-md border border-indigo-200 rounded-xl p-4 text-lg md:text-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 shadow-inner text-indigo-900 whitespace-pre-wrap leading-relaxed transition-all text-center overflow-y-auto"
-                                  value={playlist[itemIdx]?.segments[segIdx] || ''}
-                                  onChange={(val) => {
-                                    setPlaylist(prev => {
-                                      const newPlaylist = [...prev];
-                                      newPlaylist[itemIdx] = {
-                                        ...newPlaylist[itemIdx],
-                                        segments: [...newPlaylist[itemIdx].segments]
-                                      };
-                                      newPlaylist[itemIdx].segments[segIdx] = val;
-                                      return newPlaylist;
-                                    });
-                                  }}
-                                  onSelectChange={setHasSelection}
-                                  placeholder="Ketik teks di sini (blok teks untuk mewarnai)..."
-                                />
-                                <div className="flex justify-between items-center mt-2 gap-2">
-                                  {/* Toolbar Warna */}
-                                  <div className={`flex flex-wrap gap-1.5 transition-all duration-200 ${
-                                    hasSelection ? 'opacity-100 pointer-events-auto' : 'opacity-50 pointer-events-none grayscale'
-                                  }`}>
-                                    <button onClick={() => wrapText('merah')} className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600 transition shadow-sm">Merah</button>
-                                    <button onClick={() => wrapText('kuning')} className="px-3 py-1.5 bg-yellow-400 text-slate-900 rounded-lg text-xs font-bold hover:bg-yellow-500 transition shadow-sm">Kuning</button>
-                                    <button onClick={() => wrapText('hijau')} className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-xs font-bold hover:bg-green-600 transition shadow-sm">Hijau</button>
-                                    <button onClick={() => wrapText('biru')} className="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-xs font-bold hover:bg-blue-600 transition shadow-sm">Biru</button>
-                                    <button onClick={() => wrapText('ungu')} className="px-3 py-1.5 bg-purple-500 text-white rounded-lg text-xs font-bold hover:bg-purple-600 transition shadow-sm">Ungu</button>
-                                    <button onClick={() => wrapText('oranye')} className="px-3 py-1.5 bg-orange-400 text-white rounded-lg text-xs font-bold hover:bg-orange-500 transition shadow-sm">Oranye</button>
-                                    <button onClick={() => wrapText('putih')} className="px-3 py-1.5 bg-white text-slate-900 border border-slate-300 rounded-lg text-xs font-bold hover:bg-slate-100 transition shadow-sm">Putih</button>
-                                    <button onClick={() => wrapText('hitam')} className="px-3 py-1.5 bg-black text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition shadow-sm">Hitam</button>
-                                    <button onClick={() => { if (editorRef.current) editorRef.current.removeFormat(); }} className="px-3 py-1.5 bg-slate-200 text-slate-800 rounded-lg text-xs font-bold hover:bg-slate-300 transition shadow-sm" title="Kembalikan ke warna asli">Default</button>
-                                  </div>
+        {/* Title */}
+        {mode === 'content' && itemData?.title && itemData?.type !== 'video' && itemData?.type !== 'countdown' && (
+          <h2 
+            className="absolute left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-20 transition-all duration-500"
+            style={{
+              top: '6%',
+              fontSize: '3.5cqw',
+              textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)'
+            }}
+          >
+            {itemData?.title}
+          </h2>
+        )}
 
-                                  <button 
-                                    onClick={() => setIsBgPickerOpen(true)}
-                                    className="flex items-center gap-1.5 text-xs md:text-sm font-semibold text-indigo-700 bg-white/50 hover:bg-white/80 px-3 py-1.5 rounded-lg border border-indigo-200 shadow-sm transition shrink-0"
-                                  >
-                                    <ImageIcon size={14} /> 
-                                    {playlist[itemIdx]?.segmentBackgrounds?.[segIdx] ? 'Ubah Background' : 'Set Background'}
-                                  </button>
-                                </div>
-                              </div>
-                            ) : playlist[itemIdx]?.segments[segIdx] ? (
-                              <div className="w-full h-full flex flex-col justify-center overflow-hidden bg-white/50 dark:bg-slate-800/50 rounded-xl p-6 border border-white/40 shadow-sm">
-                                <div 
-                                  className="text-lg md:text-xl whitespace-pre-wrap leading-relaxed text-indigo-900 dark:text-slate-200 text-center w-full"
-                                  dangerouslySetInnerHTML={{ __html: processText(playlist[itemIdx]?.segments[segIdx]) }} 
-                                />
-                              </div>
-                            ) : (
-                              <span className="text-indigo-900/30 italic text-center w-full">Lirik tidak tersedia</span>
-                            )}
-                          </div>
-                          <div className="w-full lg:w-1/2 flex flex-col justify-start items-center h-full min-h-0">
-                            <h4 className="text-sm font-bold text-indigo-900/60 dark:text-slate-400 uppercase mb-2 flex items-center gap-2 shrink-0"><Monitor size={14} /> Live Preview</h4>
-                            <div 
-                              className="w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg flex flex-col items-center justify-center p-2 md:p-4 border-[4px] md:border-[6px] border-slate-800 max-h-full shrink-0"
-                              style={{ 
-                                containerType: 'inline-size',
-                                backgroundImage: currentBg ? `url('${currentBg}')` : 'none',
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center'
-                              }}
-                            >
-                              <div className="absolute inset-0 bg-black/40 z-0 pointer-events-none"></div>
+        {/* Content Container */}
+        {itemData?.type !== 'video' && (
+          <div className="relative z-10 flex flex-col items-center justify-center w-full mt-[10%] mb-[8%] px-[8%]">
+            {itemData?.type === 'countdown' ? (
+               <div className="text-white text-center font-bold tracking-widest leading-none drop-shadow-xl w-full font-mono" 
+                    style={{ textShadow: '0 10px 30px rgba(0,0,0,0.8), 0 0 40px rgba(255,255,255,0.2)', fontSize: '18cqw' }}>
+                 {(() => {
+                   const displaySecs = previewCountdown !== null ? previewCountdown : parseInt(itemData?.segments[0] || '0');
+                   return `${Math.floor(displaySecs / 60).toString().padStart(2, '0')}:${(displaySecs % 60).toString().padStart(2, '0')}`;
+                 })()}
+               </div>
+            ) : mode === 'content' ? (
+               <>
+                 <div 
+                   className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl w-full animate-fade-in" 
+                   style={{ 
+                     textShadow: '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)', 
+                     fontSize: (() => {
+                       const t = itemData?.segments[segIdx] || '';
+                      if (t.length > 350) return '3cqw';
+                      if (t.length > 250) return '3.5cqw';
+                      if (t.length > 180) return '4cqw';
+                      if (t.length > 120) return '4.5cqw';
+                      if (t.length > 70) return '5.5cqw';
+                      if (t.length > 40) return '6.5cqw';
+                      return '7.5cqw';
+                     })(),
+                     lineHeight: '1.4'
+                   }}
+                   dangerouslySetInnerHTML={{ __html: processText(itemData?.segments[segIdx] || '') }}
+                 />
+                 
+                 {/* Subtitle (Bait) di bawah isi */}
+                 <div 
+                   className="text-yellow-300 font-bold mt-[1.5cqw] tracking-widest uppercase opacity-80 animate-fade-in"
+                   style={{
+                     fontSize: '1.5cqw',
+                     textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)',
+                     minHeight: '2cqw'
+                   }}
+                 >
+                   {(() => {
+                     let label = itemData?.segmentLabels?.[segIdx] || '';
+                     if (itemData?.type === 'bible' && !label) {
+                         const m = itemData.title?.match(/(.+?)\s*:\s*(\d+)/);
+                         label = m ? `Ayat ${parseInt(m[2], 10) + segIdx}` : `Ayat ${segIdx + 1}`;
+                     }
+                     if (itemData?.type === 'song' && !label) label = '•';
+                     if (itemData?.type === 'song' && label.startsWith('Slide ')) label = label.replace('Slide ', 'Bait ');
+                     return label;
+                   })()}
+                 </div>
+               </>
+            ) : logos.filter(l => l.enabled !== false).length > 0 ? (
+               <img 
+                 src={logos.filter(l => l.enabled !== false)[0].url} 
+                 style={{ width: `${33 * logos.filter(l => l.enabled !== false)[0].scale}%`, maxWidth: `${400 * logos.filter(l => l.enabled !== false)[0].scale}px` }}
+                 className="object-contain animate-fade-in drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]" 
+                 alt="Logo" 
+               />
+            ) : null}
+          </div>
+        )}
 
-                              {/* Video Preview */}
-                              {playlist[itemIdx]?.type === 'video' && playlist[itemIdx]?.segments[segIdx] && (
-                                <div className="absolute inset-0 z-[5] bg-black pointer-events-none flex items-center justify-center">
-                                  {(() => {
-                                    const url = playlist[itemIdx].segments[segIdx];
-                                    const isPlay = mode === 'content' ? '1' : '0';
-                                    let embedUrl = '';
-                                    let videoId = '';
-                                    if (url.includes('youtube.com') || url.includes('youtu.be')) {
-                                      if (url.includes('list=')) {
-                                        const listId = url.split('list=')[1].split('&')[0];
-                                        if (url.includes('v=')) {
-                                          videoId = url.split('v=')[1].split('&')[0];
-                                        }
-                                        embedUrl = videoId 
-                                          ? `https://www.youtube-nocookie.com/embed/${videoId}?list=${listId}&autoplay=${isPlay}&mute=1&controls=0&enablejsapi=1`
-                                          : `https://www.youtube-nocookie.com/embed/videoseries?list=${listId}&autoplay=${isPlay}&mute=1&controls=0&enablejsapi=1`;
-                                      } else if (url.includes('youtube.com/watch?v=')) {
-                                        videoId = url.split('v=')[1].split('&')[0];
-                                        embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=${isPlay}&mute=1&controls=0&enablejsapi=1`;
-                                      } else if (url.includes('youtu.be/')) {
-                                        videoId = url.split('youtu.be/')[1].split('?')[0];
-                                        embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=${isPlay}&mute=1&controls=0&enablejsapi=1`;
-                                      } else if (url.includes('youtube.com/embed/') || url.includes('youtube-nocookie.com/embed/')) {
-                                        embedUrl = url.includes('?') ? url.replace(/autoplay=[01]/, `autoplay=${isPlay}`) : `${url}?autoplay=${isPlay}`;
-                                        if (!embedUrl.includes('autoplay=')) embedUrl += `&autoplay=${isPlay}`;
-                                        embedUrl = embedUrl.replace('youtube.com', 'youtube-nocookie.com');
-                                        if (!embedUrl.includes('mute=1')) embedUrl += '&mute=1';
-                                        if (!embedUrl.includes('controls=0')) embedUrl += '&controls=0';
-                                        if (!embedUrl.includes('enablejsapi=1')) embedUrl += '&enablejsapi=1';
-                                      } else {
-                                        embedUrl = url;
-                                      }
-                                      return <iframe id="preview-youtube" key={embedUrl} className="w-full h-full object-contain pointer-events-none" src={embedUrl} allow="autoplay; encrypted-media" tabIndex={-1} />;
-                                    }
-                                    if (url.startsWith('local_vid_')) {
-                                      return (
-                                        <div id="preview-video-container" className="w-full h-full">
-                                          <LocalVideoPlayer key={`${url}-${mode}`} id={url} loop={playlist[itemIdx].loop || false} autoPlay={mode === 'content' && videoState === 'play'} muted={true} />
-                                        </div>
-                                      );
-                                    }
-                                    return <video id="preview-video" key={`${url}-${mode}`} className="w-full h-full object-contain pointer-events-none" src={url} muted={true} autoPlay={mode === 'content' && videoState === 'play'} loop={playlist[itemIdx].loop || false} />;
-                                  })()}
-                                </div>
-                              )}
-                              
-                              {/* Multi-Logos */}
-                              {logos.length > 0 && playlist[itemIdx]?.type !== 'countdown' && (
-                                <>
-                                  {logos.map(logo => (
-                                    <img 
-                                      key={logo.id}
-                                      src={logo.url} 
-                                      style={{ 
-                                        width: `${8 * logo.scale}%`,
-                                        left: `${logo.x}%`,
-                                        top: `${logo.y}%`,
-                                        transform: 'translate(-50%, -50%)'
-                                      }}
-                                      className="absolute h-auto opacity-70 z-10 pointer-events-none"
-                                      alt="Logo" 
-                                    />
-                                  ))}
-                                </>
-                              )}
+        {/* End of Safe Area */}
+        </div>
 
-                              {/* Title */}
-                              {playlist[itemIdx]?.title && playlist[itemIdx]?.type !== 'video' && playlist[itemIdx]?.type !== 'countdown' && (
-                                <h2 
-                                  className="absolute top-[8%] left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-20"
-                                  style={{
-                                    fontSize: '4.5cqw',
-                                    textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)'
-                                  }}
-                                >
-                                  {playlist[itemIdx]?.title}
-                                </h2>
-                              )}
-
-                              {/* Content Container */}
-                              {playlist[itemIdx]?.type !== 'video' && (
-                                <div className="relative z-10 flex flex-col items-center justify-center w-full mt-[10%] mb-[8%] px-[8%]">
-                                  {/* Subtitle (Bait) */}
-                                  {playlist[itemIdx]?.type !== 'countdown' && playlist[itemIdx]?.segments[segIdx] && (
-                                    <div 
-                                      className="text-yellow-300 font-bold mb-[1.5cqw] tracking-wider uppercase"
-                                      style={{
-                                        fontSize: '2cqw',
-                                        textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)'
-                                      }}
-                                    >
-                                      {playlist[itemIdx]?.segmentLabels?.[segIdx] || `BAIT ${segIdx + 1}`}
-                                    </div>
-                                  )}
-                                  
-                                  <div 
-                                    className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl w-full" 
-                                    style={{ 
-                                      textShadow: '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)', 
-                                      fontSize: (() => {
-                                        const t = playlist[itemIdx]?.segments[segIdx] || '';
-                                        if (t.length > 250) return '2cqw';
-                                        if (t.length > 180) return '2.5cqw';
-                                        if (t.length > 120) return '3cqw';
-                                        if (t.length > 70) return '3.5cqw';
-                                        if (t.length > 40) return '4cqw';
-                                        return '4.5cqw';
-                                      })(),
-                                      lineHeight: '1.4'
-                                    }}
-                                    dangerouslySetInnerHTML={{ __html: processText(playlist[itemIdx]?.segments[segIdx] || 'Pilih slide...') }}
-                                  />
-                                </div>
-                              )}
-
-                              {/* Progress Text - above running text */}
-                              {playlist[itemIdx]?.type !== 'video' && playlist[itemIdx]?.segments[segIdx] && (
-                                <div 
-                                  className="absolute left-0 right-0 w-full text-center text-white/60 font-medium tracking-wider lowercase z-20"
-                                  style={{ 
-                                    fontSize: '1.5cqw',
-                                    textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)',
-                                    bottom: isRtVisible && rtPos === 'bottom' ? `${((rtHeight || 7) / 56.25 * 100) + 1}%` : '2%'
-                                  }}
-                                >
-                                  {`bait ${(playlist[itemIdx]?.visibleSegments || [...Array(playlist[itemIdx].segments?.length || 1).keys()]).indexOf(segIdx) + 1} dari ${(playlist[itemIdx]?.visibleSegments || playlist[itemIdx]?.segments || []).length}`}
-                                </div>
-                              )}
-
-                              {/* Running Text Bar in Preview */}
-                              {isRtVisible && runningText && (
-                                <div 
-                                  className={`absolute left-0 right-0 z-30 bg-black/60 backdrop-blur-sm border-y border-white/10 overflow-hidden flex items-center ${
-                                    rtPos === 'top' ? 'top-0' : 'bottom-0'
-                                  }`}
-                                  style={{ height: `${((rtHeight || 7) / 56.25) * 100}%` }}
-                                >
-                                  <div className="animate-marquee-seamless" style={{ animationDuration: '8s' }}>
-                                    <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtHeight || 7) / 56.25 * 100) * 0.35}cqw` }}>
-                                      {runningText.split('\n').join('  ●  ')}
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-
-                          </div>
-                        </div>
-                  )}
-                </div>
-              </div>
+        {/* Running Text Bar in Preview */}
+        {isRtVisible && runningText && (
+          <div 
+            className={`absolute left-0 right-0 z-30 bg-black/60 backdrop-blur-sm border-y border-white/10 overflow-hidden flex items-center ${
+              rtPos === 'top' ? 'top-0' : 'bottom-0'
+            }`}
+            style={{ height: `${((rtHeight || 7) / 56.25) * 100}%` }}
+          >
+            <div className="animate-marquee-seamless shrink-0" style={{ animationDuration: `${Math.max(10, 80 - ((rtSpeed || 15) * 2))}s` }}>
+              {(() => {
+                const spacer = "  ●  ";
+                const textBlock = (runningText || '').split('\n').join(spacer);
+                const rtBlockText = Array(20).fill(textBlock).join(spacer);
+                return (
+                  <>
+                    <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtHeight || 7) / 56.25 * 100) * 0.35}cqw` }}>
+                      {rtBlockText}
+                    </div>
+                    <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtHeight || 7) / 56.25 * 100) * 0.35}cqw` }}>
+                      {rtBlockText}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
 
   return (
-    <div className="h-full flex flex-col p-4 md:p-6 gap-4 overflow-hidden relative">
+    <div className="h-full flex flex-col pb-4 px-4 gap-4 overflow-hidden relative bg-[#f1f5f9] dark:bg-[#050505]">
       
-      <header className="glass-panel p-3 md:p-5 flex flex-col md:flex-row justify-between items-center shrink-0 gap-3 md:gap-4 shadow-lg border-white/50">
-        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start shrink-0">
-          <button onClick={() => navigate('/dashboard')} className="glass-button text-indigo-900 flex items-center gap-2 font-medium px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base">
-            <ArrowLeft size={16}/> Dashboard
-          </button>
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl md:text-2xl font-heading font-extrabold text-indigo-900 tracking-tight drop-shadow-sm">Control Panel</h1>
+      <header className="glass-panel p-3 flex justify-between items-center shrink-0 shadow-sm border-white/50 z-10 mx-4 mt-4 rounded-xl">
+        <div className="flex items-center gap-3 px-2">
+          <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 text-white p-1.5 rounded-lg shadow-md">
+            <Monitor size={20} />
           </div>
+          <h1 className="text-xl font-heading font-extrabold text-indigo-900 tracking-tight drop-shadow-sm flex items-center">
+            WorshipPresenter
+          </h1>
         </div>
-        <div className="flex flex-nowrap overflow-x-auto w-full md:w-auto items-center gap-2 md:gap-4 justify-start md:justify-end pb-1 scrollbar-hide">
-          {errorMsg && <div className="text-red-700 bg-red-100/90 px-3 py-1 rounded-lg text-xs md:text-sm border border-red-300 font-medium whitespace-nowrap">{errorMsg}</div>}
-          <div className="shrink-0">
-            <SyncButton isParentSyncing={isSyncing} />
+        <div className="flex items-center gap-4">
+          {errorMsg && <div className="text-red-700 bg-red-100/90 px-3 py-1 rounded-lg text-xs border border-red-300 font-medium whitespace-nowrap">{errorMsg}</div>}
+          <SyncButton isParentSyncing={isSyncing} />
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold rounded-xl border border-red-400 shadow-[0_2px_10px_rgba(220,38,38,0.3)] text-xs">
+            <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div> LIVE
           </div>
-          <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold rounded-xl border border-red-400 shadow-lg shadow-red-500/30 text-sm md:text-base">
-            <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-white animate-pulse"></div> LIVE
-          </div>
-          <button 
-            onClick={() => setIsRunningTextModalOpen(true)} 
-            className={`shrink-0 glass-button flex items-center gap-2 transition-all px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base ${isRtVisible ? 'bg-red-500 text-white hover:bg-red-600 border-red-500 shadow-red-500/30 shadow-md' : 'text-indigo-900'}`}
-          >
-            <Type size={16}/> Running Text
-          </button>
-          <button onClick={() => setIsLogoModalOpen(true)} className="shrink-0 glass-button text-indigo-900 flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base">
-            <CheckCircle size={16}/> Logo
-          </button>
-          <button onClick={() => setIsBgModalOpen(true)} className="shrink-0 glass-button text-indigo-900 flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base">
-            <ImageIcon size={16}/> BG
-          </button>
-          <button 
-            onClick={openDisplay} 
-            className={`shrink-0 glass-button flex items-center gap-2 font-bold px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base transition-all ${
-              isDisplayOpen 
-                ? 'bg-rose-500 text-white hover:bg-rose-600 border-rose-500 shadow-rose-500/30 shadow-md' 
-                : 'bg-indigo-600/10 text-indigo-900 border-indigo-400/30 hover:bg-indigo-600/20'
-            }`}
-          >
-            <Monitor size={16}/> {isDisplayOpen ? 'Tutup Display' : 'Buka Display'}
-          </button>
         </div>
       </header>
       
-      <FooterClock />
+      <main className="flex-1 flex gap-4 min-h-0 overflow-hidden">
+        {/* Left Sidebar */}
+        <aside className="w-[12%] glass-panel flex flex-col gap-3 p-3 shadow-lg border-white/50 overflow-y-auto">
+          <button onClick={() => navigate('/dashboard')} className="glass-button w-full text-indigo-900 flex items-center justify-center font-bold px-2 py-4 text-[11px] uppercase tracking-wider transition-all hover:bg-white/70">
+            DASHBOARD
+          </button>
+          
+          <div className="w-full h-px bg-indigo-900/10 my-1"></div>
+          
+          <button onClick={() => { setIsRunningTextModalOpen(true); setDisplayPanelTab('add'); }} className="glass-button w-full text-indigo-900 flex items-center justify-center font-bold px-2 py-4 text-[11px] uppercase tracking-wider transition-all hover:bg-white/70">
+            LAGU / ALKITAB
+          </button>
 
-      <main className="flex-1 flex flex-col lg:flex-row gap-3 md:gap-6 min-h-0">
-        <aside className="w-full h-[35%] lg:h-auto lg:w-[28%] glass-panel p-3 md:p-5 flex flex-col overflow-hidden shadow-lg border-white/50">
-          <div className="flex justify-between items-start mb-3 md:mb-5 shrink-0 gap-2">
+          <div className="mt-auto flex flex-col gap-2">
+            <button 
+              onClick={() => { 
+                if (displayPanelTab === 'add' || !isRunningTextModalOpen) {
+                  setIsRunningTextModalOpen(true); 
+                  setDisplayPanelTab('rt'); 
+                } else {
+                  setIsRunningTextModalOpen(false);
+                }
+              }} 
+              className={`glass-button w-full flex items-center justify-center font-bold px-2 py-4 text-[11px] uppercase tracking-wider transition-all ${
+                (isRunningTextModalOpen && displayPanelTab !== 'add') ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md border-indigo-500' : isRtVisible ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 shadow-md border-indigo-300' : 'bg-white/50 text-indigo-900 hover:bg-white/70 border-white/40'
+              }`}
+            >
+              LAYOUT
+            </button>
+          </div>
+        </aside>
+
+        {/* Center Workspace (Dual Display + Controls) */}
+        <section className="flex-1 flex flex-col gap-4 min-w-0 overflow-hidden">
+          
+          {/* Dual Display Area */}
+          <div className="flex gap-4 min-h-0 shrink-0 h-[45%]">
+            <div className="flex-1 flex flex-col group min-h-0 bg-slate-900/40 rounded-2xl p-3 border border-white/5 shadow-inner">
+              <div className="flex justify-center mb-2 shrink-0">
+                <span className="bg-indigo-900/80 text-indigo-100 text-[9px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm border border-indigo-700/50">PREVIEW</span>
+              </div>
+              <div className="flex-1 relative flex items-center justify-center min-h-0 w-full">
+                <div className="relative overflow-hidden rounded-xl border border-indigo-500/30 shadow-xl bg-black w-full aspect-video max-h-full flex shrink-0">
+                  {(() => {
+                    const next = getNextSlideInfo();
+                    if (next.item === -1) return <div className="flex h-full w-full items-center justify-center text-slate-500 font-bold italic text-sm">Akhir dari Rundown</div>;
+                    return renderDisplayBox(next.item, next.segment, false);
+                  })()}
+                </div>
+              </div>
+            </div>
+            <div className="flex-1 flex flex-col group min-h-0 bg-slate-900/40 rounded-2xl p-3 border border-white/5 shadow-inner">
+              <div className="flex justify-center mb-2 shrink-0">
+                <span className="bg-red-900/80 text-red-100 text-[9px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm border border-red-700/50 flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div> LIVE</span>
+              </div>
+              <div className="flex-1 relative flex items-center justify-center min-h-0 w-full">
+                <div className="relative overflow-hidden rounded-xl border border-red-500/50 shadow-[0_0_20px_rgba(220,38,38,0.2)] bg-black w-full aspect-video max-h-full flex shrink-0">
+                  {renderDisplayBox(liveItem, liveSegment, true)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Toolbar Area (Middle) */}
+          <div className="flex flex-col gap-3 shrink-0 px-1">
+            {/* Controls Row */}
+            <div className="flex items-center justify-between gap-4">
+              {/* Left: Prev/Next */}
+              <div className="flex items-center gap-2 shrink-0">
+                <button onClick={handlePrev} className="flex bg-[#D4B872]/10 border border-[#C5A059] text-[#C5A059] justify-center items-center gap-1.5 px-4 py-2 font-bold uppercase text-[11px] hover:bg-[#C5A059]/20 rounded-lg transition-all"><ArrowLeft size={14}/> PREV</button>
+                <button onClick={handleNext} className="flex bg-[#D4B872]/10 border border-[#C5A059] text-[#C5A059] justify-center items-center gap-1.5 px-4 py-2 font-bold uppercase text-[11px] hover:bg-[#C5A059]/20 rounded-lg transition-all">NEXT <ArrowRight size={14}/></button>
+              </div>
+
+              {/* Middle: Bait Buttons (Kotak Khusus) */}
+              {(() => {
+                const item = tempLiveItem ? tempLiveItem : playlist[activeItem];
+                const seg = tempLiveItem ? liveSegment : activeSegment;
+                
+                return item?.segments && item.segments.length > 1 ? (
+                  <div className="flex-1 bg-transparent border border-indigo-500/30 dark:border-white/20 rounded-xl p-1.5 flex items-center gap-1.5 overflow-x-auto min-w-0 custom-scrollbar">
+                    {(item.visibleSegments || [...Array(item.segments.length).keys()]).map((idx) => (
+                      <button 
+                        key={idx}
+                        onClick={() => { 
+                          if (tempLiveItem) {
+                            pushTempToLive(tempLiveItem, idx);
+                          } else {
+                            setActiveSegment(idx); 
+                            setMode('content'); 
+                            if (activeItem === liveItem) {
+                              pushStateToLive(activeItem, idx, 'content');
+                            }
+                          }
+                        }}
+                        className={`px-3 py-1.5 font-bold text-[11px] rounded-lg transition-all duration-200 border shrink-0 whitespace-nowrap ${
+                          seg === idx && mode === 'content' 
+                            ? 'bg-[#C5A059] text-black border-transparent shadow-[0_0_10px_rgba(197,160,89,0.3)]' 
+                            : 'bg-transparent text-slate-500 dark:text-[#C5A059]/60 border-slate-300 dark:border-[#C5A059]/30 hover:bg-slate-200 dark:hover:bg-[#C5A059]/10 hover:text-slate-800 dark:hover:text-[#C5A059]'
+                        }`}
+                      >
+                        {item?.segmentLabels ? item.segmentLabels[idx] : `Slide ${idx + 1}`}
+                      </button>
+                    ))}
+                  </div>
+                ) : item?.type === 'video' ? (
+                  <div className="flex-1 flex flex-col justify-center items-center px-4 w-full h-full min-w-0">
+                    <div className="flex justify-center items-center gap-3 w-full max-w-lg">
+                      <button onClick={toggleVideoPlay} className="flex bg-[#C5A059] text-black justify-center items-center gap-2 px-4 py-2 font-extrabold uppercase text-[11px] hover:bg-[#D4B872] rounded-lg transition-all shadow-[0_0_15px_rgba(197,160,89,0.3)] shrink-0">
+                        {videoState === 'play' ? <><Pause size={14} className="fill-black"/> PAUSE</> : <><Play size={14} className="fill-black"/> PLAY</>}
+                      </button>
+                      <div className="flex-1 flex items-center gap-2 text-slate-800 dark:text-white/80 text-xs font-mono font-bold min-w-0">
+                        <span className="shrink-0 w-[40px] text-right">{videoProgress ? formatVideoTime(videoProgress.currentTime) : '0:00'}</span>
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max={videoProgress?.duration || 100} 
+                          step="0.1"
+                          value={videoProgress?.currentTime || 0}
+                          onChange={handleVideoSeek}
+                          className="flex-1 h-1.5 bg-slate-300 dark:bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#C5A059] shadow-inner min-w-[50px]"
+                        />
+                        <span className="shrink-0 w-[40px]">{videoProgress ? formatVideoTime(videoProgress.duration) : '0:00'}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1.5 shrink-0 bg-slate-200 dark:bg-white/10 rounded-lg p-1 border border-slate-300 dark:border-white/5 shadow-inner">
+                        <button 
+                          onClick={toggleVideoMute} 
+                          className={`p-1.5 rounded-md transition-all ${item?.muted ? 'bg-red-500/20 text-red-600 dark:text-red-300 hover:bg-red-500/30' : 'text-slate-600 dark:text-white/80 hover:bg-slate-300 dark:hover:bg-white/20 hover:text-slate-900 dark:hover:text-white'}`}
+                          title={item?.muted ? 'Unmute Suara' : 'Mute Suara'}
+                        >
+                          {item?.muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                        </button>
+                        <div className="w-px h-4 bg-slate-400 dark:bg-white/20 mx-0.5"></div>
+                        <button 
+                          onClick={toggleVideoLoop} 
+                          className={`p-1.5 rounded-md transition-all ${item?.loop ? 'bg-[#C5A059]/20 text-[#b38a42] dark:text-[#C5A059] hover:bg-[#C5A059]/30' : 'text-slate-600 dark:text-white/80 hover:bg-slate-300 dark:hover:bg-white/20 hover:text-slate-900 dark:hover:text-white'}`}
+                          title={item?.loop ? 'Matikan Loop' : 'Nyalakan Loop'}
+                        >
+                          <Repeat size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex-1"></div>
+                );
+              })()}
+
+              {/* Right: Screen & Live Actions */}
+              <div className="flex items-center gap-2 shrink-0">
+                <button onClick={openDisplay} className="flex bg-transparent border border-slate-600 text-slate-300 justify-center items-center gap-2 px-4 py-2 font-bold text-[11px] hover:bg-slate-800 rounded-lg transition-all">
+                  <Monitor size={14}/> {isDisplayOpen ? 'Tutup Layar' : 'Buka Layar'}
+                </button>
+                <button 
+                  onClick={() => {
+                    const newMode = mode === 'blank' ? 'content' : 'blank';
+                    setMode(newMode);
+                    pushStateToLive(activeItem, activeSegment, newMode);
+                  }} 
+                  className={`px-4 py-2 rounded-lg text-[11px] font-bold transition-all uppercase ${
+                    mode === 'blank' 
+                      ? 'bg-red-600 hover:bg-red-700 text-white shadow-[0_0_10px_rgba(220,38,38,0.5)]' 
+                      : 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
+                  }`}
+                >
+                  {mode === 'blank' ? 'Tampilkan Teks' : 'BLANK DISPLAY'}
+                </button>
+                <button 
+                  onClick={() => {
+                    const targetMode = mode === 'blank' ? 'content' : mode;
+                    if (mode === 'blank') setMode('content');
+                    pushStateToLive(activeItem, activeSegment, targetMode);
+                  }} 
+                  className="bg-[#C5A059] hover:bg-[#D4B872] text-black px-6 py-2 rounded-lg text-[11px] font-extrabold shadow-[0_0_15px_rgba(197,160,89,0.3)] transition-all flex items-center gap-2"
+                >
+                  <Play size={12} className="fill-black"/> TAMPILKAN LIVE
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Settings Panel */}
+          <div className="glass-panel shrink-0 flex flex-col p-3 flex-1 min-h-[220px]">
+            {/* Tab Headers */}
+            {displayPanelTab !== 'add' && (
+              <div className="flex gap-2 mb-3">
+                <button 
+                  onClick={() => { setIsRunningTextModalOpen(true); setDisplayPanelTab('rt'); }} 
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                    displayPanelTab === 'rt' 
+                      ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-sm' 
+                      : 'bg-white/50 dark:bg-slate-800/80 text-indigo-900 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700/80 border border-indigo-200 dark:border-slate-700'
+                  }`}
+                >Running Text</button>
+                <button 
+                  onClick={() => { setIsRunningTextModalOpen(true); setDisplayPanelTab('bg'); }} 
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                    displayPanelTab === 'bg' 
+                      ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-sm' 
+                      : 'bg-white/50 dark:bg-slate-800/80 text-indigo-900 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700/80 border border-indigo-200 dark:border-slate-700'
+                  }`}
+                >Background</button>
+                <button 
+                  onClick={() => { setIsRunningTextModalOpen(true); setDisplayPanelTab('logo'); }} 
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                    displayPanelTab === 'logo' 
+                      ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-sm' 
+                      : 'bg-white/50 dark:bg-slate-800/80 text-indigo-900 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700/80 border border-indigo-200 dark:border-slate-700'
+                  }`}
+                >Logo / Watermark</button>
+              </div>
+            )}
+
+            {/* Content Area */}
+            <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-black/40 rounded-xl p-4 border border-indigo-100 dark:border-white/5">
+              {!isRunningTextModalOpen ? (
+                <div className="flex flex-col items-center justify-center h-full gap-2 text-indigo-900/50 dark:text-slate-500">
+                  <Layout size={32} className="opacity-20" />
+                  <span className="text-xs italic font-semibold">Pilih menu di samping kiri untuk membuka panel kontrol</span>
+                </div>
+              ) : (
+                <>
+                  {displayPanelTab === 'add' && (
+                    <div className="flex flex-col h-full gap-3">
+                      <div className="flex gap-2 shrink-0">
+                        <div className="flex gap-2 flex-1">
+                          <button onClick={() => { setSearchType('song'); setSearchQuery(''); }} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg transition text-xs font-semibold ${searchType === 'song' ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-md' : 'bg-white dark:bg-slate-800 text-indigo-900 dark:text-slate-300 border border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}><Music size={14}/> Lagu</button>
+                          <button onClick={() => { setSearchType('bible'); setSearchQuery(''); }} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg transition text-xs font-semibold ${searchType === 'bible' ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-md' : 'bg-white dark:bg-slate-800 text-indigo-900 dark:text-slate-300 border border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}><BookOpen size={14}/> Alkitab</button>
+                        </div>
+                        <div className="flex-1">
+                          <select 
+                            className="w-full bg-white/50 dark:bg-slate-800 border border-indigo-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-indigo-900 dark:text-white font-semibold focus:outline-none focus:border-indigo-500 transition"
+                            value={searchType === 'song' ? selectedSongVersion : selectedBibleVersion}
+                            onChange={(e) => searchType === 'song' ? setSelectedSongVersion(e.target.value) : setSelectedBibleVersion(e.target.value)}
+                          >
+                            {dbList.filter(d => d.type === searchType).map(db => (
+                              <option key={db.id} value={db.id}>{db.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-3 flex-1 overflow-y-auto">
+                        <form onSubmit={handleSearch} className="flex gap-2 shrink-0">
+                          <div className="relative flex-1">
+                              <input 
+                                type="text" 
+                                id="searchInputBox"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder={`Cari ${searchType === 'song' ? 'Lagu' : 'Alkitab'}...`} 
+                                className="glass-input w-full pr-8 !bg-white dark:!bg-slate-900 dark:text-white dark:border-slate-700"
+                                autoFocus
+                              />
+                              {searchQuery && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSearchQuery('');
+                                    document.getElementById('searchInputBox')?.focus();
+                                  }}
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full text-indigo-900/50 hover:text-indigo-900 hover:bg-indigo-900/10 dark:text-slate-500 dark:hover:text-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
+                                  title="Hapus Pencarian"
+                                >
+                                  <span className="font-extrabold text-sm font-sans">X</span>
+                                </button>
+                              )}
+                            </div>
+                            <button type="submit" disabled={isSearching} className="glass-button bg-indigo-500/20 dark:bg-slate-800 text-indigo-900 dark:text-[#C5A059] border-indigo-500/30 dark:border-slate-700 px-4 py-1.5 rounded-lg transition">
+                              {isSearching ? <Loader2 size={14} className="animate-spin" /> : <Search size={14}/>}
+                            </button>
+                          </form>
+
+                          <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 border border-indigo-100 dark:border-slate-700 rounded-xl p-2 bg-white/50 dark:bg-slate-900/50 scrollbar-thin scrollbar-thumb-indigo-200 dark:scrollbar-thumb-slate-700">
+                            {searchResults.map((res) => (
+                              <div key={res.id} className="p-2 mb-2 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-lg transition flex justify-between gap-2 items-center">
+                                <div className="flex-1 overflow-hidden">
+                                  <div className="font-semibold text-indigo-900 dark:text-[#C5A059] text-[11px] truncate">{res.title}</div>
+                                  {(res.author || res.key || res.beat || res.category) && (
+                                    <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5 text-[9px] text-indigo-600/80 dark:text-slate-400">
+                                      {res.author && <span className="truncate max-w-[100px]" title={res.author}>👤 {res.author}</span>}
+                                      {res.key && <span title="Nada Dasar">🎵 {res.key}</span>}
+                                      {res.beat && <span title="Ketukan">⏱ {res.beat}</span>}
+                                      {res.category && <span title="Kategori">🏷️ {res.category}</span>}
+                                    </div>
+                                  )}
+                                  <div className="text-[10px] text-indigo-800/60 dark:text-slate-500 line-clamp-2 mt-1">{res.segments && res.segments[0]}</div>
+                                </div>
+                                <div className="flex flex-col gap-1.5 shrink-0 w-[85px]">
+                                  <button 
+                                    onClick={() => addToRundown(res)}
+                                    className="bg-green-500/10 hover:bg-green-500/20 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-500/30 dark:border-green-700 px-2 py-1.5 rounded transition font-bold uppercase tracking-wider text-[9px] flex justify-center items-center gap-1 w-full"
+                                  >
+                                    <Plus size={10}/> Rundown
+                                  </button>
+                                  <button 
+                                    onClick={() => pushTempToLive(res)}
+                                    className="bg-red-500/10 hover:bg-red-500/20 text-red-700 dark:bg-red-900/40 dark:text-red-400 border border-red-500/30 dark:border-red-700 px-2 py-1.5 rounded transition font-bold uppercase tracking-wider text-[9px] flex justify-center items-center gap-1 w-full"
+                                  >
+                                    <Play size={10} className="fill-current"/> Live
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                            {searchResults.length === 0 && !isSearching && searchQuery !== '' && (
+                              <div className="text-center text-[10px] text-indigo-900/60 dark:text-slate-500 p-4">Tidak ada hasil ditemukan.</div>
+                            )}
+                            {searchResults.length === 0 && !isSearching && searchQuery === '' && (
+                              <div className="p-1">
+                                {searchType === 'song' ? (
+                                  <>
+                                      <div className="flex flex-col gap-1">
+                                        {allSongTitles ? allSongTitles.map((song: any) => (
+                                          <div key={song.id} className="p-2 mb-1 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-lg transition flex justify-between gap-2 items-center">
+                                            <div className="flex-1 overflow-hidden flex items-start gap-2">
+                                              <span className="bg-indigo-100 dark:bg-black/30 text-indigo-800 dark:text-[#C5A059] px-2 py-0.5 rounded text-[10px] min-w-[32px] text-center shrink-0 border border-white/20 dark:border-slate-700 mt-0.5">{song.id}</span>
+                                              <div className="flex-1 min-w-0 flex flex-col">
+                                                <div className="font-semibold text-indigo-900 dark:text-[#C5A059] text-[11px] truncate">{song.title}</div>
+                                                {(song.author || song.key || song.beat || song.category) && (
+                                                  <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[9px] text-indigo-600/80 dark:text-slate-400 mt-0.5">
+                                                    {song.author && <span className="truncate max-w-[100px]" title={song.author}>👤 {song.author}</span>}
+                                                    {song.key && <span title="Nada Dasar">🎵 {song.key}</span>}
+                                                    {song.beat && <span title="Ketukan">⏱ {song.beat}</span>}
+                                                    {song.category && <span title="Kategori">🏷️ {song.category}</span>}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+                                            <div className="flex flex-col gap-1.5 shrink-0 w-[85px]">
+                                              <button 
+                                                onClick={() => handleQuickAddSong(song.id.toString(), false)}
+                                                className="bg-green-500/10 hover:bg-green-500/20 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-500/30 dark:border-green-700 px-2 py-1.5 rounded transition font-bold uppercase tracking-wider text-[9px] flex justify-center items-center gap-1 w-full"
+                                              >
+                                                <Plus size={10}/> Rundown
+                                              </button>
+                                              <button 
+                                                onClick={() => handleQuickAddSong(song.id.toString(), true)}
+                                                className="bg-red-500/10 hover:bg-red-500/20 text-red-700 dark:bg-red-900/40 dark:text-red-400 border border-red-500/30 dark:border-red-700 px-2 py-1.5 rounded transition font-bold uppercase tracking-wider text-[9px] flex justify-center items-center gap-1 w-full"
+                                              >
+                                                <Play size={10} className="fill-current"/> Live
+                                              </button>
+                                            </div>
+                                          </div>
+                                        )) : (
+                                          <div className="text-center p-4"><Loader2 size={16} className="animate-spin text-indigo-500 mx-auto"/></div>
+                                        )}
+                                      </div>
+                                  </>
+                                ) : (
+                                  <div className="grid grid-cols-3 gap-1">
+                                    {currentBibleBooks.length > 0 ? currentBibleBooks.map(book => (
+                                      <button 
+                                        key={book}
+                                        onClick={() => {
+                                          setSearchQuery(book + " ");
+                                          document.getElementById('searchInputBox')?.focus();
+                                        }}
+                                        className="p-1.5 text-center text-[10px] font-semibold text-indigo-900 dark:text-slate-300 bg-white/40 dark:bg-slate-800 border border-white/20 dark:border-slate-700 rounded hover:bg-indigo-600 dark:hover:bg-[#C5A059] hover:text-white dark:hover:text-black transition line-clamp-1 shadow-sm"
+                                      >
+                                        {book}
+                                      </button>
+                                    )) : (
+                                      <div className="col-span-3 text-center p-4"><Loader2 size={16} className="animate-spin text-indigo-500 mx-auto"/></div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {displayPanelTab === 'rt' && (
+                    <div className="flex flex-col gap-4 h-full">
+                      <div className="flex items-center gap-3 shrink-0">
+                        <button 
+                          onClick={() => setIsRtVisible(!isRtVisible)}
+                          className={`flex-1 py-3 rounded-lg font-bold text-xs shadow-sm flex items-center justify-center gap-2 transition-all ${
+                            isRtVisible ? 'bg-red-500 text-white shadow-red-500/20' : 'bg-indigo-600 text-white shadow-indigo-600/20'
+                          }`}
+                        >
+                          <Power size={14} /> 
+                          {isRtVisible ? 'MATIKAN' : 'HIDUPKAN'}
+                        </button>
+                      </div>
+
+                      <div className="flex flex-col gap-2 flex-1 min-h-0">
+                        <textarea 
+                          value={runningText}
+                          onChange={e => setRunningText(e.target.value)}
+                          placeholder="Ketik teks yang ingin ditampilkan berjalan dari kanan ke kiri..."
+                          className="glass-input flex-1 min-h-0 resize-none font-semibold text-sm !p-3 dark:!bg-slate-900"
+                        ></textarea>
+                      </div>
+
+                      <div className="flex items-center gap-4 shrink-0 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-lg p-2">
+                        <div className="flex-1 flex gap-3 items-center">
+                          <span className="text-[10px] font-bold text-indigo-900/50 dark:text-slate-400 uppercase w-12">Ukuran</span>
+                          <span className="text-[9px] font-bold text-indigo-900/70 dark:text-slate-500">Kecil</span>
+                          <input type="range" min="3" max="25" value={rtHeight} onChange={e => setRtHeight(Number(e.target.value))} className="flex-1 accent-indigo-600 dark:accent-[#C5A059]" />
+                          <span className="text-[9px] font-bold text-indigo-900/70 dark:text-slate-500">Besar</span>
+                        </div>
+                        <div className="w-px h-6 bg-indigo-100 dark:bg-slate-700"></div>
+                        <div className="flex-1 flex gap-3 items-center">
+                          <span className="text-[10px] font-bold text-indigo-900/50 dark:text-slate-400 uppercase w-12">Speed</span>
+                          <span className="text-[9px] font-bold text-indigo-900/70 dark:text-slate-500">Cepat</span>
+                          <input type="range" min="5" max="40" value={rtSpeed} onChange={e => setRtSpeed(Number(e.target.value))} className="flex-1 accent-indigo-600 dark:accent-[#C5A059]" />
+                          <span className="text-[9px] font-bold text-indigo-900/70 dark:text-slate-500">Lambat</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {displayPanelTab === 'logo' && (
+                    <div className="flex flex-col gap-3 h-full overflow-hidden">
+                      <div className="flex flex-col gap-2 overflow-y-auto flex-1 min-h-0 pr-1">
+                        {logos.map((logo, index) => (
+                          <div key={logo.id} className="flex gap-3 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-lg p-3 shadow-sm items-center">
+                            <div className="w-14 h-14 rounded-md overflow-hidden bg-slate-900/50 dark:bg-black/50 shrink-0 flex items-center justify-center border border-slate-700/50 p-1 shadow-inner backdrop-blur-sm">
+                              <img src={logo.url} alt="Logo" className="max-w-full max-h-full object-contain drop-shadow-sm" />
+                            </div>
+                            <div className="flex-1 flex flex-col gap-3 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold text-indigo-900/60 dark:text-slate-400 shrink-0 w-12">Logo {index + 1}</span>
+                                <span className="text-[9px] font-bold text-indigo-900/50 dark:text-slate-500">Kecil</span>
+                                <input type="range" min="0.1" max="5" step="0.1" value={logo.scale} onChange={(e) => updateLogo(logo.id, { scale: parseFloat(e.target.value) })} className="flex-1 accent-indigo-600 dark:accent-[#C5A059]" />
+                                <span className="text-[9px] font-bold text-indigo-900/50 dark:text-slate-500">Besar</span>
+                                <span className="text-[9px] font-bold text-indigo-600 dark:text-[#C5A059] w-8 text-right mr-1">{Math.round(logo.scale * 100)}%</span>
+                                <button 
+                                  onClick={() => updateLogo(logo.id, { enabled: logo.enabled === false ? true : false })} 
+                                  className={`p-1 px-2 text-[9px] font-bold rounded transition shrink-0 mr-1 ${logo.enabled !== false ? 'bg-green-500/20 text-green-700 dark:text-green-400 hover:bg-green-500/40' : 'bg-slate-500/20 text-slate-700 dark:text-slate-400 hover:bg-slate-500/40'}`}
+                                >
+                                  {logo.enabled !== false ? 'ON' : 'OFF'}
+                                </button>
+                                <button onClick={() => removeLogo(logo.id)} className="text-red-400 hover:text-white hover:bg-red-500 p-1 rounded transition shrink-0"><X size={12}/></button>
+                              </div>
+                              <div className="flex gap-2 h-7">
+                                <button onClick={() => updateLogo(logo.id, { x: 2, y: 3 })} className={`flex-1 rounded text-[9px] font-bold border transition shadow-sm ${logo.x < 50 && logo.y < 50 ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black border-transparent' : 'bg-transparent text-indigo-900/70 dark:text-slate-400 border-indigo-200 dark:border-slate-600 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}>Kiri Atas</button>
+                                <button onClick={() => updateLogo(logo.id, { x: 98, y: 3 })} className={`flex-1 rounded text-[9px] font-bold border transition shadow-sm ${logo.x >= 50 && logo.y < 50 ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black border-transparent' : 'bg-transparent text-indigo-900/70 dark:text-slate-400 border-indigo-200 dark:border-slate-600 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}>Kanan Atas</button>
+                                <button onClick={() => updateLogo(logo.id, { x: 2, y: 97 })} className={`flex-1 rounded text-[9px] font-bold border transition shadow-sm ${logo.x < 50 && logo.y >= 50 ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black border-transparent' : 'bg-transparent text-indigo-900/70 dark:text-slate-400 border-indigo-200 dark:border-slate-600 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}>Kiri Bawah</button>
+                                <button onClick={() => updateLogo(logo.id, { x: 98, y: 97 })} className={`flex-1 rounded text-[9px] font-bold border transition shadow-sm ${logo.x >= 50 && logo.y >= 50 ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black border-transparent' : 'bg-transparent text-indigo-900/70 dark:text-slate-400 border-indigo-200 dark:border-slate-600 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}>Kanan Bawah</button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {logos.length === 0 && <div className="flex-1 flex items-center justify-center text-slate-500 text-xs font-semibold italic min-h-[100px]">Belum ada logo — klik Tambah Logo di bawah</div>}
+                      </div>
+                      <input type="file" accept="image/*" ref={logoInputRef} onChange={handleLogoUpload} className="hidden" />
+                      <button onClick={() => logoInputRef.current?.click()} className="w-full py-3 border-2 border-dashed border-indigo-300 dark:border-slate-600 rounded-xl text-xs text-indigo-900/60 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-[#C5A059] hover:border-indigo-400 dark:hover:border-[#C5A059] hover:bg-indigo-50/50 dark:hover:bg-white/5 font-bold transition flex items-center justify-center gap-2 shrink-0"><Plus size={16}/> Tambah Logo</button>
+                    </div>
+                  )}
+
+                  {displayPanelTab === 'bg' && (
+                    <div className="h-full">
+                      <BackgroundPickerInline 
+                        onSelect={handleGlobalBackgroundSelect} 
+                        currentBgUrl={localStorage.getItem('custom_bg')} 
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* Right Sidebar (Rundown / Setlist) */}
+        <aside className="w-[25%] glass-panel p-4 flex flex-col overflow-hidden shadow-lg border-white/50">
+          <div className="mb-4 flex justify-center">
+            <FooterClock />
+          </div>
+          <div className="flex justify-between items-start mb-4 shrink-0 gap-2 border-b border-indigo-900/10 pb-3">
             <div className="flex-1">
               {isEditingRundown ? (
-                <div className="flex flex-col gap-1 w-full">
+                <div className="flex flex-col gap-2 w-full">
                   <input 
                     type="text"
                     value={playlistName}
                     onChange={(e) => setPlaylistName(e.target.value)}
-                    className="bg-white/50 text-indigo-950 font-bold px-2 py-1 rounded border border-indigo-200 focus:outline-none focus:border-indigo-500 w-full text-sm"
+                    className="bg-white dark:bg-slate-800 text-indigo-950 dark:text-indigo-100 font-bold px-3 py-2 rounded-lg border-2 border-indigo-200 dark:border-indigo-700 focus:outline-none focus:border-indigo-500 w-full text-sm"
                     placeholder="Nama Playlist"
                   />
                   <input 
                     type="date"
                     value={playlistDate}
                     onChange={(e) => setPlaylistDate(e.target.value)}
-                    className="bg-white/50 text-indigo-900 px-2 py-1 rounded border border-indigo-200 focus:outline-none focus:border-indigo-500 w-full text-xs"
+                    className="bg-white/50 dark:bg-slate-800/50 text-indigo-900 dark:text-indigo-200 px-3 py-2 rounded-lg border-2 border-indigo-200 dark:border-indigo-700 focus:outline-none focus:border-indigo-500 w-full text-xs font-semibold"
                   />
                 </div>
               ) : (
                 <>
-                  <h2 className="font-heading font-bold text-indigo-950 uppercase tracking-wide text-sm md:text-base leading-tight">{playlistName}</h2>
-                  <div className="text-xs text-indigo-600/80 font-medium">{playlistDate}</div>
+                  <h2 className="font-heading font-extrabold text-indigo-950 dark:text-indigo-100 uppercase tracking-wide text-base leading-tight">{playlistName}</h2>
+                  <div className="text-xs text-indigo-600 dark:text-indigo-400 font-bold mt-1">{playlistDate}</div>
                 </>
               )}
             </div>
@@ -1471,23 +1914,27 @@ export default function ControlPanel() {
                   setIsEditingRundown(true);
                 }
               }}
-              className={`flex items-center gap-2 text-sm px-4 py-2 rounded-xl transition-all shadow-sm font-semibold ${
+              className={`flex items-center gap-2 text-xs px-3 py-2 rounded-xl transition-all shadow-sm font-bold shrink-0 ${
                 isEditingRundown 
-                  ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-600/30 hover:shadow-md' 
-                  : 'glass-button text-indigo-900 hover:bg-white/70'
+                  ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-600/30' 
+                  : 'glass-button bg-white text-indigo-900 hover:bg-white/80 border-white'
               }`}
             >
-              {isSaving ? <Loader2 size={16} className="animate-spin" /> : (isEditingRundown ? <Save size={16} /> : <Edit size={16} />)}
-              {isEditingRundown ? 'Simpan' : 'Edit Rundown'}
+              {isSaving ? <Loader2 size={14} className="animate-spin" /> : (isEditingRundown ? <Save size={14} /> : <Edit size={14} />)}
+              {isEditingRundown ? 'Simpan' : 'Edit'}
             </button>
           </div>
+          <div className="text-xs font-bold text-indigo-900/50 dark:text-indigo-200/50 mb-2 uppercase tracking-wider">RUNDOWN</div>
           
-          <div className="space-y-1 overflow-y-auto px-1.5 pt-1 pr-2 pb-4 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent flex-1">
+          <div className="space-y-2 overflow-y-auto pr-2 pb-4 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent flex-1">
+            {playlist.length === 0 && (
+              <div className="text-center text-sm font-semibold text-indigo-900/40 dark:text-indigo-200/40 mt-10">Rundown kosong.</div>
+            )}
             {playlist.map((item, idx) => (
               <div 
                 id={`rundown-item-${idx}`}
                 key={item.id || idx} 
-                className={`flex gap-2 transition-all duration-300 ${dragItem === idx ? 'opacity-40 scale-95' : 'hover:-translate-y-0.5'}`}
+                className={`flex gap-2 transition-all duration-300 ${dragItem === idx ? 'opacity-40 scale-95' : 'hover:-translate-y-1'}`}
                 draggable={isEditingRundown}
                 onDragStart={(e) => {
                   e.dataTransfer.setData('text/plain', idx.toString());
@@ -1502,27 +1949,25 @@ export default function ControlPanel() {
                     const item = playlist[idx];
                     const visible = item.visibleSegments || [...Array(item.segments?.length || 1).keys()];
                     const seg = visible.length > 0 ? visible[0] : 0;
-                    const isAlreadyActive = activeItem === idx && activeSegment === seg;
                     
                     setActiveItem(idx);
                     setActiveSegment(seg);
-                    
-                    if (isAlreadyActive) {
-                      pushStateToLive(idx, seg, item.type === 'video' ? 'logo' : 'content');
-                      if (item.type === 'video') setMode('logo'); else setMode('content');
-                    }
+                    setTempLiveItem(null);
+                    const newMode = item.type === 'video' ? 'logo' : 'content';
+                    setMode(newMode);
                   }}
-                  className={`flex-1 text-left py-2 px-3 rounded-md border backdrop-blur-sm transition-all ${isEditingRundown ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${
+                  className={`flex-1 text-left p-3 rounded-xl border-2 backdrop-blur-sm transition-all ${isEditingRundown ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${
                     activeItem === idx
-                      ? 'bg-white/80 border-indigo-400 shadow-sm transform scale-[1.01]' 
-                      : 'bg-white/30 border-white/40 hover:bg-white/50 shadow-sm'
+                      ? 'bg-white dark:bg-[#C5A059]/10 border-indigo-400 dark:border-[#C5A059] shadow-md shadow-indigo-500/10 dark:shadow-[0_0_15px_rgba(197,160,89,0.3)] relative z-10' 
+                      : 'bg-white/40 dark:bg-white/5 border-transparent hover:bg-white/60 dark:hover:bg-white/10 hover:border-white dark:hover:border-white/20 shadow-sm'
                   }`}
                 >
-                  <div className="flex justify-between w-full items-center">
-                    <div className={`font-semibold text-sm select-none truncate ${activeItem === idx ? 'text-indigo-900' : 'text-slate-800 dark:text-slate-200'}`}>
+                  <div className="flex justify-between w-full items-start gap-2">
+                    <div className={`font-bold text-sm leading-tight line-clamp-2 ${activeItem === idx ? 'text-indigo-900 dark:text-[#D4B872]' : 'text-indigo-900/80 dark:text-indigo-200/70'}`}>
                       {idx + 1}. {item.title || item.name || '(Tanpa Judul)'}
                     </div>
-                    <div className="flex gap-2">
+                    
+                    <div className="flex items-center gap-1">
                       {(item.type === 'song' || item.type === 'bible' || item.type === 'video') && (
                         <button 
                           onClick={(e) => {
@@ -1530,261 +1975,139 @@ export default function ControlPanel() {
                             if (item.type === 'video') openVideoModal(idx);
                             else openSegmentModal(idx, e);
                           }}
-                          className="text-indigo-600 hover:text-indigo-800 bg-indigo-100 p-1 rounded transition-colors"
+                          className="text-indigo-500 dark:text-indigo-300 hover:text-white dark:hover:text-white hover:bg-indigo-500 dark:hover:bg-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 p-1.5 rounded-lg transition-colors shrink-0"
                           title={item.type === 'video' ? "Edit Link Video" : "Atur Slide / Bait"}
                         >
-                          <Settings size={12} />
+                          <Settings size={14} />
                         </button>
                       )}
-                      {isEditingRundown && (
-                        <>
-                          <button 
-                            onClick={(e) => { 
-                              e.stopPropagation(); 
-                              if (replaceIndex === idx) setReplaceIndex(null); 
-                              else { setReplaceIndex(idx); setIsAddItemModalOpen(true); } 
-                            }}
-                            className={`p-1 rounded transition-colors ${replaceIndex === idx ? 'bg-indigo-600 text-white' : 'text-indigo-600 hover:text-indigo-800 bg-indigo-100'}`}
-                            title="Ganti Item"
-                          >
-                            <RefreshCw size={12} />
-                          </button>
-                          <button 
-                            onClick={(e) => removePlaylistItem(idx, e)}
-                            className="text-red-500 hover:text-red-700 bg-red-100 p-1 rounded transition-colors"
-                            title="Hapus"
-                          >
-                            <X size={12} />
-                          </button>
-                        </>
+                      
+                      {item.type !== 'video' && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditItemIndex(idx);
+                            setEditSegmentIndex(0);
+                          }}
+                          className="text-emerald-600 dark:text-emerald-400 hover:text-white dark:hover:text-white hover:bg-emerald-500 dark:hover:bg-emerald-500 bg-emerald-50 dark:bg-emerald-900/40 p-1.5 rounded-lg transition-colors shrink-0"
+                          title="Edit Teks / Konten"
+                        >
+                          <Edit size={14} />
+                        </button>
                       )}
                     </div>
                   </div>
-                  <div className="text-[10px] font-bold text-indigo-600/70 uppercase mt-0.5 select-none tracking-wider">{item.type}</div>
+                  
+                  <div className="flex justify-between items-center mt-2">
+                    <div className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-0.5 rounded uppercase tracking-widest">{item.type}</div>
+                    
+                    {item.type === 'countdown' && <div className="text-[10px] font-bold text-indigo-900/50 dark:text-indigo-200/50 uppercase">{Math.floor(parseInt(item.segments[0] || '0') / 60)}:{(parseInt(item.segments[0] || '0') % 60).toString().padStart(2, '0')}</div>}
+                    
+                    {isEditingRundown && (
+                      <div className="flex gap-1">
+                        <button 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            if (replaceIndex === idx) setReplaceIndex(null); 
+                            else { setReplaceIndex(idx); setIsAddItemModalOpen(true); } 
+                          }}
+                          className={`p-1.5 rounded-lg transition-colors ${replaceIndex === idx ? 'bg-indigo-600 text-white' : 'text-indigo-500 hover:bg-indigo-50'}`}
+                          title="Ganti Item"
+                        >
+                          <RefreshCw size={12} />
+                        </button>
+                        <button 
+                          onClick={(e) => removePlaylistItem(idx, e)}
+                          className="text-red-500 hover:text-white hover:bg-red-500 p-1.5 rounded-lg transition-colors bg-red-50"
+                          title="Hapus"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-          
-          {replaceIndex !== null && (
-            <div className="mt-2 bg-indigo-100 text-indigo-900 text-xs p-2 rounded-lg border border-indigo-200 flex justify-between items-center shrink-0">
-              <span>Ganti: <strong>{playlist[replaceIndex]?.title}</strong></span>
-              <button onClick={() => setReplaceIndex(null)} className="text-red-500 hover:bg-red-500/10 p-1 rounded"><X size={12}/></button>
-            </div>
-          )}
-          <div className="mt-3 grid grid-cols-2 gap-2 shrink-0">
-            <button 
-              onClick={() => setIsAddItemModalOpen(true)}
-              className="glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-2 text-indigo-900 py-2 text-xs font-semibold hover:bg-white/70 transition-all"
-            >
-              <Search size={14} /> Lagu / Ayat
-            </button>
-            <button 
-              onClick={addQuickAnnouncement}
-              className="glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-2 text-indigo-900 py-2 text-xs font-semibold hover:bg-white/70 transition-all"
-            >
-              <Plus size={14} /> Pengumuman
-            </button>
-            <button 
-              onClick={() => openVideoModal(replaceIndex)}
-              className="glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-2 text-indigo-900 py-2 text-xs font-semibold hover:bg-white/70 transition-all"
-            >
-              <Plus size={14} /> Video
-            </button>
-            <button 
-              onClick={addCountdown}
-              className="glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-2 text-indigo-900 py-2 text-xs font-semibold hover:bg-white/70 transition-all"
-            >
-              <Plus size={14} /> Countdown
-            </button>
-          </div>
-        </aside>
-        
-        <section className="flex-1 flex flex-col gap-3 md:gap-6 min-w-0">
-          {isEditingRundown ? (
-            renderDisplayBox(activeItem, activeSegment, false)
-          ) : (
-            renderDisplayBox(liveItem, liveSegment, true)
-          )}
-          <div className="glass-panel p-3 md:p-5 shrink-0 flex justify-between items-center gap-2 md:gap-6 shadow-lg border-white/50 w-full overflow-hidden">
-             
-             {/* Kumpulan Tombol Bait/Slide */}
-             <div className="flex items-center gap-2 overflow-x-auto shrink-1 pb-1 scrollbar-thin scrollbar-thumb-indigo-200">
-               {playlist[activeItem]?.segments && playlist[activeItem].segments.length > 1 && (
-                 <>
-                   {(playlist[activeItem].visibleSegments || [...Array(playlist[activeItem].segments.length).keys()]).map((idx: number) => (
-                     <button 
-                       key={idx}
-                       onClick={() => { 
-                         const isAlreadyActive = activeSegment === idx && mode === 'content';
-                         setActiveSegment(idx); 
-                         setMode('content'); 
-                         if (isAlreadyActive) pushStateToLive(activeItem, idx, 'content');
-                       }}
-                       className={`px-3 py-1.5 md:px-4 md:py-2 font-semibold text-xs md:text-sm whitespace-nowrap rounded-lg transition-all duration-200 border shadow-sm hover:-translate-y-0.5 shrink-0 ${
-                         activeSegment === idx && mode === 'content' 
-                           ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-600/30' 
-                           : 'bg-white/70 text-indigo-900 border-white/50 hover:bg-white/90'
-                       }`}
-                     >
-                       {playlist[activeItem]?.segmentLabels ? playlist[activeItem].segmentLabels[idx] : `Slide ${idx + 1}`}
-                     </button>
-                   ))}
-                 </>
-               )}
-             </div>
 
-             {/* Tombol Kontrol Navigasi Utama */}
-             <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
-               <button onClick={handlePrev} className="glass-button bg-white/60 text-indigo-950 flex flex-1 md:flex-none justify-center items-center gap-1.5 md:gap-2 px-3 py-2 md:px-5 md:py-3 text-xs md:text-sm hover:bg-white/80 shadow-md rounded-xl shrink-0"><ArrowLeft size={16}/> Mundur</button>
-               <button onClick={handleNext} className="glass-button bg-gradient-to-r from-indigo-500 to-indigo-600 text-white border-transparent flex flex-1 md:flex-none justify-center items-center gap-1.5 md:gap-2 px-3 py-2 md:px-5 md:py-3 text-xs md:text-sm hover:shadow-lg hover:shadow-indigo-500/30 rounded-xl shrink-0">Lanjut <ArrowRight size={16}/></button>
-               <div className="w-px h-8 md:h-10 bg-indigo-900/20 mx-1 md:mx-2 shrink-0"></div>
-               <button 
-                  onClick={() => setMode(m => m === 'blank' ? 'content' : 'blank')} 
-                  className={`glass-button flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-5 md:py-3 text-xs md:text-sm rounded-xl transition-all shadow-md shrink-0 ${mode === 'blank' ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700 shadow-slate-900/40' : 'bg-white/60 text-slate-800 hover:bg-white/80'}`}
-               >
-                 <Square size={14}/> Blank
-               </button>
-             </div>
-          </div>
-        </section>
-      </main>
-      {/* MODAL TAMBAH ITEM (LAGU/AYAT/SLIDE) */}
-      {isAddItemModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 overflow-hidden">
-          <div className="bg-white/90 backdrop-blur-xl p-6 rounded-2xl shadow-2xl max-w-lg w-full border border-white/40 h-[85vh] max-h-[800px] flex flex-col overflow-hidden">
-            <h2 className="text-xl font-bold text-indigo-900 mb-4 flex items-center gap-2 shrink-0">
-              <Plus size={20} /> Tambah Item ke Rundown
-            </h2>
-            
-            <div className="flex gap-2 mb-4 justify-between items-center shrink-0">
-              <div className="flex gap-2 flex-1">
-                <button onClick={() => setSearchType('song')} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition text-sm font-semibold ${searchType === 'song' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-indigo-900 border border-indigo-200'}`}><Music size={14}/> Lagu</button>
-                <button onClick={() => setSearchType('bible')} className={`flex-1 flex justify-center items-center gap-2 px-3 py-2 rounded-lg transition text-sm font-semibold ${searchType === 'bible' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-indigo-900 border border-indigo-200'}`}><BookOpen size={14}/> Ayat</button>
-              </div>
-              <div className="flex-1">
-                <select 
-                  className="w-full bg-white/50 border border-indigo-200 rounded-lg px-2 py-2 text-sm text-indigo-900 font-semibold focus:outline-none focus:border-indigo-500 transition"
-                  value={searchType === 'song' ? selectedSongVersion : selectedBibleVersion}
-                  onChange={(e) => searchType === 'song' ? setSelectedSongVersion(e.target.value) : setSelectedBibleVersion(e.target.value)}
-                >
-                  {dbList.filter(d => d.type === searchType).map(db => (
-                    <option key={db.id} value={db.id}>{db.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <form onSubmit={handleSearch} className="flex gap-2 mb-4 shrink-0">
-              <input 
-                type="text" 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={`Cari ${searchType === 'song' ? 'Lagu' : 'Ayat'}...`} 
-                className="glass-input flex-1 !bg-white"
-                autoFocus
-              />
-              <button type="submit" disabled={isSearching} className="glass-button bg-indigo-500/20 text-indigo-900 border-indigo-500/30 px-4">
-                {isSearching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16}/>}
-              </button>
-            </form>
-
-            {searchResults.length === 0 && !isSearching && searchQuery === '' && searchType === 'song' && (
-              <div className="flex justify-center gap-2 mb-2 shrink-0">
-                <button onClick={() => setViewMode('grid')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-900 border border-indigo-200'}`}>Nomor Saja</button>
-                <button onClick={() => setViewMode('list')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-900 border border-indigo-200'}`}>Nomor & Judul</button>
+          <div className="mt-3 pt-3 border-t border-indigo-900/10 shrink-0">
+            {replaceIndex !== null && (
+              <div className="mb-2 bg-indigo-100 text-indigo-900 text-xs p-2 rounded-lg border border-indigo-200 flex justify-between items-center">
+                <span className="truncate pr-2">Ganti: <strong>{playlist[replaceIndex]?.title}</strong></span>
+                <button onClick={() => setReplaceIndex(null)} className="text-red-500 hover:bg-red-500/10 p-1 rounded shrink-0"><X size={12}/></button>
               </div>
             )}
-
-            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 space-y-2 mb-4 border border-indigo-100 rounded-xl p-2 bg-slate-50/50">
-              {searchResults.map((res) => (
-                <div key={res.id} className="p-3 bg-white border border-indigo-100 rounded-xl hover:bg-indigo-50 transition cursor-pointer flex justify-between items-center" onClick={() => addToRundown(res)}>
-                  <div>
-                    <div className="font-semibold text-indigo-900 text-sm">{res.title}</div>
-                    <div className="text-xs text-indigo-800/60 line-clamp-1">{res.segments[0]}</div>
-                  </div>
-                  <div className="text-lg font-bold text-indigo-900/30"><Plus size={18}/></div>
-                </div>
-              ))}
-              {searchResults.length === 0 && !isSearching && searchQuery !== '' && (
-                <div className="text-center text-sm text-indigo-900/60 p-4">Tidak ada hasil ditemukan.</div>
-              )}
-              {searchResults.length === 0 && !isSearching && searchQuery === '' && (
-                <div className="p-1">
-                  {searchType === 'song' ? (
-                    <>
-                      {viewMode === 'grid' ? (
-                        <div className="grid grid-cols-6 gap-1.5">
-                          {Array.from({length: 525}, (_, i) => i + 1).map(num => (
-                            <button 
-                              key={num}
-                              onClick={() => handleQuickAddSong(num.toString())}
-                              className="py-2 px-1 text-center text-xs font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm"
-                            >
-                              {num}
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-1.5">
-                          {allSongTitles ? allSongTitles.map((song: any) => (
-                            <button 
-                              key={song.id}
-                              onClick={() => handleQuickAddSong(song.id.toString())}
-                              className="w-full overflow-hidden p-2 text-left text-sm font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition shadow-sm flex items-center gap-3"
-                            >
-                              <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded text-xs min-w-[32px] text-center shrink-0">{song.id}</span>
-                              <span className="line-clamp-1 break-all">{song.title}</span>
-                            </button>
-                          )) : (
-                            <div className="text-center p-4"><Loader2 size={20} className="animate-spin text-indigo-500 mx-auto"/></div>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {currentBibleBooks.length > 0 ? currentBibleBooks.map(book => (
-                        <button 
-                          key={book}
-                          onClick={() => {
-                            setSearchQuery(book + " ");
-                            document.getElementById('searchInputBox')?.focus();
-                          }}
-                          className="p-2 text-left text-xs font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition line-clamp-1 shadow-sm"
-                        >
-                          {book}
-                        </button>
-                      )) : (
-                        <div className="col-span-2 text-center p-4"><Loader2 size={24} className="animate-spin text-indigo-500 mx-auto"/></div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-between items-center mt-2 border-t pt-4 border-indigo-100 shrink-0">
-              <div className="flex items-center gap-3">
-
-                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-indigo-900 bg-white/40 px-3 py-2 rounded-xl border border-white/40 hover:bg-white/60 transition shadow-sm">
-                  <input 
-                    type="checkbox" 
-                    checked={isAutoSplitEnabled}
-                    onChange={toggleAutoSplit}
-                    className="rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
-                  />
-                  Auto-Split Teks
-                </label>
-              </div>
-              <button onClick={() => setIsAddItemModalOpen(false)} className="px-5 py-2 rounded-lg font-bold text-indigo-900 bg-black/5 hover:bg-black/10 transition text-sm">
-                Tutup
+            <div className="flex gap-2 mb-2">
+              <button 
+                onClick={addQuickAnnouncement}
+                className="flex-1 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
+              >
+                <Plus size={14} /> Teks
+              </button>
+              <button 
+                onClick={() => openVideoModal(replaceIndex)}
+                className="flex-1 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
+              >
+                <Plus size={14} /> Video
+              </button>
+              <button 
+                onClick={addCountdown}
+                className="flex-1 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
+              >
+                <Clock size={14} /> Waktu
               </button>
             </div>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => {
+                  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(playlist, null, 2));
+                  const downloadAnchorNode = document.createElement('a');
+                  downloadAnchorNode.setAttribute("href", dataStr);
+                  const sanitizedName = (playlistName || "rundown").replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                  downloadAnchorNode.setAttribute("download", `${sanitizedName}.json`);
+                  document.body.appendChild(downloadAnchorNode);
+                  downloadAnchorNode.click();
+                  downloadAnchorNode.remove();
+                }}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white flex-1 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 transition flex justify-center items-center gap-1.5 uppercase tracking-wider"
+              >
+                <Save size={14} /> Simpan
+              </button>
+              
+              <label className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 flex-1 py-2.5 rounded-xl text-xs font-bold shadow-sm transition flex justify-center items-center gap-1.5 uppercase tracking-wider cursor-pointer">
+                <FileText size={14} /> Input
+                <input 
+                  type="file" 
+                  accept=".json" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      try {
+                        const importedPlaylist = JSON.parse(event.target?.result as string);
+                        if (Array.isArray(importedPlaylist)) {
+                          setPlaylist(importedPlaylist);
+                          localStorage.setItem(`worship_playlist_${playlistId}`, JSON.stringify(importedPlaylist));
+                          if (isEditingRundown) saveRundown();
+                        } else {
+                          alert("Format file tidak valid. Harus berupa array rundown.");
+                        }
+                      } catch (err) {
+                        alert("Gagal membaca file JSON.");
+                      }
+                    };
+                    reader.readAsText(file);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            </div>
           </div>
-        </div>
-      )}
-
+        </aside>
+      </main>
       {isVideoModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
           <div className="bg-white/95 backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-2xl max-w-xl w-full border border-white/50 relative">
@@ -1794,13 +2117,20 @@ export default function ControlPanel() {
             <h2 className="text-xl font-bold text-indigo-900 mb-4">Tambahkan Video</h2>
             <div className="mb-4 space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Paste Link (YouTube / MP4 / Google Drive)</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Upload File Video (MP4, dsb. Maks 30MB)</label>
                 <input 
-                  className="glass-input w-full font-semibold text-sm" 
-                  value={videoUrlInput} 
-                  onChange={e => setVideoUrlInput(e.target.value)}
-                  placeholder="https://www.youtube.com/watch?v=..."
+                  type="file" 
+                  accept="video/*" 
+                  id="cp-video-file-upload"
+                  className="hidden"
+                  onChange={handleVideoUpload}
                 />
+                <label 
+                  htmlFor="cp-video-file-upload"
+                  className={`glass-button text-sm py-4 cursor-pointer flex justify-center items-center gap-2 w-full border-2 border-dashed transition-all ${isVideoUploading ? 'bg-indigo-50 border-indigo-200 text-indigo-500' : videoUrlInput.startsWith('local_vid_') ? 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100' : 'bg-slate-50 border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400'}`}
+                >
+                  {isVideoUploading ? <Loader2 size={20} className="animate-spin" /> : (videoUrlInput.startsWith('local_vid_') ? <><CheckCircle size={20} /> File Dipilih! Klik untuk mengganti</> : <><Plus size={20} /> Pilih File Video</>)}
+                </label>
                 
                 <label className="flex items-center gap-3 mt-4 cursor-pointer p-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
                   <input 
@@ -1811,42 +2141,14 @@ export default function ControlPanel() {
                   />
                   <span className="text-slate-700 font-semibold select-none">Putar berulang-ulang (Loop) sampai pindah slide</span>
                 </label>
-                <label className="flex items-center gap-3 cursor-pointer bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                <label className="flex items-center gap-3 mt-3 cursor-pointer bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors">
                   <input 
                     type="checkbox" 
-                    checked={!!playlist[activeItem]?.muted} 
-                    onChange={(e) => {
-                      const val = e.target.checked;
-                      setPlaylist(prev => {
-                        const newPl = [...prev];
-                        newPl[activeItem] = { ...newPl[activeItem], muted: val };
-                        return newPl;
-                      });
-                    }}
+                    checked={isVideoMuted} 
+                    onChange={(e) => setIsVideoMuted(e.target.checked)}
                     className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" 
                   />
                   <span className="text-slate-700 font-semibold select-none">Bisukan Suara (Mute)</span>
-                </label>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="h-px bg-slate-200 flex-1"></div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">ATAU</span>
-                <div className="h-px bg-slate-200 flex-1"></div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Upload File Video (Maks 30MB)</label>
-                <input 
-                  type="file" 
-                  accept="video/*" 
-                  id="cp-video-file-upload"
-                  className="hidden"
-                  onChange={handleVideoUpload}
-                />
-                <label 
-                  htmlFor="cp-video-file-upload"
-                  className={`glass-button text-sm py-2 cursor-pointer flex justify-center items-center gap-2 w-full ${isVideoUploading ? 'bg-indigo-200 text-indigo-500' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
-                >
-                  {isVideoUploading ? <Loader2 size={16} className="animate-spin" /> : 'Pilih File Video'}
                 </label>
               </div>
             </div>
@@ -1866,217 +2168,8 @@ export default function ControlPanel() {
       />
 
       {/* LOGO MODAL */}
-      {isLogoModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm transition-opacity">
-          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-6 rounded-2xl shadow-2xl max-w-2xl w-full border border-white/40 dark:border-slate-700 max-h-[90vh] flex flex-col">
-            
-            <div className="flex-1 overflow-y-auto pr-2">
-              <h2 className="text-xl font-bold text-indigo-900 dark:text-indigo-100 mb-2">Logo & Watermark</h2>
-              <p className="text-sm text-indigo-800/70 dark:text-indigo-200/70 mb-4">Tambahkan logo dan geser (drag) di dalam kotak hitam untuk mengatur posisinya.</p>
-              
-              <div 
-                ref={containerRef}
-                className="w-full aspect-video bg-slate-900 rounded-xl relative overflow-hidden shadow-inner border-[6px] border-slate-800 dark:border-slate-950 select-none"
-              >
-                {logos.map(logo => (
-                  <div
-                    key={logo.id}
-                    className="absolute cursor-move group"
-                    style={{ 
-                      left: `${logo.x}%`, 
-                      top: `${logo.y}%`, 
-                      width: `${8 * logo.scale}%`,
-                      transform: 'translate(-50%, -50%)',
-                      zIndex: activeDragLogo === logo.id ? 50 : 10
-                    }}
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      setActiveDragLogo(logo.id);
-                      (e.target as HTMLElement).setPointerCapture(e.pointerId);
-                    }}
-                    onPointerMove={(e) => {
-                      if (activeDragLogo !== logo.id || !containerRef.current) return;
-                      const rect = containerRef.current.getBoundingClientRect();
-                      const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-                      const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
-                      updateLogo(logo.id, { x, y });
-                    }}
-                    onPointerUp={(e) => {
-                      if (activeDragLogo === logo.id) {
-                        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-                        setActiveDragLogo(null);
-                      }
-                    }}
-                  >
-                    <img src={logo.url} alt="Logo" className="w-full h-auto opacity-80 pointer-events-none group-hover:opacity-100 transition-opacity" />
-                    <div className="absolute inset-0 border-2 border-indigo-400 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity rounded-sm border-dashed"></div>
-                  </div>
-                ))}
-                {logos.length === 0 && (
-                  <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-sm font-semibold italic">Belum ada logo</div>
-                )}
-              </div>
 
-              <div className="mt-4 space-y-3 pb-4">
-              {logos.map((logo, index) => (
-                <div key={logo.id} className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3 flex flex-col gap-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Logo {index + 1}</span>
-                    <button onClick={() => removeLogo(logo.id)} className="text-red-500 hover:text-red-700 bg-red-100 dark:bg-red-900/30 p-1 rounded transition-colors" title="Hapus"><X size={14}/></button>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-semibold w-16 dark:text-slate-300">Ukuran:</span>
-                    <input 
-                      type="range" 
-                      min="0.1" max="5" step="0.1" 
-                      value={logo.scale} 
-                      onChange={(e) => updateLogo(logo.id, { scale: parseFloat(e.target.value) })}
-                      className="flex-1 accent-indigo-600 h-2 bg-indigo-200 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer"
-                    />
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300 w-8">{Math.round(logo.scale * 100)}%</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            </div>
-            
-            <input type="file" accept="image/*" ref={logoInputRef} onChange={handleLogoUpload} className="hidden" />
-            
-            <div className="flex gap-3 mt-2 pt-4 border-t border-slate-200 dark:border-slate-700 shrink-0">
-              <button onClick={() => logoInputRef.current?.click()} className="flex-1 py-3 rounded-xl font-bold text-indigo-900 dark:text-indigo-100 bg-indigo-100 dark:bg-indigo-900/30 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 border border-indigo-200 dark:border-indigo-800 flex justify-center items-center gap-2 transition shadow-sm">
-                <Plus size={18} /> Tambah Logo
-              </button>
-              <button onClick={() => setIsLogoModalOpen(false)} className="flex-1 py-3 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition">
-                Selesai & Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* RUNNING TEXT MODAL */}
-      {isRunningTextModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm transition-opacity">
-          <div className="bg-white/90 backdrop-blur-xl p-8 rounded-2xl shadow-2xl max-w-md w-full border border-white/40">
-            <h2 className="text-xl font-bold text-indigo-900 mb-2">Running Text (Teks Berjalan)</h2>
-            <p className="text-sm text-indigo-800/70 mb-6">Tampilkan pengumuman berjalan di layar.</p>
-            
-            <div className="flex flex-col gap-4 mb-6">
-              <div>
-                <label className="block text-sm font-semibold text-indigo-900 mb-2">Daftar Pengumuman</label>
-                <div className="max-h-48 overflow-y-auto pr-2 flex flex-col gap-2">
-                  {runningText.split('\n').map((txt, idx) => (
-                    <div key={idx} className="flex gap-2">
-                      <input 
-                        type="text"
-                        value={txt}
-                        onChange={(e) => {
-                          const arr = runningText.split('\n');
-                          arr[idx] = e.target.value;
-                          setRunningText(arr.join('\n'));
-                        }}
-                        className="flex-1 bg-white border border-indigo-200 rounded-lg p-2 text-sm text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        placeholder={`Pengumuman ${idx + 1}...`}
-                      />
-                      <button 
-                        onClick={() => {
-                          const arr = runningText.split('\n');
-                          arr.splice(idx, 1);
-                          setRunningText(arr.length ? arr.join('\n') : '');
-                        }}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
-                        title="Hapus baris ini"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <button 
-                  onClick={() => setRunningText(runningText ? runningText + '\n' : '\n')}
-                  className="mt-3 w-full py-2 border border-indigo-200 border-dashed rounded-lg text-indigo-600 hover:bg-indigo-50 font-semibold text-sm transition flex items-center justify-center gap-2"
-                >
-                  <Plus size={16} /> Tambah Pengumuman
-                </button>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-indigo-900 mb-2">Posisi</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setRtPos('top')}
-                    className={`p-2 rounded-lg text-sm font-semibold border-2 transition ${rtPos === 'top' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-indigo-100 bg-white text-indigo-400 hover:border-indigo-300'}`}
-                  >
-                    Atas
-                  </button>
-                  <button
-                    onClick={() => setRtPos('bottom')}
-                    className={`p-2 rounded-lg text-sm font-semibold border-2 transition ${rtPos === 'bottom' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-indigo-100 bg-white text-indigo-400 hover:border-indigo-300'}`}
-                  >
-                    Bawah
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-indigo-900 mb-2">
-                  Kecepatan (Durasi: {rtSpeed} detik)
-                </label>
-
-                <div className="flex items-center gap-3">
-                  <input 
-                    type="range" 
-                    min="5" 
-                    max="40" 
-                    value={rtSpeed}
-                    onChange={(e) => setRtSpeed(Number(e.target.value))}
-                    className="w-full accent-indigo-600"
-                  />
-                  <span className="text-sm font-bold w-8 text-indigo-900 bg-indigo-50 px-2 py-1 rounded text-center">{rtSpeed}</span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Ukuran / Tinggi Bar (vw)</label>
-                <div className="flex items-center gap-3">
-                  <input 
-                    type="range" 
-                    min="4" 
-                    max="15" 
-                    value={rtHeight} 
-                    onChange={(e) => setRtHeight(Number(e.target.value))} 
-                    className="w-full accent-indigo-600"
-                  />
-                  <span className="text-sm font-bold w-8 text-indigo-900 bg-indigo-50 px-2 py-1 rounded text-center">{rtHeight}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex flex-col gap-3">
-              <div className="grid grid-cols-2 gap-3">
-                <button 
-                  onClick={() => broadcastRunningText(false)}
-                  className="py-3 rounded-xl font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition"
-                  disabled={!isRtVisible}
-                >
-                  Sembunyikan
-                </button>
-                <button 
-                  onClick={() => broadcastRunningText(true)}
-                  className="py-3 rounded-xl font-bold text-white bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/30 transition"
-                >
-                  Tampilkan
-                </button>
-              </div>
-              <button 
-                onClick={() => setIsRunningTextModalOpen(false)}
-                className="w-full py-3 rounded-xl font-bold text-indigo-900 bg-black/5 hover:bg-black/10 transition mt-2"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* SEGMENT SELECTION MODAL */}
       {isSegmentModalOpen && segmentEditIndex !== null && (
@@ -2129,6 +2222,155 @@ export default function ControlPanel() {
                 <button type="submit" className="px-6 py-2 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition">Tambahkan</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT ITEM MODAL */}
+      {editItemIndex !== null && playlist[editItemIndex] && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
+          <div className="bg-white/95 backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-2xl max-w-2xl w-full border border-white/50 relative flex flex-col max-h-[90vh]">
+            <button onClick={() => setEditItemIndex(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full p-2 transition-all">
+              <X size={20} />
+            </button>
+            <h2 className="text-xl font-bold text-indigo-900 mb-4 flex items-center gap-2">
+              <Edit size={24} /> Edit {playlist[editItemIndex].type === 'announcement' ? 'Pengumuman' : playlist[editItemIndex].type === 'countdown' ? 'Hitung Mundur' : 'Lagu / Teks'}
+            </h2>
+            
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+              {/* Title Input */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Judul (Opsional)</label>
+                <input 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-indigo-900 font-semibold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all"
+                  value={playlist[editItemIndex].title || ''}
+                  onChange={(e) => {
+                    setPlaylist(prev => {
+                      const pl = [...prev];
+                      pl[editItemIndex] = { ...pl[editItemIndex], title: e.target.value };
+                      return pl;
+                    });
+                  }}
+                  placeholder="Masukkan Judul..."
+                />
+              </div>
+
+              {/* Countdown Inputs */}
+              {playlist[editItemIndex].type === 'countdown' ? (
+                <div className="flex gap-4 items-center justify-center p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="flex flex-col items-center">
+                    <input 
+                      type="number"
+                      className="w-24 text-center bg-white border-2 border-indigo-200 rounded-xl p-3 text-3xl focus:outline-none focus:border-indigo-500 transition-all font-bold"
+                      value={Math.floor(parseInt(playlist[editItemIndex].segments[0] || '0') / 60)}
+                      onChange={(e) => {
+                        setPlaylist(prev => {
+                          const pl = [...prev];
+                          const sec = parseInt(pl[editItemIndex].segments[0] || '0') % 60;
+                          pl[editItemIndex] = { ...pl[editItemIndex], segments: [String(Number(e.target.value) * 60 + sec)] };
+                          return pl;
+                        });
+                      }}
+                    />
+                    <span className="text-slate-500 mt-2 text-xs font-bold uppercase tracking-wider">Menit</span>
+                  </div>
+                  <div className="text-3xl font-bold text-slate-300 pb-6">:</div>
+                  <div className="flex flex-col items-center">
+                    <input 
+                      type="number"
+                      className="w-24 text-center bg-white border-2 border-indigo-200 rounded-xl p-3 text-3xl focus:outline-none focus:border-indigo-500 transition-all font-bold"
+                      value={parseInt(playlist[editItemIndex].segments[0] || '0') % 60}
+                      onChange={(e) => {
+                        setPlaylist(prev => {
+                          const pl = [...prev];
+                          const min = Math.floor(parseInt(pl[editItemIndex].segments[0] || '0') / 60);
+                          pl[editItemIndex] = { ...pl[editItemIndex], segments: [String(min * 60 + Number(e.target.value))] };
+                          return pl;
+                        });
+                      }}
+                    />
+                    <span className="text-slate-500 mt-2 text-xs font-bold uppercase tracking-wider">Detik</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {/* Segment Tabs */}
+                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                    {(playlist[editItemIndex].segments as any[]).map((_: any, i: number) => (
+                      <button
+                        key={i}
+                        onClick={() => setEditSegmentIndex(i)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-bold whitespace-nowrap transition-all ${
+                          editSegmentIndex === i ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {playlist[editItemIndex].segmentLabels?.[i] || (playlist[editItemIndex].type === 'announcement' ? `Slide ${i + 1}` : `Bait ${i + 1}`)}
+                      </button>
+                    ))}
+                    {(playlist[editItemIndex].type === 'song' || playlist[editItemIndex].type === 'announcement') && (
+                      <button
+                        onClick={() => {
+                          setPlaylist(prev => {
+                            const pl = [...prev];
+                            const currentLabels = pl[editItemIndex].segmentLabels || pl[editItemIndex].segments.map((_: any, i: number) => pl[editItemIndex].type === 'announcement' ? `Slide ${i + 1}` : `Bait ${i + 1}`);
+                            const newLabel = pl[editItemIndex].type === 'announcement' ? `Slide ${pl[editItemIndex].segments.length + 1}` : `Bait ${pl[editItemIndex].segments.length + 1}`;
+                            pl[editItemIndex] = { 
+                              ...pl[editItemIndex], 
+                              segments: [...pl[editItemIndex].segments, ''],
+                              segmentLabels: [...currentLabels, newLabel]
+                            };
+                            return pl;
+                          });
+                          setEditSegmentIndex(playlist[editItemIndex].segments.length);
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-sm font-bold bg-green-100 text-green-700 hover:bg-green-200 transition-all flex items-center gap-1"
+                      >
+                        <Plus size={14} /> {playlist[editItemIndex].type === 'announcement' ? 'Tambah Slide' : 'Tambah Bait'}
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Rich Editor */}
+                  <div className="flex flex-col gap-2">
+                    <RichEditor
+                      ref={editorRef}
+                      className="w-full min-h-[150px] bg-slate-50 border border-slate-200 rounded-xl p-4 text-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-indigo-900 whitespace-pre-wrap leading-relaxed transition-all resize-y"
+                      value={playlist[editItemIndex].segments[editSegmentIndex] || ''}
+                      onChange={(val) => {
+                        setPlaylist(prev => {
+                          const pl = [...prev];
+                          pl[editItemIndex] = { ...pl[editItemIndex], segments: [...pl[editItemIndex].segments] };
+                          pl[editItemIndex].segments[editSegmentIndex] = val;
+                          return pl;
+                        });
+                      }}
+                      onSelectChange={setHasSelection}
+                      placeholder="Ketik teks di sini (blok teks untuk mewarnai)..."
+                    />
+
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-100">
+              <button 
+                onClick={() => {
+                  setPlaylist(prev => {
+                    const pl = [...prev];
+                    pl.splice(editItemIndex, 1);
+                    return pl;
+                  });
+                  setEditItemIndex(null);
+                }}
+                className="px-4 py-2 rounded-xl text-red-600 font-bold hover:bg-red-50 flex items-center gap-2 transition"
+              >
+                <Trash2 size={16} /> Hapus Item
+              </button>
+              <button onClick={() => setEditItemIndex(null)} className="px-6 py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition">
+                Selesai
+              </button>
+            </div>
           </div>
         </div>
       )}

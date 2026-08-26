@@ -40,11 +40,13 @@ export default function DisplayWindow() {
     return [];
   });
   const [actualBgUrl, setActualBgUrl] = useState<string | null>(null);
+  const [bgType, setBgType] = useState<'image' | 'video'>('image');
   
   const [countdownRemaining, setCountdownRemaining] = useState<number | null>(null);
   
   const [isCursorVisible, setIsCursorVisible] = useState(false);
   const cursorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [scale, setScale] = useState(1);
 
   const [rtState, setRtState] = useState({
     text: localStorage.getItem('worship_rt_text') || '',
@@ -59,6 +61,7 @@ export default function DisplayWindow() {
   const currentPlaylistIdRef = useRef<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const ytPlayerRef = useRef<any>(null);
+  const pendingVideoAction = useRef<'play'|'pause'|null>(null);
 
   useEffect(() => {
     // 1. Terima update cepat via BroadcastChannel lokal
@@ -95,10 +98,20 @@ export default function DisplayWindow() {
           ytPlayerRef.current.seekTo(msg.data.payload.time);
         }
       } else if (msg.data.type === 'VIDEO_PLAY') {
-        if (videoRef.current) videoRef.current.play();
-        if (ytPlayerRef.current) ytPlayerRef.current.playVideo();
+        if (videoRef.current) {
+          videoRef.current.play().catch(e => console.error("DisplayWindow play error:", e));
+          pendingVideoAction.current = null;
+        } else {
+          pendingVideoAction.current = 'play';
+        }
+        if (ytPlayerRef.current) ytPlayerRef.current.playVideo?.();
       } else if (msg.data.type === 'VIDEO_PAUSE') {
-        if (videoRef.current) videoRef.current.pause();
+        if (videoRef.current) {
+          videoRef.current.pause();
+          pendingVideoAction.current = null;
+        } else {
+          pendingVideoAction.current = 'pause';
+        }
         if (ytPlayerRef.current) ytPlayerRef.current.pauseVideo();
       }
     };
@@ -197,6 +210,7 @@ export default function DisplayWindow() {
 
   // Mode blank: jangan early return, gunakan overlay agar komponen tetap render
   const isBlank = liveState.displayMode === 'blank';
+  const enabledLogos = logos.filter(l => l.enabled !== false);
 
   // Cari textToDisplay
   let text = '';
@@ -246,33 +260,41 @@ export default function DisplayWindow() {
 
   let progressText = '';
 
-  // Modifikasi judul Alkitab agar menampilkan ayat spesifik (bukan range)
-  if (itemType === 'bible' && title) {
-    const match = title.match(/(.+?)\s*:\s*(\d+)/);
-    if (match) {
-      const baseTitle = match[1]; // e.g., "Kejadian 1"
-      const startVerse = parseInt(match[2], 10);
-      title = `${baseTitle} : ${startVerse + liveState.segmentIndex}`;
-      
-      const realTotal = liveState.item?.chapterTotalVerses || (playlistMap[liveState.currentItemId || '']?.chapterTotalVerses) || totalSegments;
-      progressText = `ayat ${startVerse + liveState.segmentIndex} dari ${realTotal}`;
+  // Hapus modifikasi judul Alkitab agar judul tetap sama persis dengan yang ada di Control Panel (contoh: "Kejadian 1:1-6")
+  if ((itemType === 'song' || itemType === 'bible' || itemType === 'announcement') && title) {
+    // Treat as announcement if type is announcement OR title is exactly "Pengumuman"
+    const isAnnouncement = itemType === 'announcement' || title.toLowerCase().includes('pengumuman');
+    
+    let label = segmentLabel || '';
+    
+    if (itemType === 'bible' && !label) {
+      const match = title.match(/(.+?)\s*:\s*(\d+)/);
+      if (match) {
+        const startVerse = parseInt(match[2], 10);
+        label = `Ayat ${startVerse + liveState.segmentIndex}`;
+      } else {
+        label = `Ayat ${liveState.segmentIndex + 1}`;
+      }
     }
-  } else if (itemType === 'song' && title) {
-    let label = segmentLabel || `Bait ${liveState.segmentIndex + 1}`;
-    if (label.startsWith('Slide ')) {
+    
+    if (!isAnnouncement && itemType === 'song' && label.startsWith('Slide ')) {
        label = label.replace('Slide ', 'Bait ');
     }
     displayLabel = label;
     
-    const allLabels = liveState.item?.segmentLabels || playlistMap[liveState.currentItemId || '']?.segmentLabels || [];
-    const isBait = (l: string) => l.toLowerCase().includes('bait') || l.toLowerCase().includes('verse') || l.toLowerCase().includes('slide');
-    
-    if (isBait(label)) {
-       const totalBait = allLabels.filter(isBait).length || totalSegments;
-       const currentBaitNum = allLabels.slice(0, liveState.segmentIndex + 1).filter(isBait).length || (liveState.segmentIndex + 1);
-       progressText = `bait ${currentBaitNum} dari ${totalBait}`;
+    if (!isAnnouncement) {
+      const allLabels = liveState.item?.segmentLabels || playlistMap[liveState.currentItemId || '']?.segmentLabels || [];
+      const isBait = (l: string) => l.toLowerCase().includes('bait') || l.toLowerCase().includes('verse') || l.toLowerCase().includes('slide');
+      
+      if (isBait(label)) {
+         const totalBait = allLabels.filter(isBait).length || totalSegments;
+         const currentBaitNum = allLabels.slice(0, liveState.segmentIndex + 1).filter(isBait).length || (liveState.segmentIndex + 1);
+         progressText = `bait ${currentBaitNum} dari ${totalBait}`;
+      } else {
+         progressText = ''; 
+      }
     } else {
-       progressText = ''; 
+      progressText = '';
     }
   }
 
@@ -288,13 +310,13 @@ export default function DisplayWindow() {
   }
 
   // Hitung ukuran font dinamis berdasarkan panjang teks
-  let fontSizeClass = "text-[5vw]"; // Default untuk teks pendek
+  let fontSizeClass = "text-[96px]"; // Default untuk teks pendek
   if (text) {
-    if (text.length > 250) fontSizeClass = "text-[2.5vw]";
-    else if (text.length > 180) fontSizeClass = "text-[3vw]";
-    else if (text.length > 120) fontSizeClass = "text-[3.5vw]";
-    else if (text.length > 70) fontSizeClass = "text-[4vw]";
-    else if (text.length > 40) fontSizeClass = "text-[4.5vw]";
+    if (text.length > 250) fontSizeClass = "text-[48px]";
+    else if (text.length > 180) fontSizeClass = "text-[58px]";
+    else if (text.length > 120) fontSizeClass = "text-[67px]";
+    else if (text.length > 70) fontSizeClass = "text-[77px]";
+    else if (text.length > 40) fontSizeClass = "text-[86px]";
   }
 
   // Hitung durasi animasi yang proporsional dengan panjang teks agar kecepatan stabil
@@ -328,11 +350,22 @@ export default function DisplayWindow() {
   useEffect(() => {
     const fetchBg = async () => {
       const currentBg = itemBg || liveState.bgUrl;
-      if (currentBg?.startsWith('slide_bg_')) {
+      if (currentBg?.startsWith('slide_bg_vid_')) {
+        const blob = await getSlideBackground(currentBg);
+        if (blob instanceof Blob) {
+          setActualBgUrl(URL.createObjectURL(blob));
+          setBgType('video');
+        } else {
+          setActualBgUrl(null);
+          setBgType('image');
+        }
+      } else if (currentBg?.startsWith('slide_bg_')) {
         const base64 = await getSlideBackground(currentBg);
-        setActualBgUrl(base64 || null);
+        setActualBgUrl(base64 as string | null);
+        setBgType('image');
       } else {
         setActualBgUrl(currentBg || null);
+        setBgType(currentBg?.match(/\.(mp4|webm)$/i) ? 'video' : 'image');
       }
     };
     fetchBg();
@@ -378,36 +411,73 @@ export default function DisplayWindow() {
     };
   }, []);
 
-  return (
-    <div 
-      className={`fixed inset-0 flex flex-col items-center justify-center bg-gray-900 text-white p-12 text-center transition-all duration-300 overflow-hidden ${isCursorVisible ? 'cursor-default' : 'cursor-none'}`}
-      style={{
-        backgroundImage: actualBgUrl ? `url(${actualBgUrl})` : 'none',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      }}
-    >
-      <div className="absolute inset-0 bg-black/40 z-0"></div>
+  useEffect(() => {
+    const handleResize = () => {
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      const targetRatio = 16 / 9;
+      const windowRatio = windowWidth / windowHeight;
 
-      {/* Multi-Logo Watermarks */}
-      {logos.length > 0 && (text || itemType === 'video') && (
+      if (windowRatio > targetRatio) {
+        setScale(windowHeight / 1080);
+      } else {
+        setScale(windowWidth / 1920);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return (
+    <div className={`fixed inset-0 flex items-center justify-center bg-black overflow-hidden ${isCursorVisible ? 'cursor-default' : 'cursor-none'}`}>
+      
+      {/* Background that fills the entire viewport */}
+      <div 
+        className="absolute inset-0 z-0 bg-gray-900"
+        style={bgType === 'image' ? {
+          backgroundImage: actualBgUrl ? `url(${actualBgUrl})` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        } : undefined}
+      >
+        {bgType === 'video' && actualBgUrl && (
+          <video 
+            src={actualBgUrl} 
+            autoPlay 
+            loop 
+            muted 
+            playsInline 
+            className="absolute inset-0 w-full h-full object-cover z-0"
+          />
+        )}
+        <div className="absolute inset-0 bg-black/40 z-0"></div>
+      </div>
+
+      {/* Container utama yang mengisi seluruh area aman (di luar running text) */}
+      <div 
+        className="absolute left-0 right-0 z-10 flex flex-col items-center justify-center pointer-events-none transition-all duration-500"
+        style={{ 
+          containerType: 'inline-size',
+          top: rtState.isVisible && rtState.position === 'top' ? `${((rtState.height || 7) / 56.25) * 100}%` : '0',
+          bottom: rtState.isVisible && rtState.position === 'bottom' ? `${((rtState.height || 7) / 56.25) * 100}%` : '0'
+        }}
+      >
+      {enabledLogos.length > 0 && (text || itemType === 'video') && (
         <div 
-          className="absolute left-0 right-0 transition-all duration-500 pointer-events-none z-[60]"
-          style={{
-            top: rtState.isVisible && rtState.position === 'top' ? `${rtState.height || 7}vw` : '0',
-            bottom: rtState.isVisible && rtState.position === 'bottom' ? `${rtState.height || 7}vw` : '0'
-          }}
+          className="absolute inset-0 pointer-events-none z-[60]"
         >
-          {logos.map(logo => (
+          {enabledLogos.map(logo => (
             <img 
               key={logo.id}
               src={logo.url} 
               style={{ 
                 width: `${8 * logo.scale}%`,
-                left: `${logo.x}%`,
-                top: `${logo.y}%`,
-                transform: 'translate(-50%, -50%)'
+                ...(logo.x < 50 ? { left: `${logo.x}%` } : { right: `${100 - logo.x}%` }),
+                ...(logo.y < 50 ? { top: `${logo.y}%` } : { bottom: `${100 - logo.y}%` }),
               }}
               className="absolute h-auto opacity-70 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]"
               alt="Logo" 
@@ -416,70 +486,48 @@ export default function DisplayWindow() {
         </div>
       )}
 
-      {/* Judul dan Progress Slide (Header) */}
+      {/* Judul (Header) */}
       {liveState.displayMode === 'content' && (
         <>
-          {itemType !== 'video' && (
-        <div 
-          className={`absolute left-0 right-0 w-full flex flex-col items-center z-20 animate-fade-in transition-all duration-500 ${
-            rtState.isVisible && rtState.position === 'top' ? 'top-32' : 'top-12'
-          }`}
-        >
-          {title && (itemType === 'song' || itemType === 'bible' || itemType === 'announcement') && (
-            <div className="flex flex-col items-center gap-3">
-              <h2 
-                key={`title-${title}-${liveState.segmentIndex}`}
-                className="px-8 md:px-64 text-center text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-yellow-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] opacity-90 tracking-wider mb-2"
-                style={{ textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)' }}
-              >
-                {title}
-              </h2>
-              {categoryLabel && (
-                <div 
-                  className="bg-white/20 border border-white/30 px-3 py-1 rounded-full text-[1.2vw] font-bold text-white shadow-sm backdrop-blur-md uppercase tracking-wider"
-                  style={{ textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' }}
-                >
-                  {categoryLabel}
-                </div>
-              )}
-            </div>
+          {itemType !== 'video' && title && (itemType === 'song' || itemType === 'bible' || itemType === 'announcement') && (
+            <h2 
+              key={`title-${title}-${liveState.segmentIndex}`}
+              className="absolute left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-20 transition-all duration-500"
+              style={{
+                top: '6%',
+                fontSize: '3.5cqw',
+                textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
+              }}
+            >
+              {title}
+            </h2>
           )}
-        </div>
-      )}
 
       {/* Konten Lirik/Ayat atau Slideshow atau Video */}
-      <div className={itemType === 'video' ? "absolute inset-0 z-50 bg-black flex justify-center items-center" : "absolute top-40 bottom-32 left-0 right-0 flex flex-col justify-center items-center px-16 z-10"}>
-        {itemType === 'video' ? (
-          (() => {
+      {itemType === 'video' ? (
+        <div className="absolute inset-0 z-50 bg-black flex justify-center items-center pointer-events-auto">
+          {(() => {
             const url = text;
+            let videoId = '';
+            let embedUrl = '';
             if (url.includes('youtube.com') || url.includes('youtu.be')) {
-              let embedUrl = '';
-              let videoId = '';
               if (url.includes('list=')) {
                 const listId = url.split('list=')[1].split('&')[0];
                 if (url.includes('v=')) {
                   videoId = url.split('v=')[1].split('&')[0];
                 }
                 embedUrl = videoId 
-                  ? `https://www.youtube-nocookie.com/embed/${videoId}?list=${listId}&autoplay=1&mute=${isVideoMuted ? '1' : '0'}`
-                  : `https://www.youtube-nocookie.com/embed/videoseries?list=${listId}&autoplay=1&mute=${isVideoMuted ? '1' : '0'}`;
+                  ? `https://www.youtube-nocookie.com/embed/${videoId}?list=${listId}&autoplay=0`
+                  : `https://www.youtube-nocookie.com/embed/videoseries?list=${listId}&autoplay=0`;
               } else if (url.includes('youtube.com/watch?v=')) {
                 videoId = url.split('v=')[1].split('&')[0];
-                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=${isVideoMuted ? '1' : '0'}`;
+                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0`;
               } else if (url.includes('youtu.be/')) {
                 videoId = url.split('youtu.be/')[1].split('?')[0];
-                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=${isVideoMuted ? '1' : '0'}`;
+                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0`;
               } else if (url.includes('youtube.com/embed/') || url.includes('youtube-nocookie.com/embed/')) {
-                embedUrl = url.includes('?') ? url.replace('autoplay=0', 'autoplay=1') : `${url}?autoplay=1`;
-                if (isVideoMuted) {
-                  embedUrl = embedUrl.replace('mute=0', 'mute=1');
-                  if (!embedUrl.includes('mute=')) embedUrl += '&mute=1';
-                } else {
-                  embedUrl = embedUrl.replace('mute=1', 'mute=0');
-                  if (!embedUrl.includes('mute=')) embedUrl += '&mute=0';
-                }
+                embedUrl = url.includes('?') ? url.replace('autoplay=1', 'autoplay=0') : `${url}?autoplay=0`;
                 embedUrl = embedUrl.replace('youtube.com', 'youtube-nocookie.com');
-                // try to parse videoId from embed url
                 videoId = embedUrl.split('embed/')[1].split('?')[0];
               } else {
                 embedUrl = url; // Fallback
@@ -487,12 +535,14 @@ export default function DisplayWindow() {
               
               if (videoId) {
                 const opts = {
-                  width: '100%',
                   height: '100%',
+                  width: '100%',
                   playerVars: {
-                    autoplay: 1,
+                    autoplay: 0,
+                    mute: isVideoMuted ? 1 : 0,
                     controls: 0,
                     disablekb: 1,
+                    enablejsapi: 1,
                     loop: isVideoLoop ? 1 : 0,
                     playlist: isVideoLoop ? videoId : undefined,
                   }
@@ -501,7 +551,7 @@ export default function DisplayWindow() {
                   <YouTube
                     videoId={videoId}
                     opts={opts}
-                    className="w-full h-full object-contain animate-fade-in pointer-events-none"
+                    className="w-full h-full object-contain animate-fade-in"
                     onReady={(e: any) => {
                       ytPlayerRef.current = e.target;
                     }}
@@ -521,7 +571,7 @@ export default function DisplayWindow() {
               return (
                 <iframe 
                   key={embedUrl}
-                  className="w-full h-full object-contain animate-fade-in" 
+                  className="w-full h-full object-contain animate-fade-in pointer-events-auto" 
                   src={embedUrl}
                   referrerPolicy="strict-origin-when-cross-origin"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
@@ -554,15 +604,35 @@ export default function DisplayWindow() {
             };
 
             if (url.startsWith('local_vid_')) {
-              return <LocalVideoPlayer ref={videoRef} key={url} id={url} loop={isVideoLoop} autoPlay={true} muted={isVideoMuted} onTimeUpdate={handleTimeUpdate} onPlay={handlePlay} onPause={handlePause} />;
+              return <div className="w-full h-full pointer-events-auto">
+                <LocalVideoPlayer 
+                  ref={videoRef} 
+                  key={url} 
+                  id={url} 
+                  loop={isVideoLoop} 
+                  autoPlay={false} 
+                  muted={isVideoMuted} 
+                  onTimeUpdate={handleTimeUpdate} 
+                  onPlay={handlePlay} 
+                  onPause={handlePause} 
+                  onLoadedData={() => {
+                    if (pendingVideoAction.current === 'play' && videoRef.current) {
+                      videoRef.current.play().catch(e => console.error("Play error after load:", e));
+                    } else if (pendingVideoAction.current === 'pause' && videoRef.current) {
+                      videoRef.current.pause();
+                    }
+                    pendingVideoAction.current = null;
+                  }}
+                />
+              </div>;
             }
             return (
               <video 
                 ref={videoRef}
                 key={url}
-                className="w-full h-full object-contain animate-fade-in" 
+                className="w-full h-full object-contain animate-fade-in pointer-events-auto" 
                 src={url} 
-                autoPlay 
+                autoPlay={false}
                 loop={isVideoLoop}
                 muted={isVideoMuted}
                 onTimeUpdate={handleTimeUpdate}
@@ -570,80 +640,63 @@ export default function DisplayWindow() {
                 onPause={handlePause}
               />
             );
-          })()
-        ) : itemType === 'countdown' && countdownRemaining !== null ? (
-          <div className="flex flex-col items-center justify-center animate-fade-in">
-            {title && (
-              <div 
-                className="text-white font-bold text-[4vw] mb-[2vw] drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] tracking-wider"
-                style={{
-                  textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
-                }}
-              >
-                {title}
-              </div>
-            )}
-            <div 
-              className="text-white font-mono font-black text-[15vw] leading-none drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)] tracking-tighter"
-              style={{
-                textShadow: '4px 4px 0 #000, -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000, 0 8px 30px rgba(0,0,0,0.9)'
-              }}
-            >
+          })()}
+        </div>
+      ) : (
+        <div className="relative z-10 flex flex-col items-center justify-center w-full mt-[10%] mb-[8%] px-[8%]">
+          {itemType === 'countdown' && countdownRemaining !== null ? (
+            <div className="text-white text-center font-bold tracking-widest leading-none drop-shadow-xl w-full font-mono animate-fade-in" 
+                 style={{ textShadow: '0 10px 30px rgba(0,0,0,0.8), 0 0 40px rgba(255,255,255,0.2)', fontSize: '18cqw' }}>
               {String(Math.floor(countdownRemaining / 60)).padStart(2, '0')}:{String(countdownRemaining % 60).padStart(2, '0')}
             </div>
-          </div>
-        ) : text ? (
-          <>
-            {displayLabel && (
+          ) : text ? (
+            <>
               <div 
-                className="text-yellow-300 font-bold text-[2vw] mb-[1.5vw] drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] animate-fade-in tracking-wider uppercase"
+                key={`text-${text}`}
+                className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl w-full animate-fade-in" 
+                style={{ 
+                  textShadow: '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)', 
+                  fontSize: (() => {
+                    const t = text || '';
+                    if (t.length > 350) return '3cqw';
+                    if (t.length > 250) return '3.5cqw';
+                    if (t.length > 180) return '4cqw';
+                    if (t.length > 120) return '4.5cqw';
+                    if (t.length > 70) return '5.5cqw';
+                    if (t.length > 40) return '6.5cqw';
+                    return '7.5cqw';
+                  })(),
+                  lineHeight: '1.4'
+                }}
+                dangerouslySetInnerHTML={{ __html: processText(text) }}
+              />
+              {/* Bait Label di bawah isi */}
+              <div 
+                className="text-yellow-300 font-bold mt-[1.5cqw] tracking-widest uppercase animate-fade-in opacity-80"
                 style={{
-                  textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
+                  fontSize: '1.5cqw',
+                  textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)',
+                  minHeight: '2cqw'
                 }}
               >
-                {displayLabel}
+                {displayLabel || (itemType === 'song' ? '•' : '')}
               </div>
-            )}
-            <h1 
-              key={`text-${text}`}
-            className={`${fontSizeClass} font-bold text-white text-center leading-relaxed tracking-wide drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] animate-fade-in`}
-            style={{
-              textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
-            }}
-            dangerouslySetInnerHTML={{ __html: processText(text) }}
-            >
-            </h1>
-          </>
-        ) : logos.length > 0 ? (
-          <img 
-            src={logos[0].url} 
-            style={{ width: `${33 * logos[0].scale}%`, maxWidth: `${400 * logos[0].scale}px` }}
-            className="object-contain animate-fade-in drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]" 
-            alt="Logo" 
-          />
-        ) : null}
-      </div>
-
-
-
-      {/* Progress Text (Bait x dari y) - right above running text */}
-      {progressText && (
-        <div 
-          className="absolute left-0 right-0 z-40 transition-all duration-500 text-center"
-          style={{
-            bottom: rtState.isVisible && rtState.position === 'bottom' ? `${(rtState.height || 7) + 0.5}vw` : '1vw'
-          }}
-        >
-          <div 
-            className="text-white/80 text-[1.5vw] font-medium tracking-wider lowercase inline-block"
-            style={{ textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)' }}
-          >
-            {progressText}
-          </div>
+            </>
+          ) : enabledLogos.length > 0 ? (
+            <img 
+              src={enabledLogos[0].url} 
+              style={{ width: `${33 * enabledLogos[0].scale}%`, maxWidth: `${400 * enabledLogos[0].scale}px` }}
+              className="object-contain animate-fade-in drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]" 
+              alt="Logo" 
+            />
+          ) : null}
         </div>
-          )}
+      )}
+
         </>
       )}
+
+      </div>
 
       {/* Running Text */}
       {rtState.isVisible && rtState.text && (
@@ -651,16 +704,16 @@ export default function DisplayWindow() {
           className={`absolute left-0 right-0 z-50 bg-black/60 backdrop-blur-md border-y border-white/10 overflow-hidden flex items-center ${
             rtState.position === 'top' ? 'top-0' : 'bottom-0'
           }`}
-          style={{ height: `${rtState.height || 7}vw` }}
+          style={{ height: `${((rtState.height || 7) / 56.25) * 100}%` }}
         >
           <div 
-            className="animate-marquee-seamless"
+            className="animate-marquee-seamless shrink-0"
             style={{ animationDuration: `${calculatedDuration}s` }}
           >
-            <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${(rtState.height || 7) * 0.35}vw` }}>
+            <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtState.height || 7) / 56.25 * 100) * 0.35}cqw` }}>
               {rtBlockText}
             </div>
-            <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${(rtState.height || 7) * 0.35}vw` }}>
+            <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtState.height || 7) / 56.25 * 100) * 0.35}cqw` }}>
               {rtBlockText}
             </div>
           </div>

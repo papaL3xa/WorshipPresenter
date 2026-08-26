@@ -7,18 +7,10 @@ import Library from './pages/Library';
 import Settings from './pages/Settings';
 
 const RequireAuth = ({ children }: { children: JSX.Element }) => {
-  const isLoggedIn = localStorage.getItem('worship_is_logged_in') === 'true';
-  if (!isLoggedIn) {
-    return <Navigate to="/" replace />;
-  }
   return children;
 };
 
 const RequireAdmin = ({ children }: { children: JSX.Element }) => {
-  const isAdmin = localStorage.getItem('worship_role') === 'admin';
-  if (!isAdmin) {
-    return <Navigate to="/dashboard" replace />;
-  }
   return children;
 };
 
@@ -63,7 +55,7 @@ function App() {
     <HashRouter>
       <Routes>
         {/* Rute Terbuka (Public) */}
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/display" element={<DisplayWindow />} />
         
         {/* Rute Terlindungi (Protected) */}

@@ -60,7 +60,10 @@ export default function Settings() {
       <header className="glass-panel p-5 flex flex-col md:flex-row justify-between items-center gap-4">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate(-1)} className="glass-button text-indigo-900 dark:text-[#C5A059] p-2.5 rounded-full hover:bg-white/70 dark:hover:bg-white/10 shadow-sm"><ArrowLeft size={20}/></button>
-          <h1 className="text-3xl font-heading font-extrabold text-indigo-950 dark:text-[#D4B872] drop-shadow-sm tracking-tight">Pengaturan</h1>
+          <h1 className="text-3xl font-heading font-extrabold text-indigo-950 dark:text-[#D4B872] drop-shadow-sm tracking-tight flex items-center gap-4">
+            Pengaturan
+            <FooterClock />
+          </h1>
         </div>
         <div className="flex gap-4">
           {activeTab === 'security' && !isDesktop && (
@@ -75,8 +78,6 @@ export default function Settings() {
           )}
         </div>
       </header>
-
-      <FooterClock />
 
       <main className="glass-panel w-full flex-1 p-6 md:p-10 shadow-lg relative z-10 flex flex-col overflow-y-auto mb-6">
 
@@ -94,14 +95,7 @@ export default function Settings() {
           >
             Tampilan
           </button>
-          {!isDesktop && (
-            <button 
-              onClick={() => setActiveTab('security')}
-              className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'security' ? 'bg-indigo-600 dark:bg-[#C5A059] text-white shadow-lg' : 'bg-white/40 dark:bg-white/5 text-indigo-900 dark:text-[#C5A059] hover:bg-white/60 dark:hover:bg-white/10'}`}
-            >
-              Keamanan (PIN)
-            </button>
-          )}
+
           <button 
             onClick={() => setActiveTab('backup')}
             className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'backup' ? 'bg-indigo-600 dark:bg-[#C5A059] text-white shadow-lg' : 'bg-white/40 dark:bg-white/5 text-indigo-900 dark:text-[#C5A059] hover:bg-white/60 dark:hover:bg-white/10'}`}
@@ -147,67 +141,7 @@ export default function Settings() {
           </div>
         )}
 
-        {activeTab === 'security' && (
-        <div className="space-y-8">
-          <div className="bg-white/40 dark:bg-black/20 p-8 rounded-2xl border border-white/60 dark:border-white/10 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:bg-white/50 dark:hover:bg-black/30 transition-colors">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 dark:bg-[#C5A059]/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none group-hover:bg-indigo-500/20 dark:group-hover:bg-[#C5A059]/20 transition-colors"></div>
-            
-            <h2 className="text-xl font-heading font-bold text-indigo-950 dark:text-[#D4B872] mb-6 flex items-center gap-3 drop-shadow-sm">
-              <div className="bg-indigo-100 dark:bg-black/40 p-2 rounded-lg text-indigo-600 dark:text-[#C5A059]"><Lock size={20} /></div>
-              Otorisasi Admin
-            </h2>
-            <div className="relative z-10">
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-2">PIN Admin Saat Ini <span className="text-red-500">*</span></label>
-              <input 
-                type="password" 
-                value={currentAdminPin}
-                onChange={(e) => setCurrentAdminPin(e.target.value.replace(/\D/g, ''))}
-                maxLength={6}
-                className="w-full max-w-xs bg-white/70 dark:bg-black/40 backdrop-blur-sm border-2 border-white/60 dark:border-white/10 rounded-xl px-4 py-3 text-2xl tracking-[0.3em] font-bold shadow-inner focus:border-indigo-400 dark:focus:border-[#D4B872] focus:bg-white/90 dark:focus:bg-black/60 focus:ring-4 focus:ring-indigo-400/20 dark:focus:ring-[#D4B872]/20 transition-all outline-none text-indigo-950 dark:text-[#D4B872]" 
-                placeholder="••••••" 
-              />
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-3">Anda harus memasukkan PIN Admin yang aktif saat ini untuk memvalidasi dan menyimpan perubahan.</p>
-            </div>
-          </div>
-          
-          <div className="bg-white/40 dark:bg-black/20 p-8 rounded-2xl border border-white/60 dark:border-white/10 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:bg-white/50 dark:hover:bg-black/30 transition-colors">
-            <div className="absolute bottom-0 right-0 w-40 h-40 bg-indigo-400/10 dark:bg-[#C5A059]/10 rounded-full blur-3xl -mr-10 -mb-10 pointer-events-none group-hover:bg-indigo-400/20 dark:group-hover:bg-[#C5A059]/20 transition-colors"></div>
-            
-            <h2 className="text-xl font-heading font-bold text-indigo-950 dark:text-[#D4B872] mb-6 flex items-center gap-3 drop-shadow-sm">
-              <div className="bg-indigo-100 dark:bg-black/40 p-2 rounded-lg text-indigo-600 dark:text-[#C5A059]"><ShieldAlert size={20} /></div>
-              Ubah PIN Baru
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
-              <div className="bg-white/30 dark:bg-white/5 p-5 rounded-xl border border-white/40 dark:border-white/10 shadow-inner">
-                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-3">PIN Operator Baru</label>
-                <input 
-                  type="password" 
-                  value={newOperatorPin}
-                  onChange={(e) => setNewOperatorPin(e.target.value.replace(/\D/g, ''))}
-                  maxLength={6}
-                  className="w-full bg-white/70 dark:bg-black/40 backdrop-blur-sm border-2 border-white/60 dark:border-white/10 rounded-xl px-4 py-3 text-2xl tracking-[0.3em] font-bold shadow-inner focus:border-indigo-400 dark:focus:border-[#D4B872] focus:bg-white/90 dark:focus:bg-black/60 focus:ring-4 focus:ring-indigo-400/20 dark:focus:ring-[#D4B872]/20 transition-all outline-none text-indigo-950 dark:text-[#D4B872]" 
-                  placeholder="••••••" 
-                />
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-3">Kosongkan jika tidak ingin mengubah PIN Operator.</p>
-              </div>
 
-              <div className="bg-white/30 dark:bg-white/5 p-5 rounded-xl border border-white/40 dark:border-white/10 shadow-inner">
-                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-3">PIN Admin Baru</label>
-                <input 
-                  type="password" 
-                  value={newAdminPin}
-                  onChange={(e) => setNewAdminPin(e.target.value.replace(/\D/g, ''))}
-                  maxLength={6}
-                  className="w-full bg-white/70 dark:bg-black/40 backdrop-blur-sm border-2 border-white/60 dark:border-white/10 rounded-xl px-4 py-3 text-2xl tracking-[0.3em] font-bold shadow-inner focus:border-indigo-400 dark:focus:border-[#D4B872] focus:bg-white/90 dark:focus:bg-black/60 focus:ring-4 focus:ring-indigo-400/20 dark:focus:ring-[#D4B872]/20 transition-all outline-none text-indigo-950 dark:text-[#D4B872]" 
-                  placeholder="••••••" 
-                />
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-3">Kosongkan jika tidak ingin mengubah PIN Admin.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        )}
         
         {activeTab === 'backup' && (
         <div className="space-y-8">

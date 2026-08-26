@@ -14,6 +14,8 @@ export interface SongData {
   title: string;
   author: string;
   category: string;
+  key?: string;
+  beat?: string;
   segmentOrder: number[];
   segments: string[];
   segmentLabels?: string[];
@@ -34,7 +36,7 @@ export const initDefaultDatabases = async () => {
   const dbKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbinfo_')) as string[];
   const dataKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbdata_')) as string[];
 
-  const currentDbVersion = '1.0.6'; // Update this when default files change
+  const currentDbVersion = '1.0.7'; // Update this when default files change
   const savedDbVersion = localStorage.getItem('worship_db_version');
 
   const isOutdated = savedDbVersion !== currentDbVersion;
@@ -124,7 +126,9 @@ export const exportDatabaseToTsv = async (id: string) => {
         songId: song.id,
         title: song.title,
         author: song.author,
-        category: song.category
+        category: song.category,
+        key: song.key || '',
+        beat: song.beat || ''
       };
       song.segments.forEach((seg, idx) => {
         // Here we ensure real newlines are kept. PapaParse will automatically quote them.
@@ -182,6 +186,8 @@ const loadDefaultSongDatabase = async () => {
       title: s.title,
       author: s.author || '',
       category: s.category || '',
+      key: s.key || s.nada_dasar || s.nadaDasar || '',
+      beat: s.beat || s.ketukan || '',
       segmentOrder: s.segmentOrder ? JSON.parse(s.segmentOrder) : [],
       segments: segmentMap[s.songId] || [],
       segmentLabels: labelMap[s.songId] || []
@@ -277,6 +283,8 @@ export const addCustomDatabase = async (info: DatabaseVersion, tsvContent: strin
         title: s.title || 'Untitled',
         author: s.author || '',
         category: s.category || 'Custom',
+        key: s.key || s.nada_dasar || s.nadaDasar || '',
+        beat: s.beat || s.ketukan || '',
         segmentOrder: Array.from({length: segs.length}, (_, idx) => idx),
         segments: segs
       };
@@ -387,7 +395,8 @@ export const searchLocalBible = async (query: string, versionId: string): Promis
         isRange: true,
         id: `r_${Date.now()}`,
         title: `${foundVerses[0].book} ${chapQuery}:${startVerse}-${endVerse}`,
-        segments: foundVerses.map(v => v.text)
+        segments: foundVerses.map(v => v.text),
+        segmentLabels: foundVerses.map(v => `Ayat ${v.verse}`)
       }];
     }
     return [];
@@ -431,7 +440,7 @@ export const searchLocalBible = async (query: string, versionId: string): Promis
 
 export const getAllLocalSongTitles = async (versionId: string) => {
   const songs = await searchLocalSongs('', versionId);
-  return songs.map(s => ({ id: s.id, title: s.title, category: s.category }));
+  return songs.map(s => ({ id: s.id, title: s.title, category: s.category, author: s.author, key: s.key, beat: s.beat }));
 };
 
 export const getLocalSongCategories = async (versionId: string): Promise<string[]> => {

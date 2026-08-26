@@ -1,6 +1,6 @@
 import { useState, useEffect, forwardRef } from 'react';
 
-export const LocalVideoPlayer = forwardRef<HTMLVideoElement, { id: string, loop?: boolean, autoPlay?: boolean, muted?: boolean, onTimeUpdate?: (e: React.SyntheticEvent<HTMLVideoElement>) => void, onPlay?: () => void, onPause?: () => void }>(({ id, loop, autoPlay, muted, onTimeUpdate, onPlay, onPause }, ref) => {
+export const LocalVideoPlayer = forwardRef<HTMLVideoElement, { id: string, loop?: boolean, autoPlay?: boolean, muted?: boolean, onTimeUpdate?: (e: React.SyntheticEvent<HTMLVideoElement>) => void, onPlay?: () => void, onPause?: () => void, onLoadedData?: () => void }>(({ id, loop, autoPlay, muted, onTimeUpdate, onPlay, onPause, onLoadedData }, ref) => {
   const [url, setUrl] = useState<string>('');
   
   useEffect(() => {
@@ -33,6 +33,7 @@ export const LocalVideoPlayer = forwardRef<HTMLVideoElement, { id: string, loop?
       onTimeUpdate={onTimeUpdate}
       onPlay={onPlay}
       onPause={onPause}
+      onLoadedData={onLoadedData}
       src={url} 
     />
   );
