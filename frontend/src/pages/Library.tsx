@@ -19,6 +19,8 @@ export interface SearchResult {
   title: string;
   author?: string;
   category?: string;
+  key?: string;
+  beat?: string;
   segments: string[];
   segmentLabels?: string[];
 }

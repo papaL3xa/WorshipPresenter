@@ -49,7 +49,7 @@ export default function ControlPanel() {
   const [isBgModalOpen, setIsBgModalOpen] = useState(false);
   const [isBgPickerOpen, setIsBgPickerOpen] = useState(false);
   const [isLogoModalOpen, setIsLogoModalOpen] = useState(false);
-  const [displayPanelTab, setDisplayPanelTab] = useState<'rt'|'logo'>('rt');
+  const [displayPanelTab, setDisplayPanelTab] = useState<string>('rt');
   const [isRunningTextModalOpen, setIsRunningTextModalOpen] = useState(false);
   const [isCountdownModalOpen, setIsCountdownModalOpen] = useState(false);
   const [countdownInputValue, setCountdownInputValue] = useState('5');
@@ -1489,7 +1489,7 @@ export default function ControlPanel() {
                 
                 return item?.segments && item.segments.length > 1 ? (
                   <div className="flex-1 bg-transparent border border-indigo-500/30 dark:border-white/20 rounded-xl p-1.5 flex items-center gap-1.5 overflow-x-auto min-w-0 custom-scrollbar">
-                    {(item.visibleSegments || [...Array(item.segments.length).keys()]).map((idx) => (
+                    {(item.visibleSegments || [...Array(item.segments.length).keys()]).map((idx: number) => (
                       <button 
                         key={idx}
                         onClick={() => { 
