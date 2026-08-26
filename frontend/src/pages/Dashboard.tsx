@@ -5,7 +5,7 @@ import { SyncButton } from '../components/SyncButton';
 import { callApi } from '../api';
 import { FooterClock } from '../components/FooterClock';
 
-const CURRENT_VERSION = '1.0.0';
+const CURRENT_VERSION = '1.0.1';
 const GITHUB_RELEASES_API = 'https://api.github.com/repos/pisgahbisdac/pisgahbisdac/releases';
 const GITHUB_RELEASE_URL = 'https://github.com/pisgahbisdac/pisgahbisdac/releases/tag/Stable';
 
