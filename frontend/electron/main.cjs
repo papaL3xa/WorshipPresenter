@@ -55,6 +55,8 @@ try {
   `);
 } catch (err) {
   console.error("Failed to initialize SQLite. Ensure better-sqlite3 is compiled.", err);
+  const { dialog } = require('electron');
+  dialog.showErrorBox("Database Error", "Failed to initialize better-sqlite3: " + err.message);
 }
 
 // Migrasi database lama jika ada dan database baru belum ada
@@ -275,8 +277,8 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
       args.push(category);
     }
     if (query) {
-       sql += ' AND searchable_text LIKE ? COLLATE NOCASE';
-       args.push('%' + query + '%');
+       sql += ' AND (searchable_text LIKE ? COLLATE NOCASE OR id LIKE ? COLLATE NOCASE)';
+       args.push('%' + query + '%', '%' + query + '%');
     }
     sql += ' LIMIT 2000';
     try {
