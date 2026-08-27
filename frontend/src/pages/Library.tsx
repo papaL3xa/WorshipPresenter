@@ -3,6 +3,7 @@ import { Search, Plus, Loader2, Music, BookOpen, Edit, Save, Trash2, X, ArrowLef
 import { callApi } from '../api';
 import { useBackgrounds } from '../hooks/useBackgrounds';
 import { FooterClock } from '../components/FooterClock';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useFavorites } from '../hooks/useFavorites';
@@ -437,7 +438,8 @@ export default function Library() {
             <FooterClock />
           </h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
           <SyncButton />
           <button 
             onClick={openDisplay} 

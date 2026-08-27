@@ -4,6 +4,7 @@ import { Plus, Play, Folder, Search, Settings, Loader2, Trash2, HelpCircle, X, I
 import { SyncButton } from '../components/SyncButton';
 import { callApi } from '../api';
 import { FooterClock } from '../components/FooterClock';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 const CURRENT_VERSION = '1.0.1';
 const GITHUB_RELEASES_API = 'https://api.github.com/repos/pisgahbisdac/pisgahbisdac/releases';
@@ -137,6 +138,7 @@ export default function Dashboard() {
           <FooterClock />
         </div>
         <div className="flex flex-wrap justify-center items-center gap-2 md:gap-4">
+          <ThemeToggle />
           <SyncButton />
           <button onClick={() => setIsAboutOpen(true)} className="glass-button flex items-center gap-2 relative">
             <Info size={18}/> Tentang

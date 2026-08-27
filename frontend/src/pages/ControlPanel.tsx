@@ -7,6 +7,7 @@ import YouTube from 'react-youtube';
 import { BackgroundPickerModal, BackgroundPickerInline } from '../components/BackgroundPickerModal';
 import { saveLocalVideo } from '../utils/imageStorage';
 import { FooterClock } from '../components/FooterClock';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { RichEditor, RichEditorRef } from '../components/RichEditor';
 import { LocalVideoPlayer } from '../components/LocalVideoPlayer';
 import { initDefaultDatabases, searchLocalSongs, searchLocalBible, syncCustomSongs, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, getBibleBooksList } from '../utils/dbStorage';
@@ -1401,6 +1402,7 @@ export default function ControlPanel() {
           </h1>
         </div>
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           {errorMsg && <div className="text-red-700 bg-red-100/90 px-3 py-1 rounded-lg text-xs border border-red-300 font-medium whitespace-nowrap">{errorMsg}</div>}
           <SyncButton isParentSyncing={isSyncing} />
           <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold rounded-xl border border-red-400 shadow-[0_2px_10px_rgba(220,38,38,0.3)] text-xs">

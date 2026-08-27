@@ -4,6 +4,7 @@ import { ArrowLeft, Save, Lock, Loader2, CheckCircle, ShieldAlert, Download, Upl
 import { callApi } from '../api';
 import { exportCustomSongsJson, exportPlaylistsJson, exportAllJson, importBackupTsv } from '../utils/backupRestore';
 import { FooterClock } from '../components/FooterClock';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -12,7 +13,7 @@ export default function Settings() {
   const [newAdminPin, setNewAdminPin] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('worship_dark_mode') !== 'false');
   const isDesktop = typeof window !== 'undefined' && (window as any).electronAPI;
-  const [activeTab, setActiveTab] = useState<'security' | 'backup' | 'display'>('display');
+  const [activeTab, setActiveTab] = useState<'security' | 'backup'>('backup');
   
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -66,6 +67,7 @@ export default function Settings() {
           </h1>
         </div>
         <div className="flex gap-4">
+          <ThemeToggle />
           {activeTab === 'security' && !isDesktop && (
             <button 
               onClick={handleSave} 
@@ -88,58 +90,7 @@ export default function Settings() {
           </div>
         )}
         
-        <div className="flex gap-4 mb-8">
-          <button 
-            onClick={() => setActiveTab('display')}
-            className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'display' ? 'bg-indigo-600 dark:bg-[#C5A059] text-white shadow-lg' : 'bg-white/40 dark:bg-white/5 text-indigo-900 dark:text-[#C5A059] hover:bg-white/60 dark:hover:bg-white/10'}`}
-          >
-            Tampilan
-          </button>
-
-          <button 
-            onClick={() => setActiveTab('backup')}
-            className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'backup' ? 'bg-indigo-600 dark:bg-[#C5A059] text-white shadow-lg' : 'bg-white/40 dark:bg-white/5 text-indigo-900 dark:text-[#C5A059] hover:bg-white/60 dark:hover:bg-white/10'}`}
-          >
-            Backup & Restore
-          </button>
         </div>
-
-        {activeTab === 'display' && (
-          <div className="space-y-8">
-            <div className="bg-white/40 dark:bg-black/20 p-8 rounded-2xl border border-white/60 dark:border-white/10 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:bg-white/50 dark:hover:bg-black/30 transition-colors">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 dark:bg-[#C5A059]/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none group-hover:bg-indigo-500/20 dark:group-hover:bg-[#C5A059]/20 transition-colors"></div>
-              
-              <h2 className="text-xl font-heading font-bold text-indigo-950 dark:text-[#D4B872] mb-6 flex items-center gap-3 drop-shadow-sm">
-                <div className="bg-indigo-100 dark:bg-black/40 p-2 rounded-lg text-indigo-600 dark:text-[#C5A059]"><Monitor size={20} /></div>
-                Pengaturan Tema
-              </h2>
-              
-              <div className="flex items-center justify-between bg-white/70 dark:bg-black/40 backdrop-blur-sm border-2 border-white/60 dark:border-white/10 rounded-xl p-4 shadow-sm">
-                <div>
-                  <h3 className="font-bold text-indigo-950 dark:text-[#D4B872] text-lg">Mode Gelap (Dark Mode)</h3>
-                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Ubah tampilan aplikasi menjadi mode gelap untuk mengurangi silau.</p>
-                </div>
-                <button
-                  onClick={() => {
-                    const newMode = !isDarkMode;
-                    setIsDarkMode(newMode);
-                    localStorage.setItem('worship_dark_mode', newMode.toString());
-                    if (newMode) {
-                      document.documentElement.classList.add('dark');
-                    } else {
-                      document.documentElement.classList.remove('dark');
-                    }
-                  }}
-                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${isDarkMode ? 'bg-indigo-600' : 'bg-slate-300'}`}
-                >
-                  <span
-                    className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${isDarkMode ? 'translate-x-7' : 'translate-x-1'}`}
-                  />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
 
         
