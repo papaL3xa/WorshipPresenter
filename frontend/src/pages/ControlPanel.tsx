@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Monitor, Square, Play, Pause, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, Video, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock, Layout, Power, FileText, Repeat, Volume2, VolumeX } from 'lucide-react';
+import { Monitor, Square, Play, Pause, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, Video, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock, Layout, Power, FileText, Repeat, Volume2, VolumeX, List } from 'lucide-react';
 import { callApi } from '../api';
 import { SyncButton } from '../components/SyncButton';
 import { useBackgrounds } from '../hooks/useBackgrounds';
@@ -122,7 +122,9 @@ export default function ControlPanel() {
   // Add Item States
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchType, setSearchType] = useState<'song'|'bible'|'announcement'>('song');
+  const [searchType, setSearchType] = useState<'song'|'bible'|'announcement'|'playlist'>('song');
+  const [dashboardPlaylists, setDashboardPlaylists] = useState<any[]>([]);
+  const [isLoadingDashboardPlaylists, setIsLoadingDashboardPlaylists] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [currentBibleBooks, setCurrentBibleBooks] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -224,6 +226,19 @@ export default function ControlPanel() {
     }
     fetchPlaylist();
   }, [playlistId]);
+
+  useEffect(() => {
+    if (searchType === 'playlist' && dashboardPlaylists.length === 0) {
+      setIsLoadingDashboardPlaylists(true);
+      callApi('getPlaylists').then(res => {
+        if (res && res.success) {
+          setDashboardPlaylists(res.data);
+        }
+      }).catch(err => console.error(err)).finally(() => {
+        setIsLoadingDashboardPlaylists(false);
+      });
+    }
+  }, [searchType]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -1750,18 +1765,21 @@ export default function ControlPanel() {
                         <div className="flex gap-2 flex-1">
                           <button onClick={() => { setSearchType('song'); setSearchQuery(''); }} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg transition text-xs font-semibold ${searchType === 'song' ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-md' : 'bg-white dark:bg-slate-800 text-indigo-900 dark:text-slate-300 border border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}><Music size={14}/> Lagu</button>
                           <button onClick={() => { setSearchType('bible'); setSearchQuery(''); }} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg transition text-xs font-semibold ${searchType === 'bible' ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-md' : 'bg-white dark:bg-slate-800 text-indigo-900 dark:text-slate-300 border border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}><BookOpen size={14}/> Alkitab</button>
+                          <button onClick={() => { setSearchType('playlist'); setSearchQuery(''); }} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg transition text-xs font-semibold ${searchType === 'playlist' ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-md' : 'bg-white dark:bg-slate-800 text-indigo-900 dark:text-slate-300 border border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}><List size={14}/> Playlist</button>
                         </div>
-                        <div className="flex-1">
-                          <select 
-                            className="w-full bg-white/50 dark:bg-slate-800 border border-indigo-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-indigo-900 dark:text-white font-semibold focus:outline-none focus:border-indigo-500 transition"
-                            value={searchType === 'song' ? selectedSongVersion : selectedBibleVersion}
-                            onChange={(e) => searchType === 'song' ? setSelectedSongVersion(e.target.value) : setSelectedBibleVersion(e.target.value)}
-                          >
-                            {dbList.filter(d => d.type === searchType).map(db => (
-                              <option key={db.id} value={db.id} className="dark:bg-[#0A1128] dark:text-[#C5A059]">{db.name}</option>
-                            ))}
-                          </select>
-                        </div>
+                        {searchType !== 'playlist' && (
+                          <div className="flex-1">
+                            <select 
+                              className="w-full bg-white/50 dark:bg-slate-800 border border-indigo-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-indigo-900 dark:text-white font-semibold focus:outline-none focus:border-indigo-500 transition"
+                              value={searchType === 'song' ? selectedSongVersion : selectedBibleVersion}
+                              onChange={(e) => searchType === 'song' ? setSelectedSongVersion(e.target.value) : setSelectedBibleVersion(e.target.value)}
+                            >
+                              {dbList.filter(d => d.type === searchType).map(db => (
+                                <option key={db.id} value={db.id} className="dark:bg-[#0A1128] dark:text-[#C5A059]">{db.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex flex-col gap-3 flex-1 overflow-y-auto">
@@ -1772,7 +1790,7 @@ export default function ControlPanel() {
                                 id="searchInputBox"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder={`Cari ${searchType === 'song' ? 'Lagu' : 'Alkitab'}...`} 
+                                placeholder={`Cari ${searchType === 'song' ? 'Lagu' : searchType === 'bible' ? 'Alkitab' : 'Playlist'}...`} 
                                 className="glass-input w-full pr-8 !bg-white dark:!bg-slate-900 dark:text-white dark:border-slate-700"
                                 autoFocus
                               />
@@ -1796,7 +1814,32 @@ export default function ControlPanel() {
                           </form>
 
                           <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 border border-indigo-100 dark:border-slate-700 rounded-xl p-2 bg-white/50 dark:bg-slate-900/50 scrollbar-thin scrollbar-thumb-indigo-200 dark:scrollbar-thumb-slate-700">
-                            {searchResults.map((res) => (
+                            {searchType === 'playlist' ? (
+                              <div className="flex flex-col gap-2 p-1">
+                                {isLoadingDashboardPlaylists ? (
+                                  <div className="flex justify-center p-4"><Loader2 className="animate-spin text-indigo-600 dark:text-[#C5A059]" size={20} /></div>
+                                ) : dashboardPlaylists.length === 0 ? (
+                                  <div className="text-center text-xs text-slate-500 py-4">Tidak ada playlist tersimpan.</div>
+                                ) : dashboardPlaylists.filter(pl => pl.name.toLowerCase().includes(searchQuery.toLowerCase())).map(pl => (
+                                  <button 
+                                    key={pl.id} 
+                                    onClick={() => navigate('/control?id=' + pl.id)} 
+                                    className="text-left p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-[#C5A059] shadow-sm transition-all flex justify-between items-center group"
+                                  >
+                                    <div>
+                                      <div className="font-bold text-slate-800 dark:text-white text-[11px] truncate">{pl.name}</div>
+                                      <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{pl.date}</div>
+                                    </div>
+                                    <Play size={14} className="text-indigo-600 dark:text-[#C5A059] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2" />
+                                  </button>
+                                ))}
+                                {dashboardPlaylists.length > 0 && dashboardPlaylists.filter(pl => pl.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                                  <div className="text-center text-[10px] text-indigo-900/60 dark:text-slate-500 p-4">Playlist tidak ditemukan.</div>
+                                )}
+                              </div>
+                            ) : (
+                              <>
+                                {searchResults.map((res) => (
                               <div key={res.id} className="p-2 mb-2 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-lg transition flex justify-between gap-2 items-center">
                                 <div className="flex-1 overflow-hidden">
                                   <div className="font-semibold text-indigo-900 dark:text-[#C5A059] text-[11px] truncate">{res.title}</div>
@@ -1876,7 +1919,7 @@ export default function ControlPanel() {
                                       <button 
                                         key={book}
                                         onClick={() => {
-                                          setSearchQuery(book + " ");
+                                          setSearchQuery(book + ' ');
                                           document.getElementById('searchInputBox')?.focus();
                                         }}
                                         className="p-1.5 text-center text-[10px] font-semibold text-indigo-900 dark:text-slate-300 bg-white/40 dark:bg-slate-800 border border-white/20 dark:border-slate-700 rounded hover:bg-indigo-600 dark:hover:bg-[#C5A059] hover:text-white dark:hover:text-black transition line-clamp-1 shadow-sm"
@@ -2009,11 +2052,11 @@ export default function ControlPanel() {
                 }}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white w-full py-1.5 rounded-lg text-[10px] font-bold shadow-md shadow-indigo-600/30 transition flex justify-center items-center gap-1.5 uppercase tracking-wider"
               >
-                Export Playlist
+                Simpan Rundown
               </button>
               
               <label className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 w-full py-1.5 rounded-lg text-[10px] font-bold shadow-sm transition flex justify-center items-center gap-1.5 uppercase tracking-wider cursor-pointer">
-                Import Playlist
+                Import Rundown
                 <input 
                   type="file" 
                   accept=".json" 
