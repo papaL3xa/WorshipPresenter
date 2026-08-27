@@ -23,8 +23,8 @@
   }
   
   .dark body {
-    /* Deep Pitch Black Background to avoid monitor Mura/dust effect */
-    background-color: #050505;
+    /* Navy Background */
+    background-color: #0A1128;
     color: #D4B872;
     color-scheme: dark;
   }

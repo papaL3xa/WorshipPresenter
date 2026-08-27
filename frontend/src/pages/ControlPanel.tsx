@@ -1389,7 +1389,7 @@ export default function ControlPanel() {
   };
 
   return (
-    <div className="h-full flex flex-col pb-4 px-4 gap-4 overflow-hidden relative bg-[#f1f5f9] dark:bg-[#050505]">
+    <div className="h-full flex flex-col pb-4 px-4 gap-4 overflow-hidden relative bg-[#f1f5f9] dark:bg-slate-800">
       
       <header className="glass-panel p-3 flex justify-between items-center shrink-0 shadow-sm border-white/50 z-10 mx-4 mt-4 rounded-xl">
         <div className="flex items-center gap-3 px-2">
