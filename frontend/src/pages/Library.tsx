@@ -1145,13 +1145,13 @@ export default function Library() {
                         const charCount = t.length;
                         const visualLines = t.split('\n').reduce((acc: number, line: string) => acc + Math.ceil((line.length || 1) / 32), 0);
                         
-                        if (visualLines >= 8 || charCount > 350) return '4cqw';
-                        if (visualLines >= 6 || charCount > 250) return '4.5cqw';
-                        if (visualLines >= 5 || charCount > 180) return '5cqw';
-                        if (visualLines >= 4 || charCount > 120) return '5.5cqw';
-                        if (visualLines >= 3 || charCount > 70) return '6.5cqw';
-                        if (charCount > 40) return '7.5cqw';
-                        return '8.5cqw';
+                        if (visualLines >= 8 || charCount > 350) return '4.5cqw';
+                        if (visualLines >= 6 || charCount > 250) return '5cqw';
+                        if (visualLines >= 5 || charCount > 180) return '5.5cqw';
+                        if (visualLines >= 4 || charCount > 120) return '6cqw';
+                        if (visualLines >= 3 || charCount > 70) return '7cqw';
+                        if (charCount > 40) return '8cqw';
+                        return '9cqw';
                       })(),
                       lineHeight: '1.4'
                     }}
