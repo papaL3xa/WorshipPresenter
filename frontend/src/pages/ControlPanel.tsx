@@ -1546,8 +1546,11 @@ export default function ControlPanel() {
           
           <div className="w-full h-px bg-indigo-900/10 my-1"></div>
           
-          <button onClick={() => { setIsRunningTextModalOpen(true); setDisplayPanelTab('add'); }} className="glass-button w-full text-indigo-900 flex items-center justify-center font-bold px-2 py-4 text-[11px] uppercase tracking-wider transition-all hover:bg-white/70">
+          <button onClick={() => { setIsRunningTextModalOpen(true); setDisplayPanelTab('add'); if (searchType === 'playlist') setSearchType('song'); }} className={`glass-button w-full text-indigo-900 flex items-center justify-center font-bold px-2 py-4 text-[11px] uppercase tracking-wider transition-all ${displayPanelTab === 'add' && searchType !== 'playlist' ? 'bg-white/80 shadow-md' : 'hover:bg-white/70'}`}>
             LAGU / ALKITAB
+          </button>
+          <button onClick={() => { setIsRunningTextModalOpen(true); setDisplayPanelTab('add'); setSearchType('playlist'); }} className={`glass-button w-full text-indigo-900 flex items-center justify-center font-bold px-2 py-4 text-[11px] uppercase tracking-wider transition-all ${displayPanelTab === 'add' && searchType === 'playlist' ? 'bg-white/80 shadow-md' : 'hover:bg-white/70'}`}>
+            PLAYLIST
           </button>
 
           <div className="mt-auto flex flex-col gap-2">
@@ -1761,13 +1764,12 @@ export default function ControlPanel() {
                 <>
                   {displayPanelTab === 'add' && (
                     <div className="flex flex-col h-full gap-3">
-                      <div className="flex gap-2 shrink-0">
-                        <div className="flex gap-2 flex-1">
-                          <button onClick={() => { setSearchType('song'); setSearchQuery(''); }} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg transition text-xs font-semibold ${searchType === 'song' ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-md' : 'bg-white dark:bg-slate-800 text-indigo-900 dark:text-slate-300 border border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}><Music size={14}/> Lagu</button>
-                          <button onClick={() => { setSearchType('bible'); setSearchQuery(''); }} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg transition text-xs font-semibold ${searchType === 'bible' ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-md' : 'bg-white dark:bg-slate-800 text-indigo-900 dark:text-slate-300 border border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}><BookOpen size={14}/> Alkitab</button>
-                          <button onClick={() => { setSearchType('playlist'); setSearchQuery(''); }} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg transition text-xs font-semibold ${searchType === 'playlist' ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-md' : 'bg-white dark:bg-slate-800 text-indigo-900 dark:text-slate-300 border border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}><List size={14}/> Playlist</button>
-                        </div>
-                        {searchType !== 'playlist' && (
+                      {searchType !== 'playlist' && (
+                        <div className="flex gap-2 shrink-0">
+                          <div className="flex gap-2 flex-1">
+                            <button onClick={() => { setSearchType('song'); setSearchQuery(''); }} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg transition text-xs font-semibold ${searchType === 'song' ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-md' : 'bg-white dark:bg-slate-800 text-indigo-900 dark:text-slate-300 border border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}><Music size={14}/> Lagu</button>
+                            <button onClick={() => { setSearchType('bible'); setSearchQuery(''); }} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg transition text-xs font-semibold ${searchType === 'bible' ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-md' : 'bg-white dark:bg-slate-800 text-indigo-900 dark:text-slate-300 border border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}><BookOpen size={14}/> Alkitab</button>
+                          </div>
                           <div className="flex-1">
                             <select 
                               className="w-full bg-white/50 dark:bg-slate-800 border border-indigo-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-indigo-900 dark:text-white font-semibold focus:outline-none focus:border-indigo-500 transition"
@@ -1779,8 +1781,8 @@ export default function ControlPanel() {
                               ))}
                             </select>
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
 
                       <div className="flex flex-col gap-3 flex-1 overflow-y-auto">
                         <form onSubmit={handleSearch} className="flex gap-2 shrink-0">
