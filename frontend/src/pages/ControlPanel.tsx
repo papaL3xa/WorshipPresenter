@@ -2051,12 +2051,12 @@ export default function ControlPanel() {
                   downloadAnchorNode.click();
                   downloadAnchorNode.remove();
                 }}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white w-full py-1.5 rounded-lg text-[10px] font-bold shadow-md shadow-indigo-600/30 transition flex justify-center items-center gap-1.5 uppercase tracking-wider"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white w-full py-1.5 px-1 rounded-lg text-[10px] font-bold shadow-md shadow-indigo-600/30 transition flex justify-center items-center uppercase tracking-wider text-center leading-tight"
               >
                 Simpan Rundown
               </button>
               
-              <label className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 w-full py-1.5 rounded-lg text-[10px] font-bold shadow-sm transition flex justify-center items-center gap-1.5 uppercase tracking-wider cursor-pointer">
+              <label className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 w-full py-1.5 px-1 rounded-lg text-[10px] font-bold shadow-sm transition flex justify-center items-center uppercase tracking-wider text-center leading-tight cursor-pointer">
                 Import Rundown
                 <input 
                   type="file" 
