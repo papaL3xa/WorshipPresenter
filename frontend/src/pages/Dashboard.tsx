@@ -267,8 +267,8 @@ export default function Dashboard() {
 
       {isGuideOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#282828] dark:border dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#333]">
+          <div className="bg-white dark:bg-slate-800 dark:border dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-800/50">
               <h2 className="text-xl font-bold text-indigo-900 dark:text-[#D4B872] flex items-center gap-2">
                 <HelpCircle size={24} className="text-indigo-600 dark:text-[#C5A059]" /> 
                 Buku Panduan Pengguna
@@ -280,10 +280,10 @@ export default function Dashboard() {
                 <X size={20} />
               </button>
             </div>
-            <div className="flex-1 bg-slate-100 dark:bg-[#202020] overflow-hidden relative">
+            <div className="flex-1 bg-slate-100 dark:bg-slate-900/50 overflow-hidden relative">
               <iframe 
                 src="Panduan_Pengguna.html" 
-                className="w-full h-full border-none absolute inset-0 bg-white dark:bg-[#282828]" 
+                className="w-full h-full border-none absolute inset-0 bg-white dark:bg-slate-800" 
                 title="Panduan Pengguna"
               />
             </div>
@@ -293,8 +293,8 @@ export default function Dashboard() {
 
       {isAboutOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#282828] dark:border dark:border-white/10 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-indigo-100 relative">
-            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-indigo-600 via-indigo-700 to-blue-800 dark:from-[#333] dark:via-[#444] dark:to-[#222]"></div>
+          <div className="bg-white dark:bg-slate-800 dark:border dark:border-white/10 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-indigo-100 relative">
+            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-indigo-600 via-indigo-700 to-blue-800 dark:from-slate-800 dark:via-slate-700 dark:to-slate-900"></div>
             
             <button 
               onClick={() => setIsAboutOpen(false)} 
@@ -344,7 +344,7 @@ export default function Dashboard() {
                 </div>
               ) : null}
               
-              <div className="bg-indigo-50 text-indigo-900 p-5 rounded-2xl mb-4 text-sm leading-relaxed border border-indigo-100 text-left dark:bg-[#333] dark:text-[#C5A059] dark:border-white/10">
+              <div className="bg-indigo-50 text-indigo-900 p-5 rounded-2xl mb-4 text-sm leading-relaxed border border-indigo-100 text-left dark:bg-slate-700/50 dark:text-[#C5A059] dark:border-white/10">
                 <strong>Tentang Aplikasi Ini:</strong><br/>
                 Aplikasi manajemen tata ibadah ini adalah perangkat lunak <em>full free</em> yang didekasikan khusus untuk mendukung pelayanan ibadah multimedia.<br/><br/>
                 Dibuat dengan segenap hati <Heart className="inline text-rose-500 mb-1" size={16}/> oleh departemen <strong>MultiMedia Jemaat PISGAH BISDAC (Batam International Seventh-day Adventist Church)</strong>. Pengembangannya secara langsung dipimpin oleh <strong>Herbert JS Sagala</strong>.<br/><br/>
