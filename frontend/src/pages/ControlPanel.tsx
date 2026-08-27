@@ -2241,14 +2241,14 @@ export default function ControlPanel() {
       </main>
       {isVideoModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
-          <div className="bg-white/95 backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-2xl max-w-xl w-full border border-white/50 relative">
-            <button onClick={() => setIsVideoModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full p-2 transition-all">
+          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-2xl max-w-xl w-full border border-white/50 dark:border-slate-700/50 relative">
+            <button onClick={() => setIsVideoModalOpen(false)} className="absolute top-4 right-4 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full p-2 transition-all">
               <X size={20} />
             </button>
-            <h2 className="text-xl font-bold text-indigo-900 mb-4">Tambahkan Video</h2>
+            <h2 className="text-xl font-bold text-indigo-900 dark:text-[#C5A059] mb-4">Tambahkan Video</h2>
             <div className="mb-4 space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Upload File Video (MP4, dsb. Maks 30MB)</label>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Upload File Video (MP4, dsb. Maks 30MB)</label>
                 <input 
                   type="file" 
                   accept="video/*" 
@@ -2258,28 +2258,28 @@ export default function ControlPanel() {
                 />
                 <label 
                   htmlFor="cp-video-file-upload"
-                  className={`glass-button text-sm py-4 cursor-pointer flex justify-center items-center gap-2 w-full border-2 border-dashed transition-all ${isVideoUploading ? 'bg-indigo-50 border-indigo-200 text-indigo-500' : videoUrlInput.startsWith('local_vid_') ? 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100' : 'bg-slate-50 border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400'}`}
+                  className={`glass-button text-sm py-4 cursor-pointer flex justify-center items-center gap-2 w-full border-2 border-dashed transition-all ${isVideoUploading ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-500 dark:text-indigo-400' : videoUrlInput.startsWith('local_vid_') ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50' : 'bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-400 dark:hover:border-slate-600'}`}
                 >
                   {isVideoUploading ? <Loader2 size={20} className="animate-spin" /> : (videoUrlInput.startsWith('local_vid_') ? <><CheckCircle size={20} /> File Dipilih! Klik untuk mengganti</> : <><Plus size={20} /> Pilih File Video</>)}
                 </label>
                 
-                <label className="flex items-center gap-3 mt-4 cursor-pointer p-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <label className="flex items-center gap-3 mt-4 cursor-pointer p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                   <input 
                     type="checkbox" 
                     checked={isVideoLoop} 
                     onChange={(e) => setIsVideoLoop(e.target.checked)} 
                     className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shadow-sm" 
                   />
-                  <span className="text-slate-700 font-semibold select-none">Putar berulang-ulang (Loop) sampai pindah slide</span>
+                  <span className="text-slate-700 dark:text-slate-300 font-semibold select-none">Putar berulang-ulang (Loop) sampai pindah slide</span>
                 </label>
-                <label className="flex items-center gap-3 mt-3 cursor-pointer bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors">
+                <label className="flex items-center gap-3 mt-3 cursor-pointer bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                   <input 
                     type="checkbox" 
                     checked={isVideoMuted} 
                     onChange={(e) => setIsVideoMuted(e.target.checked)}
                     className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" 
                   />
-                  <span className="text-slate-700 font-semibold select-none">Bisukan Suara (Mute)</span>
+                  <span className="text-slate-700 dark:text-slate-300 font-semibold select-none">Bisukan Suara (Mute)</span>
                 </label>
               </div>
             </div>
@@ -2305,23 +2305,23 @@ export default function ControlPanel() {
       {/* SEGMENT SELECTION MODAL */}
       {isSegmentModalOpen && segmentEditIndex !== null && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
-          <div className="bg-white/90 backdrop-blur-xl p-8 rounded-2xl shadow-2xl max-w-lg w-full border border-white/40 flex flex-col max-h-[85vh]">
-            <h2 className="text-2xl font-bold text-indigo-900 mb-2 flex items-center gap-2">
+          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 rounded-2xl shadow-2xl max-w-lg w-full border border-white/40 dark:border-slate-700/50 flex flex-col max-h-[85vh]">
+            <h2 className="text-2xl font-bold text-indigo-900 dark:text-[#C5A059] mb-2 flex items-center gap-2">
               <CheckSquare size={24} /> Pilih Bait / Ayat
             </h2>
-            <div className="flex-1 overflow-y-auto space-y-2 border border-indigo-100 rounded-xl p-3 bg-slate-50/50">
+            <div className="flex-1 overflow-y-auto space-y-2 border border-indigo-100 dark:border-slate-700 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-800/50">
               {(playlist[segmentEditIndex].originalSegments || playlist[segmentEditIndex].segments).map((seg: string, i: number) => {
                 const isChecked = tempVisibleSegments.includes(i);
                 return (
-                  <label key={i} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer ${isChecked ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-200'}`}>
+                  <label key={i} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer ${isChecked ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
                     <input type="checkbox" className="mt-1 w-4 h-4" checked={isChecked} onChange={() => toggleSegment(i)} />
-                    <div className="text-sm">{seg}</div>
+                    <div className="text-sm dark:text-slate-200">{seg}</div>
                   </label>
                 );
               })}
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setIsSegmentModalOpen(false)} className="px-6 py-2 rounded-xl font-bold text-indigo-900 bg-black/5">Batal</button>
+              <button onClick={() => setIsSegmentModalOpen(false)} className="px-6 py-2 rounded-xl font-bold text-indigo-900 dark:text-slate-300 bg-black/5 dark:bg-slate-800 dark:hover:bg-slate-700">Batal</button>
               <button onClick={saveSegmentSelection} className="px-6 py-2 rounded-xl font-bold text-white bg-indigo-600">Simpan Pilihan</button>
             </div>
           </div>
@@ -2331,25 +2331,25 @@ export default function ControlPanel() {
       {/* COUNTDOWN MODAL */}
       {isCountdownModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
-          <div className="bg-white/90 backdrop-blur-xl p-8 rounded-2xl shadow-2xl max-w-md w-full border border-white/40 flex flex-col">
-            <h2 className="text-2xl font-bold text-indigo-900 mb-2 flex items-center gap-2">
+          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 rounded-2xl shadow-2xl max-w-md w-full border border-white/40 dark:border-slate-700/50 flex flex-col">
+            <h2 className="text-2xl font-bold text-indigo-900 dark:text-[#C5A059] mb-2 flex items-center gap-2">
               <Clock size={24} /> Tambah Hitung Mundur
             </h2>
             <form onSubmit={handleCountdownSubmit} className="space-y-4 mt-4">
               <div>
-                <label className="block text-sm font-bold text-indigo-900/70 mb-2">
+                <label className="block text-sm font-bold text-indigo-900/70 dark:text-slate-300 mb-2">
                   Masukkan durasi (misal: 5 untuk 5 menit, 30s untuk 30 detik, 5m 30s)
                 </label>
                 <input 
                   autoFocus
-                  className="w-full text-lg bg-white border-2 border-indigo-200 rounded-xl p-3 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all font-medium"
+                  className="w-full text-lg bg-white dark:bg-slate-800 border-2 border-indigo-200 dark:border-slate-700 dark:text-white rounded-xl p-3 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-500/20 transition-all font-medium"
                   value={countdownInputValue}
                   onChange={(e) => setCountdownInputValue(e.target.value)}
                   placeholder="5m 30s"
                 />
               </div>
               <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setIsCountdownModalOpen(false)} className="px-6 py-2 rounded-xl font-bold text-indigo-900 bg-black/5 hover:bg-black/10 transition">Batal</button>
+                <button type="button" onClick={() => setIsCountdownModalOpen(false)} className="px-6 py-2 rounded-xl font-bold text-indigo-900 dark:text-slate-300 bg-black/5 dark:bg-slate-800 hover:bg-black/10 dark:hover:bg-slate-700 transition">Batal</button>
                 <button type="submit" className="px-6 py-2 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition">Tambahkan</button>
               </div>
             </form>
@@ -2360,20 +2360,20 @@ export default function ControlPanel() {
       {/* EDIT ITEM MODAL */}
       {editItemIndex !== null && playlist[editItemIndex] && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
-          <div className="bg-white/95 backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-2xl max-w-2xl w-full border border-white/50 relative flex flex-col max-h-[90vh]">
-            <button onClick={() => setEditItemIndex(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full p-2 transition-all">
+          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-2xl max-w-2xl w-full border border-white/50 dark:border-slate-700/50 relative flex flex-col max-h-[90vh]">
+            <button onClick={() => setEditItemIndex(null)} className="absolute top-4 right-4 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full p-2 transition-all">
               <X size={20} />
             </button>
-            <h2 className="text-xl font-bold text-indigo-900 mb-4 flex items-center gap-2">
+            <h2 className="text-xl font-bold text-indigo-900 dark:text-[#C5A059] mb-4 flex items-center gap-2">
               <Edit size={24} /> Edit {playlist[editItemIndex].type === 'announcement' ? 'Pengumuman' : playlist[editItemIndex].type === 'countdown' ? 'Hitung Mundur' : 'Lagu / Teks'}
             </h2>
             
             <div className="flex-1 overflow-y-auto space-y-4 pr-2">
               {/* Title Input */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Judul (Opsional)</label>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Judul (Opsional)</label>
                 <input 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-indigo-900 font-semibold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all"
+                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-indigo-900 dark:text-white font-semibold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/20 transition-all"
                   value={playlist[editItemIndex].title || ''}
                   onChange={(e) => {
                     setPlaylist(prev => {
@@ -2388,11 +2388,11 @@ export default function ControlPanel() {
 
               {/* Countdown Inputs */}
               {playlist[editItemIndex].type === 'countdown' ? (
-                <div className="flex gap-4 items-center justify-center p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="flex gap-4 items-center justify-center p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
                   <div className="flex flex-col items-center">
                     <input 
                       type="number"
-                      className="w-24 text-center bg-white border-2 border-indigo-200 rounded-xl p-3 text-3xl focus:outline-none focus:border-indigo-500 transition-all font-bold"
+                      className="w-24 text-center bg-white dark:bg-slate-900 border-2 border-indigo-200 dark:border-slate-700 rounded-xl p-3 text-3xl focus:outline-none focus:border-indigo-500 transition-all font-bold dark:text-white"
                       value={Math.floor(parseInt(playlist[editItemIndex].segments[0] || '0') / 60)}
                       onChange={(e) => {
                         setPlaylist(prev => {
@@ -2403,13 +2403,13 @@ export default function ControlPanel() {
                         });
                       }}
                     />
-                    <span className="text-slate-500 mt-2 text-xs font-bold uppercase tracking-wider">Menit</span>
+                    <span className="text-slate-500 dark:text-slate-400 mt-2 text-xs font-bold uppercase tracking-wider">Menit</span>
                   </div>
-                  <div className="text-3xl font-bold text-slate-300 pb-6">:</div>
+                  <div className="text-3xl font-bold text-slate-300 dark:text-slate-600 pb-6">:</div>
                   <div className="flex flex-col items-center">
                     <input 
                       type="number"
-                      className="w-24 text-center bg-white border-2 border-indigo-200 rounded-xl p-3 text-3xl focus:outline-none focus:border-indigo-500 transition-all font-bold"
+                      className="w-24 text-center bg-white dark:bg-slate-900 border-2 border-indigo-200 dark:border-slate-700 rounded-xl p-3 text-3xl focus:outline-none focus:border-indigo-500 transition-all font-bold dark:text-white"
                       value={parseInt(playlist[editItemIndex].segments[0] || '0') % 60}
                       onChange={(e) => {
                         setPlaylist(prev => {
@@ -2420,7 +2420,7 @@ export default function ControlPanel() {
                         });
                       }}
                     />
-                    <span className="text-slate-500 mt-2 text-xs font-bold uppercase tracking-wider">Detik</span>
+                    <span className="text-slate-500 dark:text-slate-400 mt-2 text-xs font-bold uppercase tracking-wider">Detik</span>
                   </div>
                 </div>
               ) : (
@@ -2432,7 +2432,7 @@ export default function ControlPanel() {
                         key={i}
                         onClick={() => setEditSegmentIndex(i)}
                         className={`px-3 py-1.5 rounded-lg text-sm font-bold whitespace-nowrap transition-all ${
-                          editSegmentIndex === i ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          editSegmentIndex === i ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                         }`}
                       >
                         {playlist[editItemIndex].segmentLabels?.[i] || (playlist[editItemIndex].type === 'announcement' ? `Slide ${i + 1}` : `Bait ${i + 1}`)}
@@ -2465,7 +2465,7 @@ export default function ControlPanel() {
                   <div className="flex flex-col gap-2">
                     <RichEditor
                       ref={editorRef}
-                      className="w-full min-h-[150px] bg-slate-50 border border-slate-200 rounded-xl p-4 text-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-indigo-900 whitespace-pre-wrap leading-relaxed transition-all resize-y"
+                      className="w-full min-h-[150px] bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/20 text-indigo-900 dark:text-white whitespace-pre-wrap leading-relaxed transition-all resize-y"
                       value={playlist[editItemIndex].segments[editSegmentIndex] || ''}
                       onChange={(val) => {
                         setPlaylist(prev => {
@@ -2484,7 +2484,7 @@ export default function ControlPanel() {
               )}
             </div>
 
-            <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-100">
+            <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-100 dark:border-slate-700">
               <button 
                 onClick={() => {
                   setPlaylist(prev => {
@@ -2494,7 +2494,7 @@ export default function ControlPanel() {
                   });
                   setEditItemIndex(null);
                 }}
-                className="px-4 py-2 rounded-xl text-red-600 font-bold hover:bg-red-50 flex items-center gap-2 transition"
+                className="px-4 py-2 rounded-xl text-red-600 font-bold hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2 transition"
               >
                 <Trash2 size={16} /> Hapus Item
               </button>
