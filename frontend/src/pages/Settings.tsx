@@ -89,11 +89,6 @@ export default function Settings() {
             <span className="font-semibold">{message}</span>
           </div>
         )}
-        
-        </div>
-
-
-        
         {activeTab === 'backup' && (
         <div className="space-y-8">
           <div className="bg-white/40 dark:bg-black/20 p-8 rounded-2xl border border-white/60 dark:border-white/10 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:bg-white/50 dark:hover:bg-black/30 transition-colors">
