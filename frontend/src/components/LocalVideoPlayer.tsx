@@ -5,7 +5,16 @@ export const LocalVideoPlayer = forwardRef<HTMLVideoElement, { id: string, loop?
   
   useEffect(() => {
     let objectUrl = '';
+
     const load = async () => {
+      // Jika ID sudah berupa URL langsung (file://, http) — gunakan langsung
+      // Ini yang terjadi di Electron saat user memilih video dari disk
+      if (id.startsWith('file://') || id.startsWith('http')) {
+        setUrl(id);
+        return;
+      }
+
+      // Web browser: ambil blob dari IndexedDB
       import('../utils/imageStorage').then(async (m) => {
         const blob = await m.getLocalVideo(id);
         if (blob) {
@@ -14,13 +23,20 @@ export const LocalVideoPlayer = forwardRef<HTMLVideoElement, { id: string, loop?
         }
       });
     };
+
     load();
+
     return () => {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [id]);
 
-  if (!url) return <div className="text-white text-xs md:text-sm font-semibold animate-pulse flex flex-col items-center justify-center h-full w-full bg-black/50"><div className="animate-spin border-4 border-indigo-500 border-t-transparent rounded-full w-8 h-8 mb-2"></div>Memuat...</div>;
+  if (!url) return (
+    <div className="text-white text-xs md:text-sm font-semibold animate-pulse flex flex-col items-center justify-center h-full w-full bg-black/50">
+      <div className="animate-spin border-4 border-indigo-500 border-t-transparent rounded-full w-8 h-8 mb-2"></div>
+      Memuat...
+    </div>
+  );
 
   return (
     <video 

@@ -642,6 +642,8 @@ export default function ControlPanel() {
     if (!files || files.length === 0) return;
     
     const selectedFiles = Array.from(files).slice(0, 2);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const isElectron = !!(window as any).electronAPI;
     
     const imageInfos = await Promise.all(selectedFiles.map(file => {
       return new Promise<{url: string, width: number, height: number, file: File}>((resolve) => {
@@ -658,9 +660,23 @@ export default function ControlPanel() {
     const savedIds: string[] = [];
 
     for (const info of imageInfos) {
-      const id = 'img-' + Date.now() + Math.floor(Math.random() * 1000);
-      await saveLocalImage(id, info.file);
-      savedIds.push(`local_img_${id}`);
+      if (isElectron) {
+        // Di Electron: gunakan file:// path langsung — tidak perlu copy, instan!
+        const filePath = (info.file as any).path;
+        if (filePath) {
+          // Konversi Windows path ke file:// URL
+          const fileUrl = 'file:///' + filePath.replace(/\\/g, '/');
+          savedIds.push(fileUrl);
+        } else {
+          // Fallback jika tidak ada path (seharusnya tidak terjadi di Electron)
+          savedIds.push(URL.createObjectURL(info.file));
+        }
+      } else {
+        // Di browser: simpan ke IndexedDB
+        const id = 'img-' + Date.now() + Math.floor(Math.random() * 1000);
+        await saveLocalImage(id, info.file);
+        savedIds.push(`local_img_${id}`);
+      }
     }
 
     if (imageInfos.length === 2) {
@@ -728,17 +744,27 @@ export default function ControlPanel() {
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const isElectron = !!(window as any).electronAPI;
     
+    if (isElectron) {
+      // Di Electron: gunakan file:// path langsung — tidak perlu copy ke IndexedDB
+      const filePath = (file as any).path;
+      if (filePath) {
+        const fileUrl = 'file:///' + filePath.replace(/\\/g, '/');
+        setVideoUrlInput(fileUrl);
+      } else {
+        alert('Gagal membaca path file. Pastikan Anda menggunakan aplikasi desktop.');
+      }
+      return;
+    }
+
+    // Versi browser: simpan ke IndexedDB
     setIsVideoUploading(true);
     try {
       const vidId = Date.now().toString();
-      // Simpan file blob langsung ke IndexedDB
       await saveLocalVideo(vidId, file);
-      
-      // Set referensi ID ke input URL
       setVideoUrlInput(`local_vid_${vidId}`);
-      // Opsional: ganti nama file jadi title agar rapi
-      // Tapi karena komponen handleVideoSubmit menggunakan videoUrlInput sebagai segment, kita set ke local_vid_
     } catch (err: any) {
       alert('Error saat menyimpan video ke memori lokal: ' + (err.message || 'Unknown error'));
     } finally {
@@ -1394,7 +1420,7 @@ export default function ControlPanel() {
                 }
                 return <iframe id="preview-youtube" key={url} className="w-full h-full object-contain" src={url} allow="autoplay; encrypted-media" tabIndex={-1} />;
               }
-              if (url.startsWith('local_vid_')) {
+              if (url.startsWith('local_vid_') || url.startsWith('file://')) {
                 return (
                   <div id="preview-video-container" className="w-full h-full">
                     <LocalVideoPlayer key={`${url}-${mode}`} id={url} loop={itemData.loop || false} autoPlay={false} muted={true} onLoadedData={() => setLocalVidLoaded(v => !v)} />
@@ -2515,9 +2541,9 @@ export default function ControlPanel() {
                 />
                 <label 
                   htmlFor="cp-video-file-upload"
-                  className={`glass-button text-sm py-4 cursor-pointer flex justify-center items-center gap-2 w-full border-2 border-dashed transition-all ${isVideoUploading ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-500 dark:text-indigo-400' : videoUrlInput.startsWith('local_vid_') ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50' : 'bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-400 dark:hover:border-slate-600'}`}
+                  className={`glass-button text-sm py-4 cursor-pointer flex justify-center items-center gap-2 w-full border-2 border-dashed transition-all ${isVideoUploading ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-500 dark:text-indigo-400' : (videoUrlInput.startsWith('local_vid_') || videoUrlInput.startsWith('file://')) ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50' : 'bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-400 dark:hover:border-slate-600'}`}
                 >
-                  {isVideoUploading ? <Loader2 size={20} className="animate-spin" /> : (videoUrlInput.startsWith('local_vid_') ? <><CheckCircle size={20} /> File Dipilih! Klik untuk mengganti</> : <><Plus size={20} /> Pilih File Video</>)}
+                  {isVideoUploading ? <Loader2 size={20} className="animate-spin" /> : ((videoUrlInput.startsWith('local_vid_') || videoUrlInput.startsWith('file://')) ? <><CheckCircle size={20} /> File Dipilih! Klik untuk mengganti</> : <><Plus size={20} /> Pilih File Video</>)}
                 </label>
                 
                 <label className="flex items-center gap-3 mt-4 cursor-pointer p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">

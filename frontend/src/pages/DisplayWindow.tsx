@@ -637,7 +637,7 @@ export default function DisplayWindow() {
               ch.close();
             };
 
-            if (url.startsWith('local_vid_')) {
+            if (url.startsWith('local_vid_') || url.startsWith('file://')) {
               return <div className="w-full h-full pointer-events-auto">
                 <LocalVideoPlayer 
                   ref={videoRef} 
