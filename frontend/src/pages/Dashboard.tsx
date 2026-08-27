@@ -216,7 +216,7 @@ export default function Dashboard() {
             />
           </div>
           <div className="mt-6 text-sm text-slate-600 dark:text-[#C5A059] bg-white/20 dark:bg-transparent p-4 rounded-xl border border-white/30 dark:border-white/10">
-            <p><strong>Tips:</strong> Anda juga bisa mencari menggunakan fitur Quick Search langsung di dalam <span className="font-semibold text-indigo-700 dark:text-[#D4B872]">Control Panel</span> saat mode Live.</p>
+            <p><strong className="text-amber-600 dark:text-amber-400">Tips:</strong> Anda juga bisa mencari menggunakan fitur Quick Search langsung di dalam <span className="font-semibold text-emerald-600 dark:text-emerald-400">Control Panel</span> saat mode Live.</p>
           </div>
         </section>
       </main>
