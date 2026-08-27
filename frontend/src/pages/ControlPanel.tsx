@@ -2157,7 +2157,7 @@ export default function ControlPanel() {
                 className="flex-1 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
                 title="Tambah Teks / Pengumuman"
               >
-                <Plus size={14} /> Teks
+                <Plus size={14} /> TEKS
               </button>
               <button 
                 onClick={() => openVideoModal(replaceIndex)}
@@ -2171,14 +2171,14 @@ export default function ControlPanel() {
                 className="flex-none w-16 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center text-indigo-900 py-2 hover:bg-white/70 transition-all"
                 title="Tambah Gambar (Maks 2)"
               >
-                <ImageIcon className="w-10 h-10" style={{ width: '38px', height: '38px' }} />
+                <ImageIcon className="w-10 h-10" style={{ width: '35px', height: '35px' }} />
               </button>
               <button 
                 onClick={addCountdown}
                 className="flex-1 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
-                title="Tambah Hitung Mundur"
+                title="Tambah Waktu / Hitung Mundur"
               >
-                <Clock size={14} /> Waktu
+                <Clock size={14} /> WAKTU
               </button>
             </div>
             <input 
