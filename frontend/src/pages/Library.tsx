@@ -1084,12 +1084,15 @@ export default function Library() {
                 <Monitor size={18} /> Live Preview Slide
               </h3>
               <div 
-                className="w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg flex items-center justify-center p-4 md:p-6 border-[4px] md:border-[6px] border-slate-800"
-                style={getBgUrl(customBg)?.type === 'image' ? {
-                  backgroundImage: getBgUrl(customBg)?.url ? `url('${getBgUrl(customBg)?.url}')` : 'none',
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center'
-                } : undefined}
+                className="w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-lg flex items-center justify-center border-[4px] md:border-[6px] border-slate-800"
+                style={{
+                  ...(getBgUrl(customBg)?.type === 'image' ? {
+                    backgroundImage: getBgUrl(customBg)?.url ? `url('${getBgUrl(customBg)?.url}')` : 'none',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                  } : {}),
+                  containerType: 'inline-size'
+                }}
               >
                 {getBgUrl(customBg)?.type === 'video' && (
                   <video 
@@ -1101,11 +1104,75 @@ export default function Library() {
                     className="absolute inset-0 w-full h-full object-cover z-0"
                   />
                 )}
-                <div className="absolute inset-0 bg-black/40 z-0 pointer-events-none"></div>
-                <p className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl text-lg md:text-xl lg:text-2xl relative z-10" 
-                   style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.8)' }}>
-                  {activeSegment !== null ? selectedItem.segments[activeSegment] : "Pilih slide..."}
-                </p>
+                <div className="absolute inset-0 bg-black/40 z-0"></div>
+
+                {/* Judul (Header) sama persis dengan display */}
+                {selectedItem.title && selectedItem.type !== 'video' && (
+                  <h2 
+                    className="absolute left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-20"
+                    style={{
+                      top: '6%',
+                      fontSize: '3.5cqw',
+                      textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
+                    }}
+                  >
+                    {selectedItem.title}
+                  </h2>
+                )}
+
+                {/* Konten Slide Preview */}
+                <div className="relative z-10 flex flex-col items-center justify-center w-full mt-[10%] mb-[8%] px-[8%]">
+                  <div 
+                    className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl w-full"
+                    style={{ 
+                      textShadow: '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)', 
+                      fontSize: (() => {
+                        const t = selectedItem.segments[activeSegment] || '';
+                        if (t.length > 350) return '3cqw';
+                        if (t.length > 250) return '3.5cqw';
+                        if (t.length > 180) return '4cqw';
+                        if (t.length > 120) return '4.5cqw';
+                        if (t.length > 70) return '5.5cqw';
+                        if (t.length > 40) return '6.5cqw';
+                        return '7.5cqw';
+                      })(),
+                      lineHeight: '1.4'
+                    }}
+                    dangerouslySetInnerHTML={{ __html: processText(selectedItem.segments[activeSegment] || '') }}
+                  />
+                  
+                  {/* Bait Label */}
+                  {selectedItem.type !== 'video' && (
+                    <div 
+                      className="text-yellow-300 font-bold mt-[1.5cqw] tracking-widest uppercase opacity-80"
+                      style={{
+                        fontSize: '1.5cqw',
+                        textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)',
+                        minHeight: '2cqw'
+                      }}
+                    >
+                      {(() => {
+                        let label = (selectedItem.segmentLabels && selectedItem.segmentLabels[activeSegment]) ? selectedItem.segmentLabels[activeSegment] : '';
+                        if (!label && (selectedItem.type === 'song' || selectedItem.book)) {
+                          if (selectedItem.book) {
+                            const match = selectedItem.title.match(/(.+?)\s*:\s*(\d+)/);
+                            if (match) {
+                              label = `Ayat ${parseInt(match[2], 10) + activeSegment}`;
+                            } else {
+                              label = `Ayat ${activeSegment + 1}`;
+                            }
+                          } else {
+                            label = '•';
+                          }
+                        }
+                        if (selectedItem.type === 'song' && label.startsWith('Slide ')) {
+                          label = label.replace('Slide ', 'Bait ');
+                        }
+                        return label;
+                      })()}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="bg-indigo-50 dark:bg-slate-800/50 p-4 rounded-xl text-sm text-indigo-900/70 dark:text-slate-400 border border-indigo-100 dark:border-white/10">
                 <p><strong>Tips:</strong> Preview ini menampilkan teks secara proporsional. Pecah baris lirik/ayat jika dirasa terlalu panjang agar jemaat dapat membacanya dengan jelas.</p>
