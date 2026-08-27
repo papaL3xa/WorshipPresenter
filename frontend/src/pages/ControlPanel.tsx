@@ -1324,7 +1324,7 @@ export default function ControlPanel() {
                      fontSize: (() => {
                        const t = itemData?.segments[segIdx] || '';
                        const charCount = t.length;
-                       const visualLines = t.split('\n').reduce((acc, line) => acc + Math.ceil((line.length || 1) / 32), 0);
+                       const visualLines = t.split('\n').reduce((acc: number, line: string) => acc + Math.ceil((line.length || 1) / 32), 0);
                        
                        if (visualLines >= 8 || charCount > 350) return '3cqw';
                        if (visualLines >= 6 || charCount > 250) return '3.5cqw';
