@@ -6,7 +6,7 @@ const hasElectron = typeof window !== 'undefined' && !!window.electronAPI;
 // Fungsi helper panggil IPC
 const callIpc = async (action: string, payload: any) => {
   // @ts-ignore
-  if (hasElectron) return window.electronAPI.callApi(action, {}, { method: 'POST', payload });
+  if (hasElectron) return window.electronAPI.callApi(action, {}, payload);
   throw new Error("Bukan environment Electron");
 };
 
