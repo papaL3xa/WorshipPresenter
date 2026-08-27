@@ -1880,7 +1880,7 @@ export default function ControlPanel() {
 
         {/* Right Sidebar (Rundown / Setlist) */}
         <aside className="w-[25%] glass-panel p-4 flex flex-col overflow-hidden shadow-lg border-white/50">
-          <div className="mb-4 flex justify-center">
+          <div className="mb-4 flex w-full">
             <FooterClock />
           </div>
           <div className="flex justify-between items-start mb-4 shrink-0 gap-2 border-b border-indigo-900/10 pb-3">
