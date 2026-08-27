@@ -8,6 +8,7 @@ app.commandLine.appendSwitch('force-device-scale-factor', '1');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 // Path to local spreadsheet/json database
+const isDev = process.env.NODE_ENV === 'development';
 const appName = 'WorshipPresenter';
 const documentsPath = app.getPath('documents');
 const appDocumentsDir = path.join(documentsPath, appName);
