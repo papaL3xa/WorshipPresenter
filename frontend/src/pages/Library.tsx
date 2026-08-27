@@ -501,7 +501,7 @@ export default function Library() {
               onChange={(e) => searchType === 'song' ? setSelectedSongVersion(e.target.value) : setSelectedBibleVersion(e.target.value)}
             >
               {dbList.filter(d => d.type === searchType).map(db => (
-                <option key={db.id} value={db.id}>{db.name}</option>
+                <option key={db.id} value={db.id} className="dark:bg-[#0A1128] dark:text-[#C5A059]">{db.name}</option>
               ))}
             </select>
             <button 
@@ -521,7 +521,7 @@ export default function Library() {
                 onChange={(e) => setSelectedSongCategory(e.target.value)}
               >
                 {songCategories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                  <option key={cat} value={cat} className="dark:bg-[#0A1128] dark:text-[#C5A059]">{cat}</option>
                 ))}
               </select>
             </div>
@@ -846,7 +846,7 @@ export default function Library() {
                           />
                           <datalist id="category-options">
                             {songCategories.filter(c => c !== 'Semua').map(cat => (
-                              <option key={cat} value={cat} />
+                              <option key={cat} value={cat} className="dark:bg-[#0A1128] dark:text-[#C5A059]" />
                             ))}
                           </datalist>
                           <input 
@@ -1128,8 +1128,8 @@ export default function Library() {
                 <h3 className="font-bold text-indigo-900 dark:text-[#D4B872] mb-2">Unggah Versi Baru (.tsv)</h3>
                 <div className="flex flex-col gap-3 mb-4">
                   <select id="newDbType" className="glass-input !py-2 !text-sm w-full">
-                    <option value="song">Lagu</option>
-                    <option value="bible">Alkitab</option>
+                    <option value="song" className="dark:bg-[#0A1128] dark:text-[#C5A059]">Lagu</option>
+                    <option value="bible" className="dark:bg-[#0A1128] dark:text-[#C5A059]">Alkitab</option>
                   </select>
                   <input id="newDbName" type="text" placeholder="Nama Versi (mis: KJV, NKB)" className="glass-input !py-2 !text-sm w-full" />
                 </div>

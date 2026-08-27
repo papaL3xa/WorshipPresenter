@@ -1647,7 +1647,7 @@ export default function ControlPanel() {
                             onChange={(e) => searchType === 'song' ? setSelectedSongVersion(e.target.value) : setSelectedBibleVersion(e.target.value)}
                           >
                             {dbList.filter(d => d.type === searchType).map(db => (
-                              <option key={db.id} value={db.id}>{db.name}</option>
+                              <option key={db.id} value={db.id} className="dark:bg-[#0A1128] dark:text-[#C5A059]">{db.name}</option>
                             ))}
                           </select>
                         </div>
