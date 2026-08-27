@@ -736,7 +736,7 @@ export default function Library() {
                               setBibleChaptersCount(maxC);
                               setIsLoadingBibleMeta(false);
                             }}
-                            className="p-2 text-left text-xs font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition line-clamp-1 shadow-sm"
+                            className="p-2 text-left text-xs font-semibold text-indigo-900 bg-white/40 border border-white/20 rounded-md hover:bg-indigo-600 hover:text-white transition line-clamp-1 shadow-sm dark:bg-[#282828] dark:border-white/10 dark:text-[#C5A059] dark:hover:bg-[#333] dark:hover:text-[#D4B872]"
                           >
                             {book}
                           </button>
@@ -748,11 +748,11 @@ export default function Library() {
                       <div className="flex flex-col">
                         <button 
                           onClick={() => setSelectedBibleBook(null)}
-                          className="mb-3 w-full p-2 bg-indigo-100 text-indigo-900 rounded-lg flex items-center justify-center gap-2 hover:bg-indigo-200 transition font-bold shadow-sm"
+                          className="mb-3 w-full p-2 bg-indigo-100 text-indigo-900 rounded-lg flex items-center justify-center gap-2 hover:bg-indigo-200 transition font-bold shadow-sm dark:bg-slate-800 dark:text-[#D4B872] dark:hover:bg-slate-700 dark:border dark:border-white/10"
                         >
                           <ArrowLeft size={16}/> Kembali ke Kitab
                         </button>
-                        <div className="font-bold text-indigo-900 mb-2 text-center">{selectedBibleBook} - Pilih Pasal</div>
+                        <div className="font-bold text-indigo-900 dark:text-[#D4B872] mb-2 text-center">{selectedBibleBook} - Pilih Pasal</div>
                         {isLoadingBibleMeta ? (
                           <div className="text-center p-4"><Loader2 size={24} className="animate-spin text-indigo-500 mx-auto"/></div>
                         ) : (
@@ -767,7 +767,7 @@ export default function Library() {
                                   setBibleVersesCount(maxV);
                                   setIsLoadingBibleMeta(false);
                                 }}
-                                className="py-2.5 text-center text-sm font-bold text-indigo-900 bg-white/60 border border-indigo-200 rounded-lg hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition shadow-sm"
+                                className="py-2.5 text-center text-sm font-bold text-indigo-900 bg-white/60 border border-indigo-200 rounded-lg hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition shadow-sm dark:bg-[#282828] dark:border-white/10 dark:text-[#C5A059] dark:hover:bg-[#333] dark:hover:text-[#D4B872] dark:hover:border-white/20"
                               >
                                 {chap}
                               </button>
@@ -779,11 +779,11 @@ export default function Library() {
                       <div className="flex flex-col">
                         <button 
                           onClick={() => setSelectedBibleChapter(null)}
-                          className="mb-3 w-full p-2 bg-indigo-100 text-indigo-900 rounded-lg flex items-center justify-center gap-2 hover:bg-indigo-200 transition font-bold shadow-sm"
+                          className="mb-3 w-full p-2 bg-indigo-100 text-indigo-900 rounded-lg flex items-center justify-center gap-2 hover:bg-indigo-200 transition font-bold shadow-sm dark:bg-slate-800 dark:text-[#D4B872] dark:hover:bg-slate-700 dark:border dark:border-white/10"
                         >
                           <ArrowLeft size={16}/> Kembali ke Pasal
                         </button>
-                        <div className="font-bold text-indigo-900 mb-2 text-center">{selectedBibleBook} {selectedBibleChapter} - Pilih Ayat</div>
+                        <div className="font-bold text-indigo-900 dark:text-[#D4B872] mb-2 text-center">{selectedBibleBook} {selectedBibleChapter} - Pilih Ayat</div>
                         {isLoadingBibleMeta ? (
                           <div className="text-center p-4"><Loader2 size={24} className="animate-spin text-indigo-500 mx-auto"/></div>
                         ) : (
@@ -797,7 +797,7 @@ export default function Library() {
                                   // Eksekusi pencarian secara langsung
                                   performSearch(query, 'bible');
                                 }}
-                                className="py-2.5 text-center text-sm font-bold text-indigo-900 bg-white/60 border border-indigo-200 rounded-lg hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition shadow-sm"
+                                className="py-2.5 text-center text-sm font-bold text-indigo-900 bg-white/60 border border-indigo-200 rounded-lg hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition shadow-sm dark:bg-[#282828] dark:border-white/10 dark:text-[#C5A059] dark:hover:bg-[#333] dark:hover:text-[#D4B872] dark:hover:border-white/20"
                               >
                                 {verse}
                               </button>
