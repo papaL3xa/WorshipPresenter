@@ -1825,7 +1825,7 @@ export default function ControlPanel() {
                                 ) : dashboardPlaylists.filter(pl => pl.name.toLowerCase().includes(searchQuery.toLowerCase())).map(pl => (
                                   <button 
                                     key={pl.id} 
-                                    onClick={() => navigate('/control?id=' + pl.id)} 
+                                    onClick={() => window.location.search = '?id=' + pl.id}
                                     className="text-left p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-[#C5A059] shadow-sm transition-all flex justify-between items-center group"
                                   >
                                     <div>
