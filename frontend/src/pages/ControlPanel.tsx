@@ -2151,31 +2151,31 @@ export default function ControlPanel() {
                 <button onClick={() => setReplaceIndex(null)} className="text-red-500 hover:bg-red-500/10 p-1 rounded shrink-0"><X size={12}/></button>
               </div>
             )}
-            <div className="flex gap-2 mb-2">
+            <div className="grid grid-cols-2 gap-2 mb-2">
               <button 
                 onClick={addQuickAnnouncement}
-                className="flex-1 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
+                className="w-full glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
                 title="Tambah Teks / Pengumuman"
               >
                 <Plus size={14} /> TEKS
               </button>
               <button 
                 onClick={() => openVideoModal(replaceIndex)}
-                className="flex-1 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
+                className="w-full glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
                 title="Tambah Video"
               >
                 <Video size={16} /> VIDEO
               </button>
               <button 
                 onClick={() => { setReplaceIndex(replaceIndex); document.getElementById('rundown-img-upload')?.click(); }}
-                className="flex-1 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
+                className="w-full glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
                 title="Tambah Gambar (Maks 2)"
               >
                 <ImageIcon size={16} /> GAMBAR
               </button>
               <button 
                 onClick={addCountdown}
-                className="flex-1 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
+                className="w-full glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
                 title="Tambah Waktu / Hitung Mundur"
               >
                 <Clock size={14} /> WAKTU
