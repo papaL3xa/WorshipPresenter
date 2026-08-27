@@ -485,12 +485,17 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
   // --- IPC untuk Media (File Fisik) ---
   if (action === 'saveMediaFile') {
     try {
+      if (!payload || typeof payload.id !== 'string') {
+        console.error('Invalid payload in saveMediaFile:', payload);
+        return { success: false, message: 'Payload atau ID tidak valid' };
+      }
+      
       const isVideo = payload.type === 'video' || payload.id.includes('_vid_');
       const targetDir = isVideo ? mediaVideosDir : mediaImagesDir;
 
       // Helper: detect extension from mime type or dataUrl header
       const getExtFromMime = (mime) => {
-        if (!mime) return isVideo ? 'webm' : 'jpg';
+        if (!mime || typeof mime !== 'string') return isVideo ? 'webm' : 'jpg';
         if (mime.includes('png')) return 'png';
         if (mime.includes('gif')) return 'gif';
         if (mime.includes('webp')) return 'webp';
