@@ -14,12 +14,15 @@ export const LocalVideoPlayer = forwardRef<HTMLVideoElement, { id: string, loop?
         return;
       }
 
-      // Web browser: ambil blob dari IndexedDB
       import('../utils/imageStorage').then(async (m) => {
         const blob = await m.getLocalVideo(id);
         if (blob) {
-          objectUrl = URL.createObjectURL(blob);
-          setUrl(objectUrl);
+          if (typeof blob === 'string') {
+            setUrl(blob);
+          } else {
+            objectUrl = URL.createObjectURL(blob);
+            setUrl(objectUrl);
+          }
         }
       });
     };

@@ -173,7 +173,13 @@ export const saveLocalVideo = async (id: string, fileBlob: Blob | File) => {
   await set(`local_vid_${id}`, fileBlob);
 };
 
-export const getLocalVideo = async (id: string): Promise<Blob | undefined> => {
+export const getLocalVideo = async (id: string): Promise<Blob | string | undefined> => {
+  if (hasElectron) {
+    const list = await getAllSlideBackgrounds();
+    const item = list.find((i: any) => i.id === id || i.id === `local_vid_${id}`);
+    if (item) return item.url;
+    return undefined;
+  }
   if (id.startsWith('local_vid_')) {
     return await get(id);
   }
@@ -212,6 +218,12 @@ export const saveLocalImage = async (id: string, fileBlob: Blob | File) => {
 };
 
 export const getLocalImage = async (id: string): Promise<Blob | string | undefined> => {
+  if (hasElectron) {
+    const list = await getAllSlideBackgrounds();
+    const item = list.find((i: any) => i.id === id || i.id === `local_img_${id}`);
+    if (item) return item.url;
+    return undefined;
+  }
   try {
     if (id.startsWith('local_img_')) {
       return await get(id);
