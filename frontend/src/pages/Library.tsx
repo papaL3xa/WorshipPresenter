@@ -1113,19 +1113,19 @@ export default function Library() {
       {/* DATABASE MANAGER MODAL */}
       {isDbManagerOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
-          <div className="bg-white/90 backdrop-blur-xl p-6 rounded-2xl shadow-2xl max-w-2xl w-full border border-white/40 max-h-[85vh] flex flex-col">
+          <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl p-6 rounded-2xl shadow-2xl max-w-2xl w-full border border-white/40 dark:border-white/10 max-h-[85vh] flex flex-col">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-indigo-900 flex items-center gap-2">
+              <h2 className="text-xl font-bold text-indigo-900 dark:text-[#D4B872] flex items-center gap-2">
                 <Settings size={20} /> Database Manager
               </h2>
-              <button onClick={() => setIsDbManagerOpen(false)} className="p-2 text-indigo-900/50 hover:text-indigo-900 hover:bg-indigo-100 rounded-lg transition">
+              <button onClick={() => setIsDbManagerOpen(false)} className="p-2 text-indigo-900/50 hover:text-indigo-900 hover:bg-indigo-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/10 rounded-lg transition">
                 <X size={20} />
               </button>
             </div>
             
             <div className="flex-1 overflow-y-auto mb-6 pr-2 space-y-4">
-              <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
-                <h3 className="font-bold text-indigo-900 mb-2">Unggah Versi Baru (.tsv)</h3>
+              <div className="bg-indigo-50/50 dark:bg-slate-900/50 p-4 rounded-xl border border-indigo-100 dark:border-white/10">
+                <h3 className="font-bold text-indigo-900 dark:text-[#D4B872] mb-2">Unggah Versi Baru (.tsv)</h3>
                 <div className="flex flex-col gap-3 mb-4">
                   <select id="newDbType" className="glass-input !py-2 !text-sm w-full">
                     <option value="song">Lagu</option>
@@ -1170,18 +1170,18 @@ export default function Library() {
                     };
                     reader.readAsText(file);
                   }}
-                  className="w-full text-sm text-indigo-900 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 cursor-pointer"
+                  className="w-full text-sm text-indigo-900 dark:text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 dark:file:bg-indigo-900/40 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-200 dark:hover:file:bg-indigo-900/60 cursor-pointer"
                 />
               </div>
 
               <div>
-                <h3 className="font-bold text-indigo-900 mb-3">Database Terpasang</h3>
+                <h3 className="font-bold text-indigo-900 dark:text-[#D4B872] mb-3">Database Terpasang</h3>
                 <div className="space-y-2">
                   {dbList.map(db => (
-                    <div key={db.id} className="flex justify-between items-center p-3 bg-white border border-indigo-100 rounded-lg shadow-sm">
+                    <div key={db.id} className="flex justify-between items-center p-3 bg-white dark:bg-slate-800/80 border border-indigo-100 dark:border-white/10 rounded-lg shadow-sm">
                       <div>
-                        <div className="font-semibold text-indigo-900">{db.name}</div>
-                        <div className="text-xs text-indigo-500 uppercase tracking-wider">{db.type} • {db.isDefault ? 'Bawaan' : 'Kustom'}</div>
+                        <div className="font-semibold text-indigo-900 dark:text-[#D4B872]">{db.name}</div>
+                        <div className="text-xs text-indigo-500 dark:text-[#C5A059] uppercase tracking-wider">{db.type} • {db.isDefault ? 'Bawaan' : 'Kustom'}</div>
                       </div>
                       <div className="flex gap-2">
                         {db.type === 'song' && (
@@ -1207,7 +1207,7 @@ export default function Library() {
                                 }
                               }
                             }}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
+                            className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition"
                             title="Backup Seluruh Isi Database ke Cloud"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path><path d="M12 12v9"></path><path d="m8 17 4 4 4-4"></path></svg>
@@ -1228,7 +1228,7 @@ export default function Library() {
                               alert("Gagal mengexport: " + err.message);
                             }
                           }}
-                          className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition"
+                          className="p-2 text-indigo-500 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition"
                           title="Export ke TSV"
                         >
                           <Download size={16} />
@@ -1256,7 +1256,7 @@ export default function Library() {
                                 }
                               }
                             }}
-                            className={`p-2 rounded-lg transition ${processingId === db.id ? 'text-slate-400' : 'text-red-500 hover:bg-red-50'}`}
+                            className={`p-2 rounded-lg transition ${processingId === db.id ? 'text-slate-400' : 'text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30'}`}
                             title="Hapus Database"
                           >
                             {processingId === db.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
