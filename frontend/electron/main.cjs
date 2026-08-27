@@ -505,7 +505,9 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
         const originalExt = path.extname(payload.filePath).toLowerCase();
         const filePath = path.join(targetDir, `${payload.id}${originalExt}`);
         fs.copyFileSync(payload.filePath, filePath);
-        return { success: true, id: payload.id, url: `file://${filePath.replace(/\\/g, '/')}` };
+        const formattedPath = filePath.replace(/\\/g, '/');
+        const fileUrl = formattedPath.startsWith('/') ? `file://${formattedPath}` : `file:///${formattedPath}`;
+        return { success: true, id: payload.id, url: fileUrl };
       }
 
       if (payload.dataUrl) {
@@ -517,7 +519,9 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
           const filePath = path.join(targetDir, `${payload.id}.${ext}`);
           const buffer = Buffer.from(matches[2], 'base64');
           fs.writeFileSync(filePath, buffer);
-          return { success: true, id: payload.id, url: `file://${filePath.replace(/\\/g, '/')}` };
+          const formattedPath = filePath.replace(/\\/g, '/');
+          const fileUrl = formattedPath.startsWith('/') ? `file://${formattedPath}` : `file:///${formattedPath}`;
+          return { success: true, id: payload.id, url: fileUrl };
         }
       }
 
@@ -552,9 +556,11 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
         // ID = filename without extension (e.g. "local_img_img-1234567")
         const ext = path.extname(f);
         const id = f.slice(0, f.length - ext.length);
+        const formattedPath = path.join(mediaImagesDir, f).replace(/\\/g, '/');
+        const fileUrl = formattedPath.startsWith('/') ? `file://${formattedPath}` : `file:///${formattedPath}`;
         results.push({
           id,
-          url: `file://${path.join(mediaImagesDir, f).replace(/\\/g, '/')}`,
+          url: fileUrl,
           type: 'image'
         });
       });
@@ -563,9 +569,11 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
       videos.forEach(f => {
         const ext = path.extname(f);
         const id = f.slice(0, f.length - ext.length);
+        const formattedPath = path.join(mediaVideosDir, f).replace(/\\/g, '/');
+        const fileUrl = formattedPath.startsWith('/') ? `file://${formattedPath}` : `file:///${formattedPath}`;
         results.push({
           id,
-          url: `file://${path.join(mediaVideosDir, f).replace(/\\/g, '/')}`,
+          url: fileUrl,
           type: 'video'
         });
       });
