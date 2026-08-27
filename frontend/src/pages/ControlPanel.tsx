@@ -660,23 +660,9 @@ export default function ControlPanel() {
     const savedIds: string[] = [];
 
     for (const info of imageInfos) {
-      if (isElectron) {
-        // Di Electron: gunakan file:// path langsung — tidak perlu copy, instan!
-        const filePath = (info.file as any).path;
-        if (filePath) {
-          // Konversi Windows path ke file:// URL
-          const fileUrl = 'file:///' + filePath.replace(/\\/g, '/');
-          savedIds.push(fileUrl);
-        } else {
-          // Fallback jika tidak ada path (seharusnya tidak terjadi di Electron)
-          savedIds.push(URL.createObjectURL(info.file));
-        }
-      } else {
-        // Di browser: simpan ke IndexedDB
-        const id = 'img-' + Date.now() + Math.floor(Math.random() * 1000);
-        await saveLocalImage(id, info.file);
-        savedIds.push(`local_img_${id}`);
-      }
+      const id = 'img-' + Date.now() + Math.floor(Math.random() * 1000);
+      await saveLocalImage(id, info.file);
+      savedIds.push(`local_img_${id}`);
     }
 
     if (imageInfos.length === 2) {
@@ -744,22 +730,8 @@ export default function ControlPanel() {
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const isElectron = !!(window as any).electronAPI;
-    
-    if (isElectron) {
-      // Di Electron: gunakan file:// path langsung — tidak perlu copy ke IndexedDB
-      const filePath = (file as any).path;
-      if (filePath) {
-        const fileUrl = 'file:///' + filePath.replace(/\\/g, '/');
-        setVideoUrlInput(fileUrl);
-      } else {
-        alert('Gagal membaca path file. Pastikan Anda menggunakan aplikasi desktop.');
-      }
-      return;
-    }
 
-    // Versi browser: simpan ke IndexedDB
+    // Simpan ke folder (Electron) atau IndexedDB (Web)
     setIsVideoUploading(true);
     try {
       const vidId = Date.now().toString();
