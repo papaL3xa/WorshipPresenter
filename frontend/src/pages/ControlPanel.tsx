@@ -1306,7 +1306,7 @@ export default function ControlPanel() {
 
         {/* Content Container */}
         {itemData?.type !== 'video' && (
-          <div className="relative z-10 flex flex-col items-center justify-center w-full mt-[10%] mb-[8%] px-[8%]">
+          <div className="absolute top-[18%] bottom-[12%] left-0 right-0 z-10 flex flex-col items-center justify-center w-full px-[8%]">
             {itemData?.type === 'countdown' ? (
                <div className="text-white text-center font-bold tracking-widest leading-none drop-shadow-xl w-full font-mono" 
                     style={{ textShadow: '0 10px 30px rgba(0,0,0,0.8), 0 0 40px rgba(255,255,255,0.2)', fontSize: '18cqw' }}>
@@ -1323,13 +1323,16 @@ export default function ControlPanel() {
                      textShadow: '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)', 
                      fontSize: (() => {
                        const t = itemData?.segments[segIdx] || '';
-                      if (t.length > 350) return '3cqw';
-                      if (t.length > 250) return '3.5cqw';
-                      if (t.length > 180) return '4cqw';
-                      if (t.length > 120) return '4.5cqw';
-                      if (t.length > 70) return '5.5cqw';
-                      if (t.length > 40) return '6.5cqw';
-                      return '7.5cqw';
+                       const charCount = t.length;
+                       const visualLines = t.split('\n').reduce((acc, line) => acc + Math.ceil((line.length || 1) / 32), 0);
+                       
+                       if (visualLines >= 8 || charCount > 350) return '3cqw';
+                       if (visualLines >= 6 || charCount > 250) return '3.5cqw';
+                       if (visualLines >= 5 || charCount > 180) return '4cqw';
+                       if (visualLines >= 4 || charCount > 120) return '4.5cqw';
+                       if (visualLines >= 3 || charCount > 70) return '5.5cqw';
+                       if (charCount > 40) return '6.5cqw';
+                       return '7.5cqw';
                      })(),
                      lineHeight: '1.4'
                    }}
