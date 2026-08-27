@@ -2164,14 +2164,14 @@ export default function ControlPanel() {
                 className="flex-none w-12 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center text-indigo-900 py-2 hover:bg-white/70 transition-all"
                 title="Tambah Video"
               >
-                <Video size="24" />
+                <Video size={14} />
               </button>
               <button 
                 onClick={() => { setReplaceIndex(replaceIndex); document.getElementById('rundown-img-upload')?.click(); }}
                 className="flex-none w-12 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center text-indigo-900 py-2 hover:bg-white/70 transition-all"
                 title="Tambah Gambar (Maks 2)"
               >
-                <ImageIcon size="24" />
+                <ImageIcon size={14} />
               </button>
               <button 
                 onClick={addCountdown}
