@@ -67,6 +67,10 @@ export default function DisplayWindow() {
     position?: 'center' | 'top' | 'bottom';
     bold?: boolean;
     shadow?: 'dark' | 'light' | 'none';
+    titleOffsetY?: number;
+    contentOffsetY?: number;
+    paddingHorizontal?: number;
+    lineHeight?: number | string;
   }>(loadTheme);
 
   const [playlistMap, setPlaylistMap] = useState<Record<string, any>>({});
@@ -714,7 +718,7 @@ export default function DisplayWindow() {
                   displayTheme.bold !== false ? 'font-bold' : 'font-medium'
                 }`} 
                 style={{ 
-                  lineHeight: displayTheme.lineHeight ?? 1.6,
+                  lineHeight: displayTheme.lineHeight ?? 1.15,
                   color: displayTheme.color || 'white',
                   textShadow: (displayTheme.shadow || 'dark') === 'dark' 
                     ? '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)'
@@ -735,8 +739,7 @@ export default function DisplayWindow() {
                     else if (charCount > 40) baseSize = 8;
                     
                     return `${baseSize + (displayTheme.fontSizeOffset || 0)}cqw`;
-                  })(),
-                  lineHeight: '1.15'
+                  })()
                 }}
                 dangerouslySetInnerHTML={{ __html: processText(text) }}
               />
