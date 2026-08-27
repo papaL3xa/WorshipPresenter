@@ -189,16 +189,18 @@ export const removeLocalVideo = async (id: string) => {
 export const saveLocalImage = async (id: string, fileBlob: Blob | File) => {
   if (hasElectron) {
     const file = fileBlob as any;
+    // In Electron, File objects from <input type="file"> always have a .path property
     if (file.path) {
       await callIpc('saveMediaFile', { id: `local_img_${id}`, filePath: file.path, type: 'image' });
       return;
     }
+    // Fallback: convert to base64 (slow, but safe)
     const dataUrl = await new Promise<string>((resolve) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
       reader.readAsDataURL(fileBlob);
     });
-    await callIpc('saveMediaFile', { id: `local_img_${id}`, dataUrl, type: 'image' });
+    await callIpc('saveMediaFile', { id: `local_img_${id}`, dataUrl, type: 'image', mimeType: fileBlob.type });
     return;
   }
   await set(`local_img_${id}`, fileBlob);

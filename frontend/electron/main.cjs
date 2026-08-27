@@ -484,32 +484,43 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
 
   // --- IPC untuk Media (File Fisik) ---
   if (action === 'saveMediaFile') {
-    // payload = { id: string, dataUrl: string, type: 'image' | 'video' }
     try {
       const isVideo = payload.type === 'video' || payload.id.includes('_vid_');
       const targetDir = isVideo ? mediaVideosDir : mediaImagesDir;
-      const extension = isVideo ? 'webm' : 'jpg'; // Asumsi default. Bisa disesuaikan dari mime type.
-      
-      let filePath = path.join(targetDir, `${payload.id}.${extension}`);
-      
+
+      // Helper: detect extension from mime type or dataUrl header
+      const getExtFromMime = (mime) => {
+        if (!mime) return isVideo ? 'webm' : 'jpg';
+        if (mime.includes('png')) return 'png';
+        if (mime.includes('gif')) return 'gif';
+        if (mime.includes('webp')) return 'webp';
+        if (mime.includes('mp4')) return 'mp4';
+        if (mime.includes('webm')) return 'webm';
+        if (mime.includes('mov')) return 'mov';
+        return isVideo ? 'webm' : 'jpg';
+      };
+
       if (payload.filePath) {
-        // Jika dari file picker lokal (seperti video/mp4 besar), kita bisa langsung copy file-nya!
-        const originalExt = path.extname(payload.filePath);
-        filePath = path.join(targetDir, `${payload.id}${originalExt}`);
+        // Fast path: file selected from disk – just copy it
+        const originalExt = path.extname(payload.filePath).toLowerCase();
+        const filePath = path.join(targetDir, `${payload.id}${originalExt}`);
         fs.copyFileSync(payload.filePath, filePath);
         return { success: true, id: payload.id, url: `file://${filePath.replace(/\\/g, '/')}` };
       }
-      
+
       if (payload.dataUrl) {
-        // Dari base64 canvas compress
         const matches = payload.dataUrl.match(/^data:(.+);base64,(.+)$/);
         if (matches && matches.length === 3) {
+          // Detect extension from mime type embedded in data URL or explicit mimeType field
+          const mimeFromUrl = matches[1];
+          const ext = getExtFromMime(payload.mimeType || mimeFromUrl);
+          const filePath = path.join(targetDir, `${payload.id}.${ext}`);
           const buffer = Buffer.from(matches[2], 'base64');
           fs.writeFileSync(filePath, buffer);
           return { success: true, id: payload.id, url: `file://${filePath.replace(/\\/g, '/')}` };
         }
       }
-      
+
       return { success: false, message: 'Tidak ada data valid yang dikirim' };
     } catch (err) {
       console.error('Failed to save media:', err);
@@ -538,8 +549,11 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
       const results = [];
       const images = fs.existsSync(mediaImagesDir) ? fs.readdirSync(mediaImagesDir) : [];
       images.forEach(f => {
+        // ID = filename without extension (e.g. "local_img_img-1234567")
+        const ext = path.extname(f);
+        const id = f.slice(0, f.length - ext.length);
         results.push({
-          id: f.split('.')[0],
+          id,
           url: `file://${path.join(mediaImagesDir, f).replace(/\\/g, '/')}`,
           type: 'image'
         });
@@ -547,8 +561,10 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
       
       const videos = fs.existsSync(mediaVideosDir) ? fs.readdirSync(mediaVideosDir) : [];
       videos.forEach(f => {
+        const ext = path.extname(f);
+        const id = f.slice(0, f.length - ext.length);
         results.push({
-          id: f.split('.')[0],
+          id,
           url: `file://${path.join(mediaVideosDir, f).replace(/\\/g, '/')}`,
           type: 'video'
         });
