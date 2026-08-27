@@ -56,7 +56,6 @@ try {
 } catch (err) {
   console.error("Failed to initialize SQLite. Ensure better-sqlite3 is compiled.", err);
 }
-const oldDbPath = path.join(app.getPath('userData'), 'database.json');
 
 // Migrasi database lama jika ada dan database baru belum ada
 if (!fs.existsSync(dbPath) && fs.existsSync(oldDbPath)) {
