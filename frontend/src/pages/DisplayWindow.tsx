@@ -657,13 +657,13 @@ export default function DisplayWindow() {
           })()}
         </div>
       ) : itemType === 'image' ? (
-        <div className="absolute inset-0 z-50 bg-black flex justify-center items-center p-4 pointer-events-auto">
+        <div className="absolute inset-0 z-50 bg-black flex justify-center items-center pointer-events-auto">
           {(() => {
             try {
               const urls = JSON.parse(text);
               if (Array.isArray(urls)) {
                 return (
-                  <div className="flex w-full h-full gap-4 items-center justify-center">
+                  <div className="flex w-full h-full gap-4 p-4 items-center justify-center">
                     {urls.map((url: string, i: number) => (
                       <div key={i} className="flex-1 h-full relative">
                         <LocalImageLoader id={url} className="w-full h-full object-contain animate-fade-in" />

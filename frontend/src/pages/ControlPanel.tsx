@@ -1290,13 +1290,13 @@ export default function ControlPanel() {
 
         {/* Image Preview */}
         {mode === 'content' && itemData?.type === 'image' && itemData?.segments[segIdx] && (
-          <div className="absolute inset-0 z-[5] bg-black flex items-center justify-center p-4">
+          <div className="absolute inset-0 z-[5] bg-black flex items-center justify-center">
             {(() => {
               try {
                 const urls = JSON.parse(itemData.segments[segIdx]);
                 if (Array.isArray(urls)) {
                   return (
-                    <div className="flex w-full h-full gap-4 items-center justify-center">
+                    <div className="flex w-full h-full gap-4 p-4 items-center justify-center">
                       {urls.map((url: string, i: number) => (
                         <div key={i} className="flex-1 h-full relative">
                           <LocalImageLoader id={url} className="w-full h-full object-contain" />
