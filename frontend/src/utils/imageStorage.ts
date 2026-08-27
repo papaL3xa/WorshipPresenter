@@ -185,3 +185,33 @@ export const removeLocalVideo = async (id: string) => {
     await del(`local_vid_${id}`);
   }
 };
+
+export const saveLocalImage = async (id: string, fileBlob: Blob | File) => {
+  if (hasElectron) {
+    const file = fileBlob as any;
+    if (file.path) {
+      await callIpc('saveMediaFile', { id: `local_img_${id}`, filePath: file.path, type: 'image' });
+      return;
+    }
+    const dataUrl = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(fileBlob);
+    });
+    await callIpc('saveMediaFile', { id: `local_img_${id}`, dataUrl, type: 'image' });
+    return;
+  }
+  await set(`local_img_${id}`, fileBlob);
+};
+
+export const getLocalImage = async (id: string): Promise<Blob | string | undefined> => {
+  try {
+    if (id.startsWith('local_img_')) {
+      return await get(id);
+    }
+    return await get(`local_img_${id}`);
+  } catch (e) {
+    console.warn("Failed to get local image", e);
+    return undefined;
+  }
+};

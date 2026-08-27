@@ -3,6 +3,7 @@ import { callApi } from '../api';
 import { CONFIG } from '../config';
 import { getSlideBackground } from '../utils/imageStorage';
 import { LocalVideoPlayer } from '../components/LocalVideoPlayer';
+import { LocalImageLoader } from '../components/LocalImageLoader';
 import YouTube from 'react-youtube';
 
 export default function DisplayWindow() {
@@ -653,6 +654,28 @@ export default function DisplayWindow() {
                 onPause={handlePause}
               />
             );
+          })()}
+        </div>
+      ) : itemType === 'image' ? (
+        <div className="absolute inset-0 z-50 bg-black flex justify-center items-center p-4 pointer-events-auto">
+          {(() => {
+            try {
+              const urls = JSON.parse(text);
+              if (Array.isArray(urls)) {
+                return (
+                  <div className="flex w-full h-full gap-4 items-center justify-center">
+                    {urls.map((url: string, i: number) => (
+                      <div key={i} className="flex-1 h-full relative">
+                        <LocalImageLoader id={url} className="w-full h-full object-contain animate-fade-in" />
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+            } catch (e) {
+              // If it fails to parse, it's just a single URL string
+            }
+            return <LocalImageLoader id={text} className="w-full h-full object-contain animate-fade-in" />;
           })()}
         </div>
       ) : (

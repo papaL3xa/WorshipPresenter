@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { Monitor, Square, Play, Pause, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock, Layout, Power, FileText, Repeat, Volume2, VolumeX } from 'lucide-react';
+import { Monitor, Square, Play, Pause, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, Video, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock, Layout, Power, FileText, Repeat, Volume2, VolumeX } from 'lucide-react';
 import { callApi } from '../api';
 import { SyncButton } from '../components/SyncButton';
 import { useBackgrounds } from '../hooks/useBackgrounds';
 import YouTube from 'react-youtube';
 import { BackgroundPickerModal, BackgroundPickerInline } from '../components/BackgroundPickerModal';
-import { saveLocalVideo } from '../utils/imageStorage';
+import { saveLocalVideo, saveLocalImage } from '../utils/imageStorage';
 import { FooterClock } from '../components/FooterClock';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { RichEditor, RichEditorRef } from '../components/RichEditor';
 import { LocalVideoPlayer } from '../components/LocalVideoPlayer';
+import { LocalImageLoader } from '../components/LocalImageLoader';
 import { initDefaultDatabases, searchLocalSongs, searchLocalBible, syncCustomSongs, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, getBibleBooksList } from '../utils/dbStorage';
 
 const processText = (raw: string) => {
@@ -580,15 +581,82 @@ export default function ControlPanel() {
     
     setIsVideoModalOpen(false);
     setIsAddItemModalOpen(false);
-    setIsEditingRundown(false); // Selesai edit agar bisa langsung diklik item lain
+    setIsEditingRundown(false);
 
-    // Langsung tampilkan ke layar jemaat dan control panel
     setMode('content');
     setLiveItem(targetIdx);
     setLiveSegment(0);
     setActiveSegment(0);
     setVideoState('pause');
+  };
+
+  const handleRundownImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     
+    const selectedFiles = Array.from(files).slice(0, 2);
+    
+    const imageInfos = await Promise.all(selectedFiles.map(file => {
+      return new Promise<{url: string, width: number, height: number, file: File}>((resolve) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          resolve({ url, width: img.width, height: img.height, file });
+        };
+        img.src = url;
+      });
+    }));
+
+    const segments: string[] = [];
+    const savedIds: string[] = [];
+
+    for (const info of imageInfos) {
+      const id = 'img-' + Date.now() + Math.floor(Math.random() * 1000);
+      await saveLocalImage(id, info.file);
+      savedIds.push(`local_img_${id}`);
+    }
+
+    if (imageInfos.length === 2) {
+      const allPortrait = imageInfos.every(info => info.width < info.height);
+      if (allPortrait) {
+        segments.push(JSON.stringify(savedIds));
+      } else {
+        segments.push(savedIds[0], savedIds[1]);
+      }
+    } else {
+      segments.push(savedIds[0]);
+    }
+
+    const newItem = {
+      id: 'image-' + Date.now(),
+      type: 'image',
+      title: 'Gambar',
+      segments: segments
+    } as any;
+    
+    let finalPlaylist = [];
+    let targetIdx = 0;
+    if (replaceIndex !== null) {
+      finalPlaylist = [...playlist];
+      finalPlaylist[replaceIndex] = newItem;
+      targetIdx = replaceIndex;
+      setPlaylist(finalPlaylist);
+      setActiveItem(replaceIndex);
+      setReplaceIndex(null);
+    } else {
+      finalPlaylist = [...playlist, newItem];
+      targetIdx = playlist.length;
+      setPlaylist(finalPlaylist);
+      setActiveItem(targetIdx);
+    }
+
+    setIsAddItemModalOpen(false);
+    setIsEditingRundown(false);
+    setMode('content');
+    setLiveItem(targetIdx);
+    setLiveSegment(0);
+    setActiveSegment(0);
+
     const stateObj = {
       playlistId,
       currentItemId: newItem.id,
@@ -606,6 +674,8 @@ export default function ControlPanel() {
     syncTimeout.current = setTimeout(async () => {
       try { await callApi('setLiveState', {}, { method: 'POST', payload: stateObj }); } catch (err) {}
     }, 200);
+
+    e.target.value = '';
   };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1218,6 +1288,31 @@ export default function ControlPanel() {
         )}
         <div className="absolute inset-0 bg-black/40 z-0"></div>
 
+        {/* Image Preview */}
+        {mode === 'content' && itemData?.type === 'image' && itemData?.segments[segIdx] && (
+          <div className="absolute inset-0 z-[5] bg-black flex items-center justify-center p-4">
+            {(() => {
+              try {
+                const urls = JSON.parse(itemData.segments[segIdx]);
+                if (Array.isArray(urls)) {
+                  return (
+                    <div className="flex w-full h-full gap-4 items-center justify-center">
+                      {urls.map((url: string, i: number) => (
+                        <div key={i} className="flex-1 h-full relative">
+                          <LocalImageLoader id={url} className="w-full h-full object-contain" />
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }
+              } catch (e) {
+                // If it fails to parse, it's just a single URL string
+              }
+              return <LocalImageLoader id={itemData.segments[segIdx]} className="w-full h-full object-contain" />;
+            })()}
+          </div>
+        )}
+
         {/* Video Preview */}
         {mode === 'content' && itemData?.type === 'video' && itemData?.segments[segIdx] && (
           <div className="absolute inset-0 z-[5] bg-black flex items-center justify-center">
@@ -1291,7 +1386,7 @@ export default function ControlPanel() {
         )}
 
         {/* Title */}
-        {mode === 'content' && itemData?.title && itemData?.type !== 'video' && itemData?.type !== 'countdown' && (
+        {mode === 'content' && itemData?.title && itemData?.type !== 'video' && itemData?.type !== 'countdown' && itemData?.type !== 'image' && (
           <h2 
             className="absolute left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-20 transition-all duration-500"
             style={{
@@ -1305,7 +1400,7 @@ export default function ControlPanel() {
         )}
 
         {/* Content Container */}
-        {itemData?.type !== 'video' && (
+        {itemData?.type !== 'video' && itemData?.type !== 'image' && (
           <div className="absolute top-[18%] bottom-[12%] left-0 right-0 z-10 flex flex-col items-center justify-center w-full px-[8%]">
             {itemData?.type === 'countdown' ? (
                <div className="text-white text-center font-bold tracking-widest leading-none drop-shadow-xl w-full font-mono" 
@@ -2000,7 +2095,7 @@ export default function ControlPanel() {
                         </button>
                       )}
                       
-                      {item.type !== 'video' && (
+                      {item.type !== 'video' && item.type !== 'image' && (
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
@@ -2060,22 +2155,40 @@ export default function ControlPanel() {
               <button 
                 onClick={addQuickAnnouncement}
                 className="flex-1 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
+                title="Tambah Teks / Pengumuman"
               >
                 <Plus size={14} /> Teks
               </button>
               <button 
                 onClick={() => openVideoModal(replaceIndex)}
-                className="flex-1 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
+                className="flex-none w-12 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center text-indigo-900 py-2 hover:bg-white/70 transition-all"
+                title="Tambah Video"
               >
-                <Plus size={14} /> Video
+                <Video size={16} />
+              </button>
+              <button 
+                onClick={() => { setReplaceIndex(replaceIndex); document.getElementById('rundown-img-upload')?.click(); }}
+                className="flex-none w-12 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center text-indigo-900 py-2 hover:bg-white/70 transition-all"
+                title="Tambah Gambar (Maks 2)"
+              >
+                <ImageIcon size={16} />
               </button>
               <button 
                 onClick={addCountdown}
                 className="flex-1 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
+                title="Tambah Hitung Mundur"
               >
                 <Clock size={14} /> Waktu
               </button>
             </div>
+            <input 
+              type="file" 
+              id="rundown-img-upload" 
+              multiple 
+              accept="image/*" 
+              className="hidden" 
+              onChange={handleRundownImageUpload} 
+            />
             <div className="flex gap-2">
               <button 
                 onClick={() => {
