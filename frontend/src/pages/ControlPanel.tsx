@@ -1393,10 +1393,10 @@ export default function ControlPanel() {
       
       <header className="glass-panel p-3 flex justify-between items-center shrink-0 shadow-sm border-white/50 z-10 mx-4 mt-4 rounded-xl">
         <div className="flex items-center gap-3 px-2">
-          <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 text-white p-1.5 rounded-lg shadow-md">
-            <Monitor size={20} />
+          <div className="bg-white/10 dark:bg-white/90 p-1 rounded-lg shadow-md border border-white/20 w-8 h-8 flex items-center justify-center overflow-hidden">
+            <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Logo" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-xl font-heading font-extrabold text-indigo-900 tracking-tight drop-shadow-sm flex items-center">
+          <h1 className="text-xl font-heading font-extrabold text-indigo-900 dark:text-[#C5A059] tracking-tight drop-shadow-sm flex items-center">
             WorshipPresenter
           </h1>
         </div>
