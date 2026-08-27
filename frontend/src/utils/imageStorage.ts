@@ -54,9 +54,14 @@ export const saveVideoBackground = async (id: string, fileBlob: Blob | File) => 
 };
 
 export const getSlideBackground = async (id: string) => {
-  // Di Electron, URL media sudah berupa protocol file://, 
-  // jadi pemanggil (seperti getAllSlideBackgrounds) sudah punya URL-nya langsung.
-  // Fungsi ini jarang dipanggil langsung di Electron jika tidak perlu.
+  if (hasElectron) {
+    // Di Electron, cari ID ini di daftar media, kembalikan URL file:// nya
+    const list = await getAllSlideBackgrounds();
+    const item = list.find((i: any) => i.id === id);
+    if (item) return item.url;
+    return undefined;
+  }
+  
   try {
     if (id.startsWith('slide_bg_vid_') || id.startsWith('slide_bg_')) {
       return await get(id);

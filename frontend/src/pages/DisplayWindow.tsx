@@ -387,6 +387,9 @@ export default function DisplayWindow() {
         if (blob instanceof Blob) {
           setActualBgUrl(URL.createObjectURL(blob));
           setBgType('video');
+        } else if (typeof blob === 'string') {
+          setActualBgUrl(blob);
+          setBgType('video');
         } else {
           setActualBgUrl(null);
           setBgType('image');
