@@ -2009,11 +2009,11 @@ export default function ControlPanel() {
                 }}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white w-full py-1.5 rounded-lg text-[10px] font-bold shadow-md shadow-indigo-600/30 transition flex justify-center items-center gap-1.5 uppercase tracking-wider"
               >
-                <Save size={12} /> Simpan
+                <Save size={12} /> Export Playlist
               </button>
               
               <label className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 w-full py-1.5 rounded-lg text-[10px] font-bold shadow-sm transition flex justify-center items-center gap-1.5 uppercase tracking-wider cursor-pointer">
-                <FileText size={12} /> Input
+                <FileText size={12} /> Import Playlist
                 <input 
                   type="file" 
                   accept=".json" 
