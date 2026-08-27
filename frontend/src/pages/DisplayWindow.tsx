@@ -208,6 +208,19 @@ export default function DisplayWindow() {
     }
   }, [isVideoMuted]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'ArrowLeft', 'ArrowUp', 'PageUp', 'b', 'B', '.'].includes(e.key)) {
+        e.preventDefault();
+        const ch = new BroadcastChannel('worship_live_sync');
+        ch.postMessage({ type: 'REMOTE_KEYDOWN', key: e.key });
+        ch.close();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Mode blank: jangan early return, gunakan overlay agar komponen tetap render
   const isBlank = liveState.displayMode === 'blank';
   const enabledLogos = logos.filter(l => l.enabled !== false);

@@ -184,8 +184,21 @@ export default function Library() {
           break;
       }
     };
+    const channel = new BroadcastChannel('worship_live_sync');
+    const handleRemoteKey = (e: MessageEvent) => {
+      if (e.data && e.data.type === 'REMOTE_KEYDOWN') {
+        const fakeEvent = { key: e.data.key, preventDefault: () => {} } as KeyboardEvent;
+        handleKeyDown(fakeEvent);
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    channel.addEventListener('message', handleRemoteKey);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      channel.removeEventListener('message', handleRemoteKey);
+      channel.close();
+    };
   }, [selectedItem, activeSegment]);
 
   // Auto-scroll ke segment yang sedang live
