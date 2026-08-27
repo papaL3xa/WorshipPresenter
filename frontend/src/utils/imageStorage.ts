@@ -159,7 +159,10 @@ export const saveLocalVideo = async (id: string, fileBlob: Blob | File) => {
   if (hasElectron) {
     const file = fileBlob as any;
     if (file.path) {
-      await callIpc('saveMediaFile', { id: `local_vid_${id}`, filePath: file.path, type: 'video' });
+      const res = await callIpc('saveMediaFile', { id: `local_vid_${id}`, filePath: file.path, type: 'video' });
+      if (res && !res.success) {
+        alert("Gagal copy video: " + res.message);
+      }
       return;
     }
     const dataUrl = await new Promise<string>((resolve) => {
@@ -167,7 +170,10 @@ export const saveLocalVideo = async (id: string, fileBlob: Blob | File) => {
       reader.onload = () => resolve(reader.result as string);
       reader.readAsDataURL(fileBlob);
     });
-    await callIpc('saveMediaFile', { id: `local_vid_${id}`, dataUrl, type: 'video' });
+    const res = await callIpc('saveMediaFile', { id: `local_vid_${id}`, dataUrl, type: 'video' });
+    if (res && !res.success) {
+      alert("Gagal save base64 video: " + res.message);
+    }
     return;
   }
   await set(`local_vid_${id}`, fileBlob);
@@ -202,7 +208,10 @@ export const saveLocalImage = async (id: string, fileBlob: Blob | File) => {
     const file = fileBlob as any;
     // In Electron, File objects from <input type="file"> always have a .path property
     if (file.path) {
-      await callIpc('saveMediaFile', { id: `local_img_${id}`, filePath: file.path, type: 'image' });
+      const res = await callIpc('saveMediaFile', { id: `local_img_${id}`, filePath: file.path, type: 'image' });
+      if (res && !res.success) {
+        alert("Gagal copy file: " + res.message);
+      }
       return;
     }
     // Fallback: convert to base64 (slow, but safe)
@@ -211,7 +220,10 @@ export const saveLocalImage = async (id: string, fileBlob: Blob | File) => {
       reader.onload = () => resolve(reader.result as string);
       reader.readAsDataURL(fileBlob);
     });
-    await callIpc('saveMediaFile', { id: `local_img_${id}`, dataUrl, type: 'image', mimeType: fileBlob.type });
+    const res = await callIpc('saveMediaFile', { id: `local_img_${id}`, dataUrl, type: 'image', mimeType: fileBlob.type });
+    if (res && !res.success) {
+      alert("Gagal save base64: " + res.message);
+    }
     return;
   }
   await set(`local_img_${id}`, fileBlob);
