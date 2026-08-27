@@ -1991,8 +1991,57 @@ export default function ControlPanel() {
 
         {/* Right Sidebar (Rundown / Setlist) */}
         <aside className="w-[25%] glass-panel p-4 flex flex-col overflow-hidden shadow-lg border-white/50">
-          <div className="mb-4 flex w-full">
-            <FooterClock />
+          <div className="mb-4 flex w-full justify-between items-center gap-2">
+            <div className="flex-1">
+              <FooterClock />
+            </div>
+            <div className="flex flex-col gap-1.5 shrink-0 w-24">
+              <button 
+                onClick={() => {
+                  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(playlist, null, 2));
+                  const downloadAnchorNode = document.createElement('a');
+                  downloadAnchorNode.setAttribute("href", dataStr);
+                  const sanitizedName = (playlistName || "rundown").replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                  downloadAnchorNode.setAttribute("download", `${sanitizedName}.json`);
+                  document.body.appendChild(downloadAnchorNode);
+                  downloadAnchorNode.click();
+                  downloadAnchorNode.remove();
+                }}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white w-full py-1.5 rounded-lg text-[10px] font-bold shadow-md shadow-indigo-600/30 transition flex justify-center items-center gap-1.5 uppercase tracking-wider"
+              >
+                <Save size={12} /> Simpan
+              </button>
+              
+              <label className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 w-full py-1.5 rounded-lg text-[10px] font-bold shadow-sm transition flex justify-center items-center gap-1.5 uppercase tracking-wider cursor-pointer">
+                <FileText size={12} /> Input
+                <input 
+                  type="file" 
+                  accept=".json" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      try {
+                        const importedPlaylist = JSON.parse(event.target?.result as string);
+                        if (Array.isArray(importedPlaylist)) {
+                          setPlaylist(importedPlaylist);
+                          localStorage.setItem(`worship_playlist_${playlistId}`, JSON.stringify(importedPlaylist));
+                          if (isEditingRundown) saveRundown();
+                        } else {
+                          alert("Format file tidak valid. Harus berupa array rundown.");
+                        }
+                      } catch (err) {
+                        alert("Gagal membaca file JSON.");
+                      }
+                    };
+                    reader.readAsText(file);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            </div>
           </div>
           <div className="flex justify-between items-start mb-4 shrink-0 gap-2 border-b border-indigo-900/10 pb-3">
             <div className="flex-1">
@@ -2189,53 +2238,7 @@ export default function ControlPanel() {
               className="hidden" 
               onChange={handleRundownImageUpload} 
             />
-            <div className="flex gap-2">
-              <button 
-                onClick={() => {
-                  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(playlist, null, 2));
-                  const downloadAnchorNode = document.createElement('a');
-                  downloadAnchorNode.setAttribute("href", dataStr);
-                  const sanitizedName = (playlistName || "rundown").replace(/[^a-z0-9]/gi, '_').toLowerCase();
-                  downloadAnchorNode.setAttribute("download", `${sanitizedName}.json`);
-                  document.body.appendChild(downloadAnchorNode);
-                  downloadAnchorNode.click();
-                  downloadAnchorNode.remove();
-                }}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white flex-1 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 transition flex justify-center items-center gap-1.5 uppercase tracking-wider"
-              >
-                <Save size={14} /> Simpan
-              </button>
-              
-              <label className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 flex-1 py-2.5 rounded-xl text-xs font-bold shadow-sm transition flex justify-center items-center gap-1.5 uppercase tracking-wider cursor-pointer">
-                <FileText size={14} /> Input
-                <input 
-                  type="file" 
-                  accept=".json" 
-                  className="hidden" 
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                      try {
-                        const importedPlaylist = JSON.parse(event.target?.result as string);
-                        if (Array.isArray(importedPlaylist)) {
-                          setPlaylist(importedPlaylist);
-                          localStorage.setItem(`worship_playlist_${playlistId}`, JSON.stringify(importedPlaylist));
-                          if (isEditingRundown) saveRundown();
-                        } else {
-                          alert("Format file tidak valid. Harus berupa array rundown.");
-                        }
-                      } catch (err) {
-                        alert("Gagal membaca file JSON.");
-                      }
-                    };
-                    reader.readAsText(file);
-                    e.target.value = '';
-                  }}
-                />
-              </label>
-            </div>
+
           </div>
         </aside>
       </main>
