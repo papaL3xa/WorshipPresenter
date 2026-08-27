@@ -25,6 +25,39 @@ const mediaVideosDir = path.join(appDocumentsDir, 'Media', 'Videos');
 let dbPath = path.join(appDocumentsDir, 'database.json');
 const oldDbPath = path.join(app.getPath('userData'), 'database.json');
 
+// SQLite Init
+let sqliteDbPath = path.join(appDocumentsDir, 'worship.sqlite');
+let sqliteDb = null;
+try {
+  const Database = require('better-sqlite3');
+  sqliteDb = new Database(sqliteDbPath);
+  sqliteDb.pragma('journal_mode = WAL');
+  sqliteDb.exec(`
+    CREATE TABLE IF NOT EXISTS songs (
+      id TEXT PRIMARY KEY,
+      title TEXT,
+      author TEXT,
+      category TEXT,
+      version_id TEXT,
+      segments_json TEXT,
+      searchable_text TEXT
+    );
+    CREATE TABLE IF NOT EXISTS bibles (
+      id TEXT PRIMARY KEY,
+      version_id TEXT,
+      book TEXT,
+      chapter INTEGER,
+      verse INTEGER,
+      text TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_bibles_version ON bibles(version_id);
+    CREATE INDEX IF NOT EXISTS idx_songs_version ON songs(version_id);
+  `);
+} catch (err) {
+  console.error("Failed to initialize SQLite. Ensure better-sqlite3 is compiled.", err);
+}
+const oldDbPath = path.join(app.getPath('userData'), 'database.json');
+
 // Migrasi database lama jika ada dan database baru belum ada
 if (!fs.existsSync(dbPath) && fs.existsSync(oldDbPath)) {
   try {
@@ -193,7 +226,158 @@ let inMemoryLiveState = { displayMode: 'content', segmentIndex: 0, updatedAt: 0 
 
 ipcMain.handle('api-call', async (event, { action, params, payload }) => {
   const db = loadDb();
+
+  // ----------------------------------------------------
+  // SQLITE HANDLERS
+  // ----------------------------------------------------
+  if (action === 'init-sqlite') {
+    if (!sqliteDb) return { success: false, message: 'SQLite not initialized' };
+    try {
+      const type = payload.type; // 'song' or 'bible'
+      const versionId = payload.versionId;
+      const data = payload.data;
+      
+      if (type === 'song') {
+        const insert = sqliteDb.prepare('INSERT OR REPLACE INTO songs (id, title, author, category, version_id, segments_json, searchable_text) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        const insertMany = sqliteDb.transaction((songs) => {
+          for (const song of songs) {
+            const searchableText = (song.segments ? song.segments.join(' ') : '') + ' ' + song.title;
+            insert.run(song.id, song.title, song.author, song.category, versionId, JSON.stringify(song.segments || []), searchableText);
+          }
+        });
+        insertMany(data);
+      } else if (type === 'bible') {
+        const count = sqliteDb.prepare('SELECT COUNT(*) as c FROM bibles WHERE version_id = ?').get(versionId);
+        if (count.c === 0) {
+          const insert = sqliteDb.prepare('INSERT INTO bibles (id, version_id, book, chapter, verse, text) VALUES (?, ?, ?, ?, ?, ?)');
+          const insertMany = sqliteDb.transaction((verses) => {
+            for (const v of verses) {
+              const vId = `${versionId}_${v.book}_${v.chapter}_${v.verse}`;
+              insert.run(vId, versionId, v.book, v.chapter, v.verse, v.text);
+            }
+          });
+          insertMany(data);
+        }
+      }
+      return { success: true };
+    } catch (err) {
+      console.error(err);
+      return { success: false, message: err.message };
+    }
+  }
+
+  if (action === 'search-sqlite-song') {
+    if (!sqliteDb) return { success: false, data: [] };
+    const { query, versionId, category } = payload;
+    let sql = 'SELECT * FROM songs WHERE version_id = ?';
+    const args = [versionId];
+    if (category && category !== 'Semua') {
+      sql += ' AND category = ?';
+      args.push(category);
+    }
+    if (query) {
+       sql += ' AND searchable_text LIKE ? COLLATE NOCASE';
+       args.push('%' + query + '%');
+    }
+    sql += ' LIMIT 2000';
+    try {
+      const rows = sqliteDb.prepare(sql).all(...args);
+      const formatted = rows.map(r => {
+         const segs = JSON.parse(r.segments_json || '[]');
+         return {
+          id: r.id,
+          title: r.title,
+          author: r.author,
+          category: r.category,
+          segments: segs,
+          segmentOrder: Array.from({length: segs.length}, (_, i) => i)
+         };
+      });
+      return { success: true, data: formatted };
+    } catch(err) { return { success: false, data: [] }; }
+  }
+
+  if (action === 'search-sqlite-bible') {
+    if (!sqliteDb) return { success: false, data: [] };
+    const { structuredQuery, versionId } = payload;
+    let sql = 'SELECT * FROM bibles WHERE version_id = ?';
+    let args = [versionId];
+
+    if (structuredQuery) {
+       if (structuredQuery.type === 'range') {
+          sql += ' AND book LIKE ? COLLATE NOCASE AND chapter = ? AND verse >= ? AND verse <= ?';
+          args.push('%' + structuredQuery.book + '%', structuredQuery.chapter, structuredQuery.startVerse, structuredQuery.endVerse);
+       } else if (structuredQuery.type === 'verse') {
+          sql += ' AND book LIKE ? COLLATE NOCASE AND chapter = ? AND verse = ?';
+          args.push('%' + structuredQuery.book + '%', structuredQuery.chapter, structuredQuery.verse);
+       } else if (structuredQuery.type === 'chapter') {
+          sql += ' AND book LIKE ? COLLATE NOCASE AND chapter = ?';
+          args.push('%' + structuredQuery.book + '%', structuredQuery.chapter);
+       } else if (structuredQuery.type === 'book') {
+          sql += ' AND book LIKE ? COLLATE NOCASE';
+          args.push('%' + structuredQuery.book + '%');
+       } else if (structuredQuery.type === 'free') {
+          sql += ' AND text LIKE ? COLLATE NOCASE';
+          args.push('%' + structuredQuery.query + '%');
+       }
+    }
+    sql += ' LIMIT 100';
+    try {
+      const rows = sqliteDb.prepare(sql).all(...args);
+      const formatted = rows.map(r => ({
+        book: r.book,
+        chapter: r.chapter,
+        verse: r.verse,
+        text: r.text
+      }));
+      return { success: true, data: formatted };
+    } catch(err) { return { success: false, data: [] }; }
+  }
+
+  if (action === 'get-sqlite-song-titles') {
+     if (!sqliteDb) return { success: false, data: [] };
+     try {
+       const rows = sqliteDb.prepare('SELECT id, title, category, author FROM songs WHERE version_id = ?').all(payload.versionId);
+       return { success: true, data: rows };
+     } catch (e) { return { success: false, data: [] }; }
+  }
   
+  if (action === 'get-sqlite-song-categories') {
+     if (!sqliteDb) return { success: false, data: [] };
+     try {
+       const rows = sqliteDb.prepare('SELECT DISTINCT category FROM songs WHERE version_id = ? AND category IS NOT NULL').all(payload.versionId);
+       return { success: true, data: rows.map(r => r.category) };
+     } catch (e) { return { success: false, data: [] }; }
+  }
+  
+  if (action === 'get-sqlite-bible-books') {
+     if (!sqliteDb) return { success: false, data: [] };
+     try {
+       // get ordered list of books in correct biblical order, but DISTINCT only gives alphabetical if no order by.
+       // actually the best is to group by book and min(id)
+       const rows = sqliteDb.prepare('SELECT book FROM bibles WHERE version_id = ? GROUP BY book ORDER BY MIN(ROWID)').all(payload.versionId);
+       return { success: true, data: rows.map(r => r.book) };
+     } catch (e) { return { success: false, data: [] }; }
+  }
+  
+  if (action === 'get-sqlite-bible-book-meta') {
+     if (!sqliteDb) return { success: false, data: 0 };
+     try {
+       const row = sqliteDb.prepare('SELECT MAX(chapter) as maxC FROM bibles WHERE version_id = ? AND book = ? COLLATE NOCASE').get(payload.versionId, payload.book);
+       return { success: true, data: row ? row.maxC : 0 };
+     } catch (e) { return { success: false, data: 0 }; }
+  }
+  
+  if (action === 'get-sqlite-bible-chapter-meta') {
+     if (!sqliteDb) return { success: false, data: 0 };
+     try {
+       const row = sqliteDb.prepare('SELECT MAX(verse) as maxV FROM bibles WHERE version_id = ? AND book = ? COLLATE NOCASE AND chapter = ?').get(payload.versionId, payload.book, payload.chapter);
+       return { success: true, data: row ? row.maxV : 0 };
+     } catch (e) { return { success: false, data: 0 }; }
+  }
+  
+  // ----------------------------------------------------
+
   if (action === 'getLiveState') {
     return { success: true, data: inMemoryLiveState };
   }

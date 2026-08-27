@@ -14,6 +14,7 @@
     "electron:installer": "npm run build && electron-builder --win --x64"
   },
   "dependencies": {
+    "better-sqlite3": "^13.0.3",
     "clsx": "^2.1.1",
     "idb-keyval": "^6.3.0",
     "jimp": "^1.6.1",

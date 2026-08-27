@@ -36,7 +36,7 @@ export const initDefaultDatabases = async () => {
   const dbKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbinfo_')) as string[];
   const dataKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbdata_')) as string[];
 
-  const currentDbVersion = '1.0.7'; // Update this when default files change
+  const currentDbVersion = '1.0.8'; // Update this when default files change
   const savedDbVersion = localStorage.getItem('worship_db_version');
 
   const isOutdated = savedDbVersion !== currentDbVersion;
@@ -195,6 +195,9 @@ const loadDefaultSongDatabase = async () => {
     
     await set('dbinfo_song_LSEB', { id: 'song_LSEB', name: 'Lagu Sion / Buku Ende', type: 'song', isDefault: true } as DatabaseVersion);
     await set('dbdata_song_LSEB', finalSongs);
+    if ((window as any).electronAPI) {
+      (window as any).electronAPI.callApi('init-sqlite', {}, { type: 'song', versionId: 'song_LSEB', data: finalSongs }).catch(console.error);
+    }
   } catch (error) {
     console.error("Failed to load default song db", error);
   }
@@ -224,6 +227,9 @@ const loadDefaultBibleDatabase = async (idSuffix: string, name: string, fileRela
     
     await set(`dbinfo_bible_${idSuffix}`, { id: `bible_${idSuffix}`, name: name, type: 'bible', isDefault: true } as DatabaseVersion);
     await set(`dbdata_bible_${idSuffix}`, finalVerses);
+    if ((window as any).electronAPI) {
+      (window as any).electronAPI.callApi('init-sqlite', {}, { type: 'bible', versionId: `bible_${idSuffix}`, data: finalVerses }).catch(console.error);
+    }
   } catch (error) {
     console.error(`Failed to load default bible db ${idSuffix}`, error);
   }
@@ -249,6 +255,9 @@ export const addCustomDatabase = async (info: DatabaseVersion, tsvContent: strin
       text: v.text
     }));
     await set(`dbdata_${info.id}`, finalVerses);
+    if ((window as any).electronAPI) {
+      (window as any).electronAPI.callApi('init-sqlite', {}, { type: 'bible', versionId: info.id, data: finalVerses }).catch(console.error);
+    }
   } else {
     // For custom songs, we assume a simple flat TSV structure for user upload: 
     // songId, title, author, segment1, segment2, segment3...
@@ -290,6 +299,9 @@ export const addCustomDatabase = async (info: DatabaseVersion, tsvContent: strin
       };
     });
     await set(`dbdata_${info.id}`, finalSongs);
+    if ((window as any).electronAPI) {
+      (window as any).electronAPI.callApi('init-sqlite', {}, { type: 'song', versionId: info.id, data: finalSongs }).catch(console.error);
+    }
   }
 };
 
@@ -332,123 +344,130 @@ export const syncCustomSongs = async () => {
 // SEARCH & RETRIEVE
 // ------------------------------------------------------------------
 export const searchLocalSongs = async (query: string, versionId: string, category: string = 'Semua'): Promise<any[]> => {
-  // 1. Get base version
-  const baseSongs: SongData[] = (await get(`dbdata_${versionId}`)) || [];
+  let baseSongs: SongData[] = [];
   
-  // 2. Get synced GAS songs (apply to all versions to mix them)
+  if ((window as any).electronAPI) {
+    const res = await (window as any).electronAPI.callApi('search-sqlite-song', {}, { query, versionId, category });
+    if (res && res.success) {
+       baseSongs = res.data;
+    }
+  } else {
+    baseSongs = (await get(`dbdata_${versionId}`)) || [];
+    let allBase = baseSongs.filter((s:any) => !s.deleted);
+    if (category && category !== 'Semua') {
+      allBase = allBase.filter(s => s.category === category);
+    }
+    if (query) {
+      const q = query.toLowerCase();
+      allBase = allBase.filter(s => 
+         s.id.toLowerCase().includes(q) || 
+         s.title.toLowerCase().includes(q) ||
+         s.segments.some((seg:string) => seg.toLowerCase().includes(q))
+      );
+    }
+    baseSongs = allBase;
+  }
+  
   const rawGas = await get('dbdata_song_GAS_SYNC');
   const gasSongs: SongData[] = Array.isArray(rawGas) ? rawGas : [];
   
-  // Merge (GAS overrides Base if same ID)
+  let filteredGas = gasSongs.filter((s:any) => !s.deleted);
+  if (category && category !== 'Semua') {
+     filteredGas = filteredGas.filter(s => s.category === category);
+  }
+  if (query) {
+     const q = query.toLowerCase();
+     filteredGas = filteredGas.filter(s => 
+        s.id.toLowerCase().includes(q) || 
+        s.title.toLowerCase().includes(q) ||
+        s.segments.some((seg:string) => seg.toLowerCase().includes(q))
+     );
+  }
+  
   const mergedMap = new Map<string, SongData>();
   baseSongs.forEach(s => mergedMap.set(s.id, s));
-  gasSongs.forEach(s => mergedMap.set(s.id, s));
+  filteredGas.forEach(s => mergedMap.set(s.id, s));
   
-  // Filter out soft-deleted songs
-  let allSongs = Array.from(mergedMap.values()).filter((s: any) => !s.deleted);
-  
-  // Filter by category if not "Semua"
-  if (category && category !== 'Semua') {
-    allSongs = allSongs.filter(s => s.category === category);
-  }
-
-  // Exact ID search (Quick Open from recent history/favorites)
+  const allSongs = Array.from(mergedMap.values());
   if (query.match(/^[a-z0-9_]+$/i)) {
-    const exactMatch = allSongs.find(s => s.id === query);
-    if (exactMatch) return [exactMatch];
+     const exactMatch = allSongs.find(s => s.id === query);
+     if (exactMatch) return [exactMatch];
   }
-  if (!query) {
-    return allSongs; // Return all for the Grid/List view
-  }
-  
-  const q = query.toLowerCase();
-  return allSongs.filter(s => 
-    s.id.toLowerCase().includes(q) || 
-    s.title.toLowerCase().includes(q) ||
-    s.segments.some(seg => seg.toLowerCase().includes(q))
-  );
+  return allSongs;
 };
 
 export const searchLocalBible = async (query: string, versionId: string): Promise<any[]> => {
-  const verses: BibleVerse[] = (await get(`dbdata_${versionId}`)) || [];
-  
   if (!query) return [];
-  
   const q = query.toLowerCase();
   
-  // Support range reference: "Kejadian 1:1-9"
+  let structuredQuery: any = null;
   const rangeMatch = q.match(/^([1-3]?[a-z\s]+?)\s*(\d+):(\d+)\s*-\s*(\d+)$/i);
-  if (rangeMatch) {
-    let bookQuery = rangeMatch[1].trim();
-    const chapQuery = parseInt(rangeMatch[2], 10);
-    const startVerse = parseInt(rangeMatch[3], 10);
-    const endVerse = parseInt(rangeMatch[4], 10);
-    
-    const foundVerses = verses.filter(v => 
-      v.book.toLowerCase().includes(bookQuery) && 
-      v.chapter === chapQuery && 
-      v.verse >= startVerse &&
-      v.verse <= endVerse
-    );
+  const refMatch = q.match(/^([1-3]?[a-z\s]+?)\s*(\d+):(\d+)$/i);
+  const chapMatch = q.match(/^([1-3]?[a-z\s]+?)\s*(\d+)$/i);
 
+  if (rangeMatch) structuredQuery = { type: 'range', book: rangeMatch[1].trim(), chapter: parseInt(rangeMatch[2], 10), startVerse: parseInt(rangeMatch[3], 10), endVerse: parseInt(rangeMatch[4], 10) };
+  else if (refMatch) structuredQuery = { type: 'verse', book: refMatch[1].trim(), chapter: parseInt(refMatch[2], 10), verse: parseInt(refMatch[3], 10) };
+  else if (chapMatch) structuredQuery = { type: 'chapter', book: chapMatch[1].trim(), chapter: parseInt(chapMatch[2], 10) };
+  else structuredQuery = { type: 'free', query: q };
+
+  if ((window as any).electronAPI) {
+     const res = await (window as any).electronAPI.callApi('search-sqlite-bible', {}, { structuredQuery, versionId });
+     if (res && res.success) {
+        if (structuredQuery.type === 'range' && res.data.length > 0) {
+           return [{
+              isRange: true,
+              id: `r_${Date.now()}`,
+              title: `${res.data[0].book} ${structuredQuery.chapter}:${structuredQuery.startVerse}-${structuredQuery.endVerse}`,
+              segments: res.data.map((v:any) => v.text),
+              segmentLabels: res.data.map((v:any) => `Ayat ${v.verse}`)
+           }];
+        }
+        return res.data;
+     }
+  }
+
+  const verses: BibleVerse[] = (await get(`dbdata_${versionId}`)) || [];
+  
+  if (structuredQuery.type === 'range') {
+    const foundVerses = verses.filter(v => v.book.toLowerCase().includes(structuredQuery.book) && v.chapter === structuredQuery.chapter && v.verse >= structuredQuery.startVerse && v.verse <= structuredQuery.endVerse);
     if (foundVerses.length > 0) {
       return [{
         isRange: true,
         id: `r_${Date.now()}`,
-        title: `${foundVerses[0].book} ${chapQuery}:${startVerse}-${endVerse}`,
+        title: `${foundVerses[0].book} ${structuredQuery.chapter}:${structuredQuery.startVerse}-${structuredQuery.endVerse}`,
         segments: foundVerses.map(v => v.text),
         segmentLabels: foundVerses.map(v => `Ayat ${v.verse}`)
       }];
     }
     return [];
-  }
-
-  // Support exact reference: "Kejadian 1:1"
-  const refMatch = q.match(/^([1-3]?[a-z\s]+?)\s*(\d+):(\d+)$/i);
-  if (refMatch) {
-    let bookQuery = refMatch[1].trim();
-    const chapQuery = parseInt(refMatch[2], 10);
-    const verseQuery = parseInt(refMatch[3], 10);
-    
-    return verses.filter(v => 
-      v.book.toLowerCase().includes(bookQuery) && 
-      v.chapter === chapQuery && 
-      v.verse === verseQuery
-    );
-  }
-
-  // Support chapter reference: "Kejadian 1"
-  const chapMatch = q.match(/^([1-3]?[a-z\s]+?)\s*(\d+)$/i);
-  if (chapMatch) {
-    let bookQuery = chapMatch[1].trim();
-    const chapQuery = parseInt(chapMatch[2], 10);
-    return verses.filter(v => 
-      v.book.toLowerCase().includes(bookQuery) && 
-      v.chapter === chapQuery
-    );
+  } else if (structuredQuery.type === 'verse') {
+    return verses.filter(v => v.book.toLowerCase().includes(structuredQuery.book) && v.chapter === structuredQuery.chapter && v.verse === structuredQuery.verse);
+  } else if (structuredQuery.type === 'chapter') {
+    return verses.filter(v => v.book.toLowerCase().includes(structuredQuery.book) && v.chapter === structuredQuery.chapter);
   }
   
-  // Support exact book reference: "Kejadian"
   const cleanQ = q.trim();
   const matchingVerses = verses.filter(v => v.book.toLowerCase() === cleanQ);
-  if (matchingVerses.length > 0) {
-    return matchingVerses.slice(0, 100);
-  }
+  if (matchingVerses.length > 0) return matchingVerses.slice(0, 100);
   
-  // Free text search
   return verses.filter(v => v.text.toLowerCase().includes(q)).slice(0, 100);
 };
 
 export const getAllLocalSongTitles = async (versionId: string) => {
+  if ((window as any).electronAPI) {
+    const res = await (window as any).electronAPI.callApi('get-sqlite-song-titles', {}, { versionId });
+    if (res && res.success) return res.data;
+  }
   const songs = await searchLocalSongs('', versionId);
-  return songs.map(s => ({ id: s.id, title: s.title, category: s.category, author: s.author, key: s.key, beat: s.beat }));
+  return songs.map((s:any) => ({ id: s.id, title: s.title, category: s.category, author: s.author, key: s.key, beat: s.beat }));
 };
 
 export const getLocalSongCategories = async (versionId: string): Promise<string[]> => {
-  // 1. Get base version
+  if ((window as any).electronAPI) {
+    const res = await (window as any).electronAPI.callApi('get-sqlite-song-categories', {}, { versionId });
+    if (res && res.success) return res.data;
+  }
   const baseSongs: SongData[] = (await get(`dbdata_${versionId}`)) || [];
-  
-  // 2. Get synced GAS songs
   const rawGas = await get('dbdata_song_GAS_SYNC');
   const gasSongs: SongData[] = Array.isArray(rawGas) ? rawGas : [];
   
@@ -458,33 +477,34 @@ export const getLocalSongCategories = async (versionId: string): Promise<string[
   
   const allSongs = Array.from(mergedMap.values());
   const categories = new Set<string>();
-  
   allSongs.forEach(s => {
     if (s.category) categories.add(s.category);
   });
-  
   return Array.from(categories).sort();
 };
 // ------------------------------------------------------------------
 // BIBLE METADATA HELPERS
 // ------------------------------------------------------------------
 export const getBibleBooksList = async (versionId: string): Promise<string[]> => {
+  if ((window as any).electronAPI) {
+    const res = await (window as any).electronAPI.callApi('get-sqlite-bible-books', {}, { versionId });
+    if (res && res.success) return res.data;
+  }
   const verses: BibleVerse[] = (await get(`dbdata_${versionId}`)) || [];
   const booksMap = new Set<string>();
-  
   for (const v of verses) {
-    if (v.book) {
-      booksMap.add(v.book);
-    }
+    if (v.book) booksMap.add(v.book);
   }
-  
   return Array.from(booksMap);
 };
 
 export const getBibleBookMetadata = async (versionId: string, bookName: string): Promise<number> => {
+  if ((window as any).electronAPI) {
+    const res = await (window as any).electronAPI.callApi('get-sqlite-bible-book-meta', {}, { versionId, book: bookName });
+    if (res && res.success) return res.data;
+  }
   const verses: BibleVerse[] = (await get(`dbdata_${versionId}`)) || [];
   let maxChapter = 0;
-  
   const b = bookName.toLowerCase();
   for (const v of verses) {
     if (v.book.toLowerCase() === b) {
@@ -495,9 +515,12 @@ export const getBibleBookMetadata = async (versionId: string, bookName: string):
 };
 
 export const getBibleChapterMetadata = async (versionId: string, bookName: string, chapter: number): Promise<number> => {
+  if ((window as any).electronAPI) {
+    const res = await (window as any).electronAPI.callApi('get-sqlite-bible-chapter-meta', {}, { versionId, book: bookName, chapter });
+    if (res && res.success) return res.data;
+  }
   const verses: BibleVerse[] = (await get(`dbdata_${versionId}`)) || [];
   let maxVerse = 0;
-  
   const b = bookName.toLowerCase();
   for (const v of verses) {
     if (v.book.toLowerCase() === b && v.chapter === chapter) {
