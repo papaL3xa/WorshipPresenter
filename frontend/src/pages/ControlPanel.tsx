@@ -2171,7 +2171,7 @@ export default function ControlPanel() {
                 className="flex-none w-16 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center text-indigo-900 py-2 hover:bg-white/70 transition-all"
                 title="Tambah Gambar (Maks 2)"
               >
-                <ImageIcon className="w-10 h-10" style={{ width: '30px', height: '30px' }} />
+                <ImageIcon className="w-6 h-6" style={{ width: '24px', height: '24px' }} />
               </button>
               <button 
                 onClick={addCountdown}
