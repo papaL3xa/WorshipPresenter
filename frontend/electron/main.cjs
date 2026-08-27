@@ -8,10 +8,31 @@ app.commandLine.appendSwitch('force-device-scale-factor', '1');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 // Path to local spreadsheet/json database
-// We place it in the same directory as the executable, or userData
-const isDev = process.env.NODE_ENV === 'development';
-let dbPath = path.join(app.getPath('userData'), 'database.json');
-// Selalu gunakan userData (AppData/Roaming) agar data tidak hilang saat install ulang / update
+const appName = 'WorshipPresenter';
+const documentsPath = app.getPath('documents');
+const appDocumentsDir = path.join(documentsPath, appName);
+const mediaImagesDir = path.join(appDocumentsDir, 'Media', 'Images');
+const mediaVideosDir = path.join(appDocumentsDir, 'Media', 'Videos');
+
+// Pastikan struktur folder ada
+[appDocumentsDir, mediaImagesDir, mediaVideosDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
+
+let dbPath = path.join(appDocumentsDir, 'database.json');
+const oldDbPath = path.join(app.getPath('userData'), 'database.json');
+
+// Migrasi database lama jika ada dan database baru belum ada
+if (!fs.existsSync(dbPath) && fs.existsSync(oldDbPath)) {
+  try {
+    fs.copyFileSync(oldDbPath, dbPath);
+    console.log('Migrasi database lama berhasil');
+  } catch (err) {
+    console.error('Gagal migrasi database lama:', err);
+  }
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -264,12 +285,94 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
   }
 
   if (action === 'deleteSongItem') {
-    if (db.customSongs) {
-      db.customSongs = db.customSongs.filter(s => s.id !== payload.id);
-      saveDb(db);
+    if (!db.customSongs) db.customSongs = [];
+    const idx = db.customSongs.findIndex(s => s.id === payload.id);
+    if (idx >= 0) {
+      db.customSongs[idx] = { id: payload.id, deleted: true };
+    } else {
+      db.customSongs.push({ id: payload.id, deleted: true });
     }
+    saveDb(db);
     return { success: true, status: 'deleted' };
   }
 
-  return { success: false, message: 'Action not found' };
+  // --- IPC untuk Media (File Fisik) ---
+  if (action === 'saveMediaFile') {
+    // payload = { id: string, dataUrl: string, type: 'image' | 'video' }
+    try {
+      const isVideo = payload.type === 'video' || payload.id.includes('_vid_');
+      const targetDir = isVideo ? mediaVideosDir : mediaImagesDir;
+      const extension = isVideo ? 'webm' : 'jpg'; // Asumsi default. Bisa disesuaikan dari mime type.
+      
+      let filePath = path.join(targetDir, `${payload.id}.${extension}`);
+      
+      if (payload.filePath) {
+        // Jika dari file picker lokal (seperti video/mp4 besar), kita bisa langsung copy file-nya!
+        const originalExt = path.extname(payload.filePath);
+        filePath = path.join(targetDir, `${payload.id}${originalExt}`);
+        fs.copyFileSync(payload.filePath, filePath);
+        return { success: true, id: payload.id, url: `file://${filePath.replace(/\\/g, '/')}` };
+      }
+      
+      if (payload.dataUrl) {
+        // Dari base64 canvas compress
+        const matches = payload.dataUrl.match(/^data:(.+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          const buffer = Buffer.from(matches[2], 'base64');
+          fs.writeFileSync(filePath, buffer);
+          return { success: true, id: payload.id, url: `file://${filePath.replace(/\\/g, '/')}` };
+        }
+      }
+      
+      return { success: false, message: 'Tidak ada data valid yang dikirim' };
+    } catch (err) {
+      console.error('Failed to save media:', err);
+      return { success: false, message: err.message };
+    }
+  }
+  
+  if (action === 'deleteMediaFile') {
+    try {
+      const isVideo = payload.id.includes('_vid_');
+      const targetDir = isVideo ? mediaVideosDir : mediaImagesDir;
+      // Cari file dengan id tersebut, karena extensinya bisa beda
+      const files = fs.readdirSync(targetDir);
+      const targetFile = files.find(f => f.startsWith(payload.id + '.'));
+      if (targetFile) {
+        fs.unlinkSync(path.join(targetDir, targetFile));
+      }
+      return { success: true };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  }
+  
+  if (action === 'listMediaFiles') {
+    try {
+      const results = [];
+      const images = fs.existsSync(mediaImagesDir) ? fs.readdirSync(mediaImagesDir) : [];
+      images.forEach(f => {
+        results.push({
+          id: f.split('.')[0],
+          url: `file://${path.join(mediaImagesDir, f).replace(/\\/g, '/')}`,
+          type: 'image'
+        });
+      });
+      
+      const videos = fs.existsSync(mediaVideosDir) ? fs.readdirSync(mediaVideosDir) : [];
+      videos.forEach(f => {
+        results.push({
+          id: f.split('.')[0],
+          url: `file://${path.join(mediaVideosDir, f).replace(/\\/g, '/')}`,
+          type: 'video'
+        });
+      });
+      
+      return { success: true, data: results };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  return { success: false, message: 'Unknown action' };
 });

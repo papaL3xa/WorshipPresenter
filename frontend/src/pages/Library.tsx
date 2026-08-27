@@ -1189,7 +1189,7 @@ export default function Library() {
                         {db.type === 'song' && (
                           <button 
                             onClick={async () => {
-                              if (confirm(`Backup seluruh data ${db.name} ke Cloud (Google Spreadsheet)? Ini akan menimpa data yang ada di Spreadsheet.`)) {
+                              if (confirm(`Sinkronkan seluruh data ${db.name} ke Google Spreadsheet? Ini akan menimpa data yang ada di Spreadsheet.`)) {
                                 try {
                                   const data = await get(`dbdata_${db.id}`);
                                   if (!data || !Array.isArray(data)) throw new Error("Data kosong");
@@ -1200,9 +1200,9 @@ export default function Library() {
                                   });
                                   
                                   if (res && res.status === 'success') {
-                                    alert("Backup seluruh database berhasil tersimpan ke Cloud!");
+                                    alert("Sinkronisasi database ke Google Spreadsheet berhasil!");
                                   } else {
-                                    alert("Gagal mem-backup: " + (res?.message || 'Error'));
+                                    alert("Gagal sinkronisasi: " + (res?.message || 'Error'));
                                   }
                                 } catch (err: any) {
                                   alert("Terjadi kesalahan: " + err.message);
@@ -1210,9 +1210,9 @@ export default function Library() {
                               }
                             }}
                             className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition"
-                            title="Backup Seluruh Isi Database ke Cloud"
+                            title="Sinkronisasi ke Google Spreadsheet"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path><path d="M12 12v9"></path><path d="m8 17 4 4 4-4"></path></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5V19A9 3 0 0 0 21 19V5"></path><path d="M3 12A9 3 0 0 0 21 12"></path></svg>
                           </button>
                         )}
                         <button 

@@ -1,6 +1,20 @@
 import { get, set, del, keys } from 'idb-keyval';
 
+// @ts-ignore
+const hasElectron = typeof window !== 'undefined' && !!window.electronAPI;
+
+// Fungsi helper panggil IPC
+const callIpc = async (action: string, payload: any) => {
+  // @ts-ignore
+  if (hasElectron) return window.electronAPI.callApi(action, {}, { method: 'POST', payload });
+  throw new Error("Bukan environment Electron");
+};
+
 export const saveSlideBackground = async (id: string, base64DataUrl: string) => {
+  if (hasElectron) {
+    await callIpc('saveMediaFile', { id, dataUrl: base64DataUrl, type: 'image' });
+    return;
+  }
   try {
     await set(`slide_bg_${id}`, base64DataUrl);
   } catch (e) {
@@ -9,7 +23,24 @@ export const saveSlideBackground = async (id: string, base64DataUrl: string) => 
   }
 };
 
-export const saveVideoBackground = async (id: string, fileBlob: Blob) => {
+export const saveVideoBackground = async (id: string, fileBlob: Blob | File) => {
+  if (hasElectron) {
+    // Jika fileBlob adalah File (punya path fisik), kirim path-nya agar lebih cepat di copy
+    const file = fileBlob as any;
+    if (file.path) {
+      await callIpc('saveMediaFile', { id, filePath: file.path, type: 'video' });
+      return;
+    }
+    // Jika Blob biasa, kita ubah jadi base64/dataURL dulu
+    const dataUrl = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(fileBlob);
+    });
+    await callIpc('saveMediaFile', { id, dataUrl, type: 'video' });
+    return;
+  }
+  
   try {
     if (id.startsWith('slide_bg_vid_')) {
       await set(id, fileBlob);
@@ -23,6 +54,9 @@ export const saveVideoBackground = async (id: string, fileBlob: Blob) => {
 };
 
 export const getSlideBackground = async (id: string) => {
+  // Di Electron, URL media sudah berupa protocol file://, 
+  // jadi pemanggil (seperti getAllSlideBackgrounds) sudah punya URL-nya langsung.
+  // Fungsi ini jarang dipanggil langsung di Electron jika tidak perlu.
   try {
     if (id.startsWith('slide_bg_vid_') || id.startsWith('slide_bg_')) {
       return await get(id);
@@ -35,6 +69,10 @@ export const getSlideBackground = async (id: string) => {
 };
 
 export const removeSlideBackground = async (id: string) => {
+  if (hasElectron) {
+    await callIpc('deleteMediaFile', { id });
+    // Tetap coba hapus di indexedDB sekadar jaga-jaga
+  }
   try {
     if (id.startsWith('slide_bg_vid_') || id.startsWith('slide_bg_')) {
       await del(id);
@@ -47,6 +85,12 @@ export const removeSlideBackground = async (id: string) => {
 };
 
 export const getAllSlideBackgrounds = async () => {
+  if (hasElectron) {
+    const res = await callIpc('listMediaFiles', {});
+    if (res && res.success) return res.data;
+    return [];
+  }
+  
   try {
     const allKeys = await keys();
     const bgKeys = allKeys.filter(k => typeof k === 'string' && (k.startsWith('slide_bg_') || k.startsWith('slide_bg_vid_'))) as string[];
@@ -67,7 +111,7 @@ export const getAllSlideBackgrounds = async () => {
   }
 };
 
-// Helper untuk kompresi gambar sebelum disimpan agar IndexedDB tidak terlalu besar
+// Helper untuk kompresi gambar
 export const compressImage = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -97,7 +141,6 @@ export const compressImage = (file: File): Promise<string> => {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
-        // Compress ke JPEG kualitas 0.8 (sekitar 100-300kb)
         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
         resolve(dataUrl);
       };
@@ -107,11 +150,21 @@ export const compressImage = (file: File): Promise<string> => {
   });
 };
 
-// ==========================================
-// FUNGSI UNTUK PENYIMPANAN VIDEO LOKAL (BLOB)
-// ==========================================
-
-export const saveLocalVideo = async (id: string, fileBlob: Blob) => {
+export const saveLocalVideo = async (id: string, fileBlob: Blob | File) => {
+  if (hasElectron) {
+    const file = fileBlob as any;
+    if (file.path) {
+      await callIpc('saveMediaFile', { id: `local_vid_${id}`, filePath: file.path, type: 'video' });
+      return;
+    }
+    const dataUrl = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(fileBlob);
+    });
+    await callIpc('saveMediaFile', { id: `local_vid_${id}`, dataUrl, type: 'video' });
+    return;
+  }
   await set(`local_vid_${id}`, fileBlob);
 };
 
@@ -123,6 +176,9 @@ export const getLocalVideo = async (id: string): Promise<Blob | undefined> => {
 };
 
 export const removeLocalVideo = async (id: string) => {
+  if (hasElectron) {
+    await callIpc('deleteMediaFile', { id: id.startsWith('local_vid_') ? id : `local_vid_${id}` });
+  }
   if (id.startsWith('local_vid_')) {
     await del(id);
   } else {

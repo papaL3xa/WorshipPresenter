@@ -344,7 +344,8 @@ export const searchLocalSongs = async (query: string, versionId: string, categor
   baseSongs.forEach(s => mergedMap.set(s.id, s));
   gasSongs.forEach(s => mergedMap.set(s.id, s));
   
-  let allSongs = Array.from(mergedMap.values());
+  // Filter out soft-deleted songs
+  let allSongs = Array.from(mergedMap.values()).filter((s: any) => !s.deleted);
   
   // Filter by category if not "Semua"
   if (category && category !== 'Semua') {
