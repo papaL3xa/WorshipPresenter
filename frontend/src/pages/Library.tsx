@@ -1129,12 +1129,15 @@ export default function Library() {
                       fontSize: (() => {
                         const segmentIndex = activeSegment !== null ? activeSegment : 0;
                         const t = selectedItem.segments[segmentIndex] || '';
-                        if (t.length > 350) return '3cqw';
-                        if (t.length > 250) return '3.5cqw';
-                        if (t.length > 180) return '4cqw';
-                        if (t.length > 120) return '4.5cqw';
-                        if (t.length > 70) return '5.5cqw';
-                        if (t.length > 40) return '6.5cqw';
+                        const charCount = t.length;
+                        const visualLines = t.split('\n').reduce((acc, line) => acc + Math.ceil((line.length || 1) / 32), 0);
+                        
+                        if (visualLines >= 8 || charCount > 350) return '3cqw';
+                        if (visualLines >= 6 || charCount > 250) return '3.5cqw';
+                        if (visualLines >= 5 || charCount > 180) return '4cqw';
+                        if (visualLines >= 4 || charCount > 120) return '4.5cqw';
+                        if (visualLines >= 3 || charCount > 70) return '5.5cqw';
+                        if (charCount > 40) return '6.5cqw';
                         return '7.5cqw';
                       })(),
                       lineHeight: '1.4'
