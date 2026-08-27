@@ -1296,7 +1296,7 @@ export default function ControlPanel() {
             className="absolute left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-20 transition-all duration-500"
             style={{
               top: '6%',
-              fontSize: '3.5cqw',
+              fontSize: '1.5cqw',
               textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)'
             }}
           >
@@ -1326,13 +1326,13 @@ export default function ControlPanel() {
                        const charCount = t.length;
                        const visualLines = t.split('\n').reduce((acc: number, line: string) => acc + Math.ceil((line.length || 1) / 32), 0);
                        
-                       if (visualLines >= 8 || charCount > 350) return '3.5cqw';
-                       if (visualLines >= 6 || charCount > 250) return '4cqw';
-                       if (visualLines >= 5 || charCount > 180) return '4.5cqw';
-                       if (visualLines >= 4 || charCount > 120) return '5cqw';
-                       if (visualLines >= 3 || charCount > 70) return '6cqw';
-                       if (charCount > 40) return '7cqw';
-                       return '8cqw';
+                       if (visualLines >= 8 || charCount > 350) return '4cqw';
+                       if (visualLines >= 6 || charCount > 250) return '4.5cqw';
+                       if (visualLines >= 5 || charCount > 180) return '5cqw';
+                       if (visualLines >= 4 || charCount > 120) return '5.5cqw';
+                       if (visualLines >= 3 || charCount > 70) return '6.5cqw';
+                       if (charCount > 40) return '7.5cqw';
+                       return '8.5cqw';
                      })(),
                      lineHeight: '1.4'
                    }}
