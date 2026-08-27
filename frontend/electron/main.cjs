@@ -146,6 +146,11 @@ function saveDb(data) {
   const tmpPath = dbPath + '.tmp';
   
   try {
+    const dir = path.dirname(dbPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    
     // 1. Tulis ke file temporary dulu agar tidak terpotong jika crash
     fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf8');
     
