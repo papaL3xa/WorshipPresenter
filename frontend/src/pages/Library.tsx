@@ -1127,7 +1127,8 @@ export default function Library() {
                     style={{ 
                       textShadow: '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)', 
                       fontSize: (() => {
-                        const t = selectedItem.segments[activeSegment] || '';
+                        const segmentIndex = activeSegment !== null ? activeSegment : 0;
+                        const t = selectedItem.segments[segmentIndex] || '';
                         if (t.length > 350) return '3cqw';
                         if (t.length > 250) return '3.5cqw';
                         if (t.length > 180) return '4cqw';
@@ -1138,7 +1139,21 @@ export default function Library() {
                       })(),
                       lineHeight: '1.4'
                     }}
-                    dangerouslySetInnerHTML={{ __html: processText(selectedItem.segments[activeSegment] || '') }}
+                    dangerouslySetInnerHTML={{ __html: (() => {
+                      const processText = (raw: string) => {
+                        if (!raw) return '';
+                        let t = raw.replace(/\n/g, '<br/>');
+                        t = t.replace(/\[merah\](.*?)\[\/merah\]/gi, '<span class="text-red-500 font-bold">$1</span>');
+                        t = t.replace(/\[kuning\](.*?)\[\/kuning\]/gi, '<span class="text-yellow-400 font-bold">$1</span>');
+                        t = t.replace(/\[hijau\](.*?)\[\/hijau\]/gi, '<span class="text-green-400 font-bold">$1</span>');
+                        t = t.replace(/\[biru\](.*?)\[\/biru\]/gi, '<span class="text-blue-400 font-bold">$1</span>');
+                        t = t.replace(/\[ungu\](.*?)\[\/ungu\]/gi, '<span class="text-purple-400 font-bold">$1</span>');
+                        t = t.replace(/\[oranye\](.*?)\[\/oranye\]/gi, '<span class="text-orange-400 font-bold">$1</span>');
+                        return t;
+                      };
+                      const segmentIndex = activeSegment !== null ? activeSegment : 0;
+                      return processText(selectedItem.segments[segmentIndex] || '');
+                    })() }}
                   />
                   
                   {/* Bait Label */}
@@ -1152,14 +1167,16 @@ export default function Library() {
                       }}
                     >
                       {(() => {
-                        let label = (selectedItem.segmentLabels && selectedItem.segmentLabels[activeSegment]) ? selectedItem.segmentLabels[activeSegment] : '';
-                        if (!label && (selectedItem.type === 'song' || selectedItem.book)) {
-                          if (selectedItem.book) {
+                        const segmentIndex = activeSegment !== null ? activeSegment : 0;
+                        let label = (selectedItem.segmentLabels && selectedItem.segmentLabels[segmentIndex]) ? selectedItem.segmentLabels[segmentIndex] : '';
+                        const hasBook = !!(selectedItem as any).book;
+                        if (!label && (selectedItem.type === 'song' || hasBook)) {
+                          if (hasBook) {
                             const match = selectedItem.title.match(/(.+?)\s*:\s*(\d+)/);
                             if (match) {
-                              label = `Ayat ${parseInt(match[2], 10) + activeSegment}`;
+                              label = `Ayat ${parseInt(match[2], 10) + segmentIndex}`;
                             } else {
-                              label = `Ayat ${activeSegment + 1}`;
+                              label = `Ayat ${segmentIndex + 1}`;
                             }
                           } else {
                             label = '•';
