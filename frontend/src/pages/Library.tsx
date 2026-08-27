@@ -1121,7 +1121,7 @@ export default function Library() {
                 )}
 
                 {/* Konten Slide Preview */}
-                <div className="relative z-10 flex flex-col items-center justify-center w-full mt-[10%] mb-[8%] px-[8%]">
+                <div className="absolute top-[18%] bottom-[12%] left-0 right-0 z-10 flex flex-col items-center justify-center w-full px-[8%]">
                   <div 
                     className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl w-full"
                     style={{ 
