@@ -1931,13 +1931,14 @@ export default function ControlPanel() {
                                     )}
                                   </div>
                                 )}
-                              </div>
-                            )}
-                          </div>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
-
                   {displayPanelTab === 'rt' && (
                     <div className="flex flex-col gap-4 h-full">
                       <div className="flex items-center gap-3 shrink-0">
