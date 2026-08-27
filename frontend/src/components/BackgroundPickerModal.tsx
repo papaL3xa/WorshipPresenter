@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Upload, Loader2, Image as ImageIcon, Trash2, Video } from 'lucide-react';
 import { getAllSlideBackgrounds, saveSlideBackground, saveVideoBackground, compressImage } from '../utils/imageStorage';
+import { invalidateElectronMediaCache } from './LocalImageLoader';
 
 interface DriveImage {
   id: string;
@@ -83,6 +84,7 @@ export function BackgroundPickerInline({ onSelect, currentBgUrl }: Omit<Backgrou
         await saveSlideBackground(newId, dataUrl);
       }
       
+      invalidateElectronMediaCache(); // Refresh Electron file:// URL cache
       onSelect(newId);
       loadImages();
     } catch (err: any) {
