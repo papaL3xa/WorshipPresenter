@@ -198,9 +198,10 @@ export default function Library() {
     }
   }, [activeSegment]);
 
-  const performSearch = async (query: string, type: string, autoSelectFirst = false) => {
+  const performSearch = async (query: string, type: string, autoSelectFirst = false, forceRefresh = false) => {
     
-    if (lastSearchedRef.current.query === query && 
+    if (!forceRefresh &&
+        lastSearchedRef.current.query === query && 
         lastSearchedRef.current.type === type && 
         lastSearchedRef.current.songVersion === selectedSongVersion && 
         lastSearchedRef.current.bibleVersion === selectedBibleVersion && 
@@ -348,6 +349,7 @@ export default function Library() {
         
         // Refresh local views
         if (searchType === 'song') {
+          performSearch(searchQuery, 'song', false, true);
           const newTitles = await getAllLocalSongTitles(selectedSongVersion);
           if (Array.isArray(newTitles)) setAllSongTitles(newTitles);
           
