@@ -2161,17 +2161,17 @@ export default function ControlPanel() {
               </button>
               <button 
                 onClick={() => openVideoModal(replaceIndex)}
-                className="flex-none w-16 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center text-indigo-900 py-2 hover:bg-white/70 transition-all"
+                className="flex-none w-12 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center text-indigo-900 py-2 hover:bg-white/70 transition-all"
                 title="Tambah Video"
               >
-                <Video className="w-10 h-10" style={{ width: '40px', height: '40px' }} />
+                <Video size={14} />
               </button>
               <button 
                 onClick={() => { setReplaceIndex(replaceIndex); document.getElementById('rundown-img-upload')?.click(); }}
-                className="flex-none w-16 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center text-indigo-900 py-2 hover:bg-white/70 transition-all"
+                className="flex-none w-12 glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center text-indigo-900 py-2 hover:bg-white/70 transition-all"
                 title="Tambah Gambar (Maks 2)"
               >
-                <ImageIcon className="w-6 h-6" style={{ width: '24px', height: '24px' }} />
+                <ImageIcon size={14} />
               </button>
               <button 
                 onClick={addCountdown}
