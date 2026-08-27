@@ -674,13 +674,13 @@ export default function DisplayWindow() {
                     const charCount = t.length;
                     const visualLines = t.split('\n').reduce((acc: number, line: string) => acc + Math.ceil((line.length || 1) / 32), 0);
                     
-                    if (visualLines >= 8 || charCount > 350) return '3cqw';
-                    if (visualLines >= 6 || charCount > 250) return '3.5cqw';
-                    if (visualLines >= 5 || charCount > 180) return '4cqw';
-                    if (visualLines >= 4 || charCount > 120) return '4.5cqw';
-                    if (visualLines >= 3 || charCount > 70) return '5.5cqw';
-                    if (charCount > 40) return '6.5cqw';
-                    return '7.5cqw';
+                    if (visualLines >= 8 || charCount > 350) return '3.5cqw';
+                    if (visualLines >= 6 || charCount > 250) return '4.2cqw';
+                    if (visualLines >= 5 || charCount > 180) return '4.8cqw';
+                    if (visualLines >= 4 || charCount > 120) return '5.5cqw';
+                    if (visualLines >= 3 || charCount > 70) return '6.2cqw';
+                    if (charCount > 40) return '7cqw';
+                    return '8cqw';
                   })(),
                   lineHeight: '1.4'
                 }}
