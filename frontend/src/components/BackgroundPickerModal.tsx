@@ -126,6 +126,14 @@ export function BackgroundPickerInline({ onSelect, currentBgUrl }: Omit<Backgrou
           </button>
         </div>
 
+        <button
+          onClick={() => onSelect('#00FF00')}
+          className={`w-full mb-6 py-3 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-2 transition-all ${currentBgUrl === '#00FF00' ? 'bg-[#00FF00]/20 border-[#00FF00] text-[#00FF00] shadow-[0_0_15px_rgba(0,255,0,0.2)]' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:border-[#00FF00]/50 hover:text-[#00FF00]'}`}
+        >
+          <div className="w-4 h-4 rounded bg-[#00FF00] border border-white/20"></div>
+          Gunakan Layar Hijau (Chroma Key / OBS)
+        </button>
+
         <h3 className="text-xs font-bold text-slate-300 mb-3 flex items-center gap-2">
           <ImageIcon size={16} className="text-[#C5A059]" /> Background Bawaan (Preset)
         </h3>

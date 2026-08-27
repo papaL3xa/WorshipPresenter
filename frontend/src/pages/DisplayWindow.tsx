@@ -57,6 +57,18 @@ export default function DisplayWindow() {
     height: Number(localStorage.getItem('worship_rt_height') || 7)
   });
 
+  // Poin 4: Theme State
+  const loadTheme = () => {
+    try { return JSON.parse(localStorage.getItem('worship_display_theme') || '{}'); } catch { return {}; }
+  };
+  const [displayTheme, setDisplayTheme] = useState<{
+    color?: string;
+    fontSizeOffset?: number;
+    position?: 'center' | 'top' | 'bottom';
+    bold?: boolean;
+    shadow?: 'dark' | 'light' | 'none';
+  }>(loadTheme);
+
   const [playlistMap, setPlaylistMap] = useState<Record<string, any>>({});
   const lastUpdateRef = useRef<number>(0);
   const currentPlaylistIdRef = useRef<string | null>(null);
@@ -114,6 +126,8 @@ export default function DisplayWindow() {
           pendingVideoAction.current = 'pause';
         }
         if (ytPlayerRef.current) ytPlayerRef.current.pauseVideo();
+      } else if (msg.data.type === 'THEME_UPDATE') {
+        setDisplayTheme(msg.data.payload);
       }
     };
 
@@ -446,30 +460,32 @@ export default function DisplayWindow() {
   }, []);
 
   return (
-    <div className={`fixed inset-0 flex items-center justify-center bg-black overflow-hidden ${isCursorVisible ? 'cursor-default' : 'cursor-none'}`}>
+    <div className={`fixed inset-0 flex items-center justify-center ${actualBgUrl === '#00FF00' ? 'bg-[#00FF00]' : 'bg-black'} overflow-hidden ${isCursorVisible ? 'cursor-default' : 'cursor-none'}`}>
       
       {/* Background that fills the entire viewport */}
-      <div 
-        className="absolute inset-0 z-0 bg-gray-900"
-        style={bgType === 'image' ? {
-          backgroundImage: actualBgUrl ? `url(${actualBgUrl})` : 'none',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
-        } : undefined}
-      >
-        {bgType === 'video' && actualBgUrl && (
-          <video 
-            src={actualBgUrl} 
-            autoPlay 
-            loop 
-            muted 
-            playsInline 
-            className="absolute inset-0 w-full h-full object-cover z-0"
-          />
-        )}
-        <div className="absolute inset-0 bg-black/40 z-0"></div>
-      </div>
+      {actualBgUrl !== '#00FF00' && (
+        <div 
+          className="absolute inset-0 z-0 bg-gray-900"
+          style={bgType === 'image' ? {
+            backgroundImage: actualBgUrl ? `url(${actualBgUrl})` : 'none',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          } : undefined}
+        >
+          {bgType === 'video' && actualBgUrl && (
+            <video 
+              src={actualBgUrl} 
+              autoPlay 
+              loop 
+              muted 
+              playsInline 
+              className="absolute inset-0 w-full h-full object-cover z-0"
+            />
+          )}
+          <div className="absolute inset-0 bg-black/40 z-0"></div>
+        </div>
+      )}
 
       {/* Container utama yang mengisi seluruh area aman (di luar running text) */}
       <div 
@@ -508,7 +524,7 @@ export default function DisplayWindow() {
               key={`title-${title}-${liveState.segmentIndex}`}
               className="absolute left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-20 transition-all duration-500"
               style={{
-                top: '6%',
+                top: `${6 + (displayTheme.titleOffsetY ?? 0)}%`,
                 fontSize: '1.5cqw',
                 textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
               }}
@@ -679,7 +695,12 @@ export default function DisplayWindow() {
           })()}
         </div>
       ) : (
-        <div className="absolute top-[18%] bottom-[12%] left-0 right-0 z-10 flex flex-col items-center justify-center w-full px-[8%]">
+        <div className={`absolute left-0 right-0 z-[70] flex flex-col items-center w-full transition-all duration-700 ${
+          (displayTheme.position || 'center') === 'top' ? 'top-[8%] bottom-[12%] justify-start' :
+          (displayTheme.position || 'center') === 'bottom' ? 'top-[18%] bottom-[8%] justify-end' :
+          'top-[18%] bottom-[12%] justify-center'
+        }`}
+        style={{ paddingLeft: `${displayTheme.paddingHorizontal ?? 8}%`, paddingRight: `${displayTheme.paddingHorizontal ?? 8}%`, marginTop: `${displayTheme.contentOffsetY ?? 0}%` }}>
           {itemType === 'countdown' && countdownRemaining !== null ? (
             <div className="text-white text-center font-bold tracking-widest leading-none drop-shadow-xl w-full font-mono animate-fade-in" 
                  style={{ textShadow: '0 10px 30px rgba(0,0,0,0.8), 0 0 40px rgba(255,255,255,0.2)', fontSize: '18cqw' }}>
@@ -689,23 +710,33 @@ export default function DisplayWindow() {
             <>
               <div 
                 key={`text-${text}`}
-                className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl w-full animate-fade-in" 
+                className={`text-center whitespace-pre-wrap drop-shadow-xl w-full animate-fade-in ${
+                  displayTheme.bold !== false ? 'font-bold' : 'font-medium'
+                }`} 
                 style={{ 
-                  textShadow: '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)', 
+                  lineHeight: displayTheme.lineHeight ?? 1.6,
+                  color: displayTheme.color || 'white',
+                  textShadow: (displayTheme.shadow || 'dark') === 'dark' 
+                    ? '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)'
+                    : (displayTheme.shadow === 'light') 
+                    ? '1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff, 0 4px 10px rgba(255,255,255,0.8)'
+                    : 'none', 
                   fontSize: (() => {
                     const t = text || '';
                     const charCount = t.length;
                     const visualLines = t.split('\n').reduce((acc: number, line: string) => acc + Math.ceil((line.length || 1) / 32), 0);
                     
-                    if (visualLines >= 8 || charCount > 350) return '4.5cqw';
-                    if (visualLines >= 6 || charCount > 250) return '5cqw';
-                    if (visualLines >= 5 || charCount > 180) return '5.5cqw';
-                    if (visualLines >= 4 || charCount > 120) return '6cqw';
-                    if (visualLines >= 3 || charCount > 70) return '7cqw';
-                    if (charCount > 40) return '8cqw';
-                    return '9cqw';
+                    let baseSize = 9;
+                    if (visualLines >= 8 || charCount > 350) baseSize = 4.5;
+                    else if (visualLines >= 6 || charCount > 250) baseSize = 5;
+                    else if (visualLines >= 5 || charCount > 180) baseSize = 5.5;
+                    else if (visualLines >= 4 || charCount > 120) baseSize = 6;
+                    else if (visualLines >= 3 || charCount > 70) baseSize = 7;
+                    else if (charCount > 40) baseSize = 8;
+                    
+                    return `${baseSize + (displayTheme.fontSizeOffset || 0)}cqw`;
                   })(),
-                  lineHeight: '1.4'
+                  lineHeight: '1.15'
                 }}
                 dangerouslySetInnerHTML={{ __html: processText(text) }}
               />

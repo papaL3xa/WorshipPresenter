@@ -854,7 +854,7 @@ export default function Library() {
                         type="text" 
                         value={selectedItem.title}
                         onChange={(e) => setSelectedItem({...selectedItem, title: e.target.value})}
-                        className="w-full text-2xl font-bold text-indigo-900 bg-transparent border border-indigo-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-[#D4B872] dark:border-white/20 dark:focus:ring-[#C5A059]"
+                        className="w-full text-2xl font-bold text-indigo-900 bg-transparent border border-indigo-200 rounded-lg px-2 py-1 mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-[#D4B872] dark:border-white/20 dark:focus:ring-[#C5A059]"
                         placeholder="Judul Lagu"
                       />
                       {selectedItem.type === 'song' && (
@@ -949,6 +949,18 @@ export default function Library() {
                       title="Hapus Lagu Permanen"
                     >
                       {isDeletingSong ? <><Loader2 size={16} className="animate-spin" /> Menghapus...</> : <><Trash2 size={16} /> Hapus Lagu</>}
+                    </button>
+                  )}
+                  {isEditingItem && (
+                    <button 
+                      onClick={() => {
+                        setIsEditingItem(false);
+                        if (selectedItem?.id) handleQuickOpenSong(selectedItem.id.toString());
+                      }}
+                      disabled={isSavingItem || isDeletingSong}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition bg-slate-200 text-slate-700 hover:bg-slate-300 shadow-sm border border-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 dark:border-slate-600 ${isSavingItem || isDeletingSong ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <X size={16} /> Batal
                     </button>
                   )}
                   <button 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Monitor, Square, Play, Pause, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, Video, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock, Layout, Power, FileText, Repeat, Volume2, VolumeX, List } from 'lucide-react';
+import { Monitor, Square, Play, Pause, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, Video, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock, Layout, Power, FileText, Repeat, Volume2, VolumeX, List, GripVertical, Palette, AlignCenter, AlignLeft, AlignRight, Bold } from 'lucide-react';
 import { callApi } from '../api';
 import { SyncButton } from '../components/SyncButton';
 import { useBackgrounds } from '../hooks/useBackgrounds';
@@ -95,6 +95,37 @@ export default function ControlPanel() {
   
   const [currentBg, setCurrentBg] = useState(localStorage.getItem('custom_bg') || '');
   const { getBgUrl, refreshBackgrounds } = useBackgrounds();
+
+  const [dragOverItem, setDragOverItem] = useState<number | null>(null);
+
+  // Theme state (Poin 4)
+  const loadTheme = () => {
+    try { return JSON.parse(localStorage.getItem('worship_display_theme') || '{}'); } catch { return {}; }
+  };
+  const [displayTheme, setDisplayTheme] = useState<{
+    color?: string;
+    fontSizeOffset?: number;
+    position?: 'center' | 'top' | 'bottom';
+    bold?: boolean;
+    shadow?: 'dark' | 'light' | 'none';
+    paddingHorizontal?: number;
+    lineHeight?: number;
+    titleOffsetY?: number;
+    contentOffsetY?: number;
+  }>(loadTheme);
+
+  const broadcastTheme = (newTheme: typeof displayTheme) => {
+    localStorage.setItem('worship_display_theme', JSON.stringify(newTheme));
+    const ch = new BroadcastChannel('worship_live_sync');
+    ch.postMessage({ type: 'THEME_UPDATE', payload: newTheme });
+    ch.close();
+  };
+
+  const updateTheme = (patch: Partial<typeof displayTheme>) => {
+    const newTheme = { ...displayTheme, ...patch };
+    setDisplayTheme(newTheme);
+    broadcastTheme(newTheme);
+  };
 
   // Initialize DBs on mount
   useEffect(() => {
@@ -539,6 +570,7 @@ export default function ControlPanel() {
     
     setPlaylist(newPlaylist);
     setDragItem(null);
+    setDragOverItem(null);
   };
 
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
@@ -1283,10 +1315,10 @@ export default function ControlPanel() {
     const itemData = ((isLiveBox && tempLiveItem) || itemIdx === -2) ? tempLiveItem : playlist[itemIdx];
     if (!itemData) return <div className="w-full h-full bg-black rounded-xl overflow-hidden relative flex flex-col items-center justify-center pointer-events-none"></div>;
     return (
-      <div className="w-full h-full bg-black rounded-xl overflow-hidden relative flex flex-col items-center justify-center pointer-events-none"
+      <div className={`w-full h-full rounded-xl overflow-hidden relative flex flex-col items-center justify-center pointer-events-none ${getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.url === '#00FF00' ? 'bg-[#00FF00]' : 'bg-black'}`}
         style={getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.type === 'image' ? { 
           containerType: 'inline-size',
-          backgroundImage: getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.url ? `url('${getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.url}')` : 'none',
+          backgroundImage: (getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.url && getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.url !== '#00FF00') ? `url('${getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.url}')` : 'none',
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         } : { containerType: 'inline-size' }}
@@ -1301,7 +1333,9 @@ export default function ControlPanel() {
             className="absolute inset-0 w-full h-full object-cover z-0"
           />
         )}
-        <div className="absolute inset-0 bg-black/40 z-0"></div>
+        {getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.url !== '#00FF00' && (
+          <div className="absolute inset-0 bg-black/40 z-0"></div>
+        )}
 
         {/* Image Preview */}
         {mode === 'content' && itemData?.type === 'image' && itemData?.segments[segIdx] && (
@@ -1403,9 +1437,9 @@ export default function ControlPanel() {
         {/* Title */}
         {mode === 'content' && itemData?.title && itemData?.type !== 'video' && itemData?.type !== 'countdown' && itemData?.type !== 'image' && (
           <h2 
-            className="absolute left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-20 transition-all duration-500"
+            className="absolute left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-[70] transition-all duration-500"
             style={{
-              top: '6%',
+              top: `${6 + (displayTheme.titleOffsetY ?? 0)}%`,
               fontSize: '1.5cqw',
               textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)'
             }}
@@ -1416,7 +1450,16 @@ export default function ControlPanel() {
 
         {/* Content Container */}
         {itemData?.type !== 'video' && itemData?.type !== 'image' && (
-          <div className="absolute top-[18%] bottom-[12%] left-0 right-0 z-10 flex flex-col items-center justify-center w-full px-[8%]">
+          <div className={`absolute left-0 right-0 z-[70] flex flex-col items-center w-full transition-all duration-700 ${
+            (displayTheme.position || 'center') === 'top' ? 'top-[8%] bottom-[12%] justify-start' :
+            (displayTheme.position || 'center') === 'bottom' ? 'top-[18%] bottom-[8%] justify-end' :
+            'top-[18%] bottom-[12%] justify-center'
+          }`}
+          style={{ 
+            paddingLeft: `${displayTheme.paddingHorizontal ?? 8}%`, 
+            paddingRight: `${displayTheme.paddingHorizontal ?? 8}%`,
+            marginTop: `${displayTheme.contentOffsetY ?? 0}%`
+          }}>
             {itemData?.type === 'countdown' ? (
                <div className="text-white text-center font-bold tracking-widest leading-none drop-shadow-xl w-full font-mono" 
                     style={{ textShadow: '0 10px 30px rgba(0,0,0,0.8), 0 0 40px rgba(255,255,255,0.2)', fontSize: '18cqw' }}>
@@ -1428,23 +1471,33 @@ export default function ControlPanel() {
             ) : mode === 'content' ? (
                <>
                  <div 
-                   className="text-white text-center font-bold whitespace-pre-wrap leading-relaxed drop-shadow-xl w-full animate-fade-in" 
+                   className={`text-center whitespace-pre-wrap drop-shadow-xl w-full animate-fade-in ${
+                     displayTheme.bold !== false ? 'font-bold' : 'font-medium'
+                   }`} 
                    style={{ 
-                     textShadow: '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)', 
+                     lineHeight: displayTheme.lineHeight ?? 1.6,
+                     color: displayTheme.color || 'white',
+                     textShadow: (displayTheme.shadow || 'dark') === 'dark' 
+                       ? '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)'
+                       : (displayTheme.shadow === 'light') 
+                       ? '1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff, 0 4px 10px rgba(255,255,255,0.8)'
+                       : 'none', 
                      fontSize: (() => {
                        const t = itemData?.segments[segIdx] || '';
                        const charCount = t.length;
                        const visualLines = t.split('\n').reduce((acc: number, line: string) => acc + Math.ceil((line.length || 1) / 32), 0);
                        
-                       if (visualLines >= 8 || charCount > 350) return '4.5cqw';
-                       if (visualLines >= 6 || charCount > 250) return '5cqw';
-                       if (visualLines >= 5 || charCount > 180) return '5.5cqw';
-                       if (visualLines >= 4 || charCount > 120) return '6cqw';
-                       if (visualLines >= 3 || charCount > 70) return '7cqw';
-                       if (charCount > 40) return '8cqw';
-                       return '9cqw';
+                       let baseSize = 9;
+                       if (visualLines >= 8 || charCount > 350) baseSize = 4.5;
+                       else if (visualLines >= 6 || charCount > 250) baseSize = 5;
+                       else if (visualLines >= 5 || charCount > 180) baseSize = 5.5;
+                       else if (visualLines >= 4 || charCount > 120) baseSize = 6;
+                       else if (visualLines >= 3 || charCount > 70) baseSize = 7;
+                       else if (charCount > 40) baseSize = 8;
+                       
+                       return `${baseSize + (displayTheme.fontSizeOffset || 0)}cqw`;
                      })(),
-                     lineHeight: '1.4'
+                     lineHeight: '1.15'
                    }}
                    dangerouslySetInnerHTML={{ __html: processText(itemData?.segments[segIdx] || '') }}
                  />
@@ -1553,6 +1606,8 @@ export default function ControlPanel() {
             PLAYLIST
           </button>
 
+          <div className="w-full h-px bg-indigo-900/10 my-1"></div>
+
           <div className="mt-auto flex flex-col gap-2">
             <button 
               onClick={() => { 
@@ -1572,11 +1627,12 @@ export default function ControlPanel() {
           </div>
         </aside>
 
+
         {/* Center Workspace (Dual Display + Controls) */}
         <section className="flex-1 flex flex-col gap-4 min-w-0 overflow-hidden">
           
           {/* Dual Display Area */}
-          <div className="flex gap-4 min-h-0 shrink-0 h-[45%]">
+          <div className="flex gap-4 shrink-0 max-h-[55%]">
             <div className="flex-1 flex flex-col group min-h-0 bg-slate-900/40 rounded-2xl p-3 border border-white/5 shadow-inner">
               <div className="flex justify-center mb-2 shrink-0">
                 <span className="bg-indigo-900/80 text-indigo-100 text-[9px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm border border-indigo-700/50">PREVIEW</span>
@@ -1750,6 +1806,14 @@ export default function ControlPanel() {
                       : 'bg-white/50 dark:bg-slate-800/80 text-indigo-900 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700/80 border border-indigo-200 dark:border-slate-700'
                   }`}
                 >Logo / Watermark</button>
+                <button 
+                  onClick={() => { setIsRunningTextModalOpen(true); setDisplayPanelTab('theme'); }} 
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                    displayPanelTab === 'theme' 
+                      ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-sm' 
+                      : 'bg-white/50 dark:bg-slate-800/80 text-indigo-900 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700/80 border border-indigo-200 dark:border-slate-700'
+                  }`}
+                >Tema Lirik</button>
               </div>
             )}
 
@@ -2029,6 +2093,141 @@ export default function ControlPanel() {
                       />
                     </div>
                   )}
+
+                  {displayPanelTab === 'theme' && (
+                    <div className="flex flex-col gap-5 p-1 overflow-y-auto h-full">
+                      <div>
+                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">🎨 Warna Teks Lirik</label>
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="color" 
+                            value={displayTheme.color || '#ffffff'}
+                            onChange={(e) => updateTheme({ color: e.target.value })}
+                            className="w-12 h-10 rounded-lg border-2 border-indigo-200 dark:border-slate-600 cursor-pointer bg-transparent"
+                          />
+                          <div className="flex gap-2 flex-wrap">
+                            {['#ffffff', '#fde68a', '#fca5a5', '#86efac', '#93c5fd', '#f0abfc', '#fdba74'].map(c => (
+                              <button 
+                                key={c} 
+                                onClick={() => updateTheme({ color: c })}
+                                className={`w-7 h-7 rounded-full border-2 transition-all hover:scale-110 ${displayTheme.color === c ? 'border-indigo-500 scale-110 shadow-md' : 'border-white/50'}`}
+                                style={{ backgroundColor: c }}
+                                title={c}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">📏 Ukuran Font (Penyesuaian)</label>
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="range" 
+                            min={-3} max={3} step={0.5}
+                            value={displayTheme.fontSizeOffset || 0}
+                            onChange={(e) => updateTheme({ fontSizeOffset: parseFloat(e.target.value) })}
+                            className="flex-1 accent-purple-600"
+                          />
+                          <span className="text-sm font-bold text-indigo-900 dark:text-indigo-200 w-10 text-center">
+                            {(displayTheme.fontSizeOffset || 0) > 0 ? '+' : ''}{displayTheme.fontSizeOffset || 0}
+                          </span>
+                          <button 
+                            onClick={() => updateTheme({ fontSizeOffset: 0 })}
+                            className="text-xs text-indigo-500 hover:text-indigo-700 font-bold px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-900/30"
+                          >Reset</button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">📍 Posisi Teks</label>
+                        <div className="flex gap-2">
+                          {([['top', 'Atas'], ['center', 'Tengah'], ['bottom', 'Bawah']] as const).map(([val, label]) => (
+                            <button 
+                              key={val}
+                              onClick={() => updateTheme({ position: val as any })}
+                              className={`flex-1 py-2 rounded-xl font-bold text-xs border-2 transition-all ${(displayTheme.position || 'center') === val ? 'bg-purple-600 text-white border-purple-600 shadow-md' : 'bg-white/50 dark:bg-white/5 text-indigo-900 dark:text-indigo-200 border-white/50 dark:border-white/10 hover:bg-white/70'}`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">✍️ Gaya Teks</label>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => updateTheme({ bold: !(displayTheme.bold !== false) })}
+                            className={`flex-1 py-2.5 rounded-xl font-bold text-xs border-2 transition-all flex items-center justify-center gap-1.5 ${(displayTheme.bold !== false) ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white/50 dark:bg-white/5 text-indigo-900 dark:text-indigo-200 border-white/50 dark:border-white/10 hover:bg-white/70'}`}
+                          >
+                            <Bold size={13}/> Tebal
+                          </button>
+                          <button 
+                            onClick={() => updateTheme({ bold: false })}
+                            className={`flex-1 py-2.5 rounded-xl text-xs border-2 transition-all ${!(displayTheme.bold !== false) ? 'bg-indigo-600 text-white border-indigo-600 shadow-md font-bold' : 'bg-white/50 dark:bg-white/5 text-indigo-900 dark:text-indigo-200 border-white/50 dark:border-white/10 hover:bg-white/70 font-medium'}`}
+                          >
+                            Normal
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">🌑 Bayangan Teks</label>
+                        <div className="flex gap-2">
+                          {([['dark', 'Gelap'], ['light', 'Terang'], ['none', 'Tanpa']] as const).map(([val, label]) => (
+                            <button 
+                              key={val}
+                              onClick={() => updateTheme({ shadow: val as any })}
+                              className={`flex-1 py-2 rounded-xl font-bold text-xs border-2 transition-all ${(displayTheme.shadow || 'dark') === val ? 'bg-purple-600 text-white border-purple-600 shadow-md' : 'bg-white/50 dark:bg-white/5 text-indigo-900 dark:text-indigo-200 border-white/50 dark:border-white/10 hover:bg-white/70'}`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+
+                      <div>
+                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">↕️ Geser Posisi Judul (Naik/Turun)</label>
+                        <div className="flex items-center gap-3 bg-white/40 dark:bg-black/20 p-3 rounded-xl border border-indigo-100 dark:border-white/5">
+                          <span className="text-[10px] font-bold text-indigo-900/70 dark:text-slate-500 uppercase">Naik</span>
+                          <input 
+                            type="range" 
+                            min="-5" max="10" step="1"
+                            value={displayTheme.titleOffsetY ?? 0}
+                            onChange={(e) => updateTheme({ titleOffsetY: parseFloat(e.target.value) })}
+                            className="flex-1 accent-indigo-600 dark:accent-indigo-500"
+                          />
+                          <span className="text-[10px] font-bold text-indigo-900/70 dark:text-slate-500 uppercase">Turun</span>
+                          <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200 w-10 text-right bg-white/50 dark:bg-white/10 py-1 px-2 rounded">{displayTheme.titleOffsetY ?? 0}%</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">↕️ Geser Posisi Lirik (Naik/Turun)</label>
+                        <div className="flex items-center gap-3 bg-white/40 dark:bg-black/20 p-3 rounded-xl border border-indigo-100 dark:border-white/5">
+                          <span className="text-[10px] font-bold text-indigo-900/70 dark:text-slate-500 uppercase">Naik</span>
+                          <input 
+                            type="range" 
+                            min="-15" max="15" step="1"
+                            value={displayTheme.contentOffsetY ?? 0}
+                            onChange={(e) => updateTheme({ contentOffsetY: parseFloat(e.target.value) })}
+                            className="flex-1 accent-indigo-600 dark:accent-indigo-500"
+                          />
+                          <span className="text-[10px] font-bold text-indigo-900/70 dark:text-slate-500 uppercase">Turun</span>
+                          <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200 w-10 text-right bg-white/50 dark:bg-white/10 py-1 px-2 rounded">{displayTheme.contentOffsetY ?? 0}%</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => updateTheme({ color: '#ffffff', fontSizeOffset: 0, position: 'center', bold: true, shadow: 'dark', lineHeight: 1.6, titleOffsetY: 0, contentOffsetY: 0 })}
+                        className="w-full py-2.5 rounded-xl border-2 border-dashed border-indigo-300 dark:border-slate-600 text-xs font-bold text-indigo-500 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-white/5 transition-all mt-2"
+                      >
+                        ↺ Reset ke Default
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -2142,15 +2341,19 @@ export default function ControlPanel() {
               <div 
                 id={`rundown-item-${idx}`}
                 key={item.id || idx} 
-                className={`flex gap-2 transition-all duration-300 ${dragItem === idx ? 'opacity-40 scale-95' : 'hover:-translate-y-1'}`}
-                draggable={isEditingRundown}
+                className={`flex gap-2 transition-all duration-200 ${
+                  dragItem === idx ? 'opacity-30 scale-95' : 
+                  dragOverItem === idx ? '' : 'hover:-translate-y-0.5'
+                }`}
+                draggable={true}
                 onDragStart={(e) => {
                   e.dataTransfer.setData('text/plain', idx.toString());
                   setDragItem(idx);
                 }}
-                onDragOver={(e) => e.preventDefault()}
+                onDragOver={(e) => { e.preventDefault(); setDragOverItem(idx); }}
                 onDrop={(e) => handleDrop(e, idx)}
-                onDragEnd={() => setDragItem(null)}
+                onDragEnd={() => { setDragItem(null); setDragOverItem(null); }}
+                onDragLeave={() => setDragOverItem(null)}
               >
                 <div 
                   onClick={() => { 
@@ -2164,13 +2367,18 @@ export default function ControlPanel() {
                     const newMode = item.type === 'video' ? 'logo' : 'content';
                     setMode(newMode);
                   }}
-                  className={`flex-1 text-left p-3 rounded-xl border-2 backdrop-blur-sm transition-all ${isEditingRundown ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${
-                    activeItem === idx
+                  className={`flex-1 text-left p-3 rounded-xl border-2 backdrop-blur-sm transition-all cursor-pointer ${
+                    dragOverItem === idx && dragItem !== idx
+                      ? 'border-blue-400 dark:border-blue-400 shadow-[0_0_12px_rgba(96,165,250,0.5)] bg-blue-50/40 dark:bg-blue-900/20'
+                      : activeItem === idx
                       ? 'bg-white dark:bg-[#C5A059]/10 border-indigo-400 dark:border-[#C5A059] shadow-md shadow-indigo-500/10 dark:shadow-[0_0_15px_rgba(197,160,89,0.3)] relative z-10' 
                       : 'bg-white/40 dark:bg-white/5 border-transparent hover:bg-white/60 dark:hover:bg-white/10 hover:border-white dark:hover:border-white/20 shadow-sm'
                   }`}
                 >
-                  <div className="flex justify-between w-full items-start gap-2">
+                  <div className="flex items-start gap-2">
+                    <GripVertical size={14} className="text-indigo-300 dark:text-slate-600 shrink-0 mt-0.5 cursor-grab" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between w-full items-start gap-2">
                     <div className={`font-bold text-sm leading-tight line-clamp-2 ${activeItem === idx ? 'text-indigo-900 dark:text-[#D4B872]' : 'text-indigo-900/80 dark:text-indigo-200/70'}`}>
                       {idx + 1}. {item.title || item.name || '(Tanpa Judul)'}
                     </div>
@@ -2205,34 +2413,35 @@ export default function ControlPanel() {
                       )}
                     </div>
                   </div>
-                  
-                  <div className="flex justify-between items-center mt-2">
-                    <div className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-0.5 rounded uppercase tracking-widest">{item.type}</div>
-                    
-                    {item.type === 'countdown' && <div className="text-[10px] font-bold text-indigo-900/50 dark:text-indigo-200/50 uppercase">{Math.floor(parseInt(item.segments[0] || '0') / 60)}:{(parseInt(item.segments[0] || '0') % 60).toString().padStart(2, '0')}</div>}
-                    
-                    {isEditingRundown && (
-                      <div className="flex gap-1">
-                        <button 
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            if (replaceIndex === idx) setReplaceIndex(null); 
-                            else { setReplaceIndex(idx); setIsAddItemModalOpen(true); } 
-                          }}
-                          className={`p-1.5 rounded-lg transition-colors ${replaceIndex === idx ? 'bg-indigo-600 text-white' : 'text-indigo-500 hover:bg-indigo-50'}`}
-                          title="Ganti Item"
-                        >
-                          <RefreshCw size={12} />
-                        </button>
-                        <button 
-                          onClick={(e) => removePlaylistItem(idx, e)}
-                          className="text-red-500 hover:text-white hover:bg-red-500 p-1.5 rounded-lg transition-colors bg-red-50"
-                          title="Hapus"
-                        >
-                          <X size={12} />
-                        </button>
-                      </div>
-                    )}
+                   <div className="flex justify-between items-center mt-2">
+                     <div className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-0.5 rounded uppercase tracking-widest">{item.type}</div>
+                     
+                     {item.type === 'countdown' && <div className="text-[10px] font-bold text-indigo-900/50 dark:text-indigo-200/50 uppercase">{Math.floor(parseInt(item.segments[0] || '0') / 60)}:{(parseInt(item.segments[0] || '0') % 60).toString().padStart(2, '0')}</div>}
+                     
+                     {isEditingRundown && (
+                       <div className="flex gap-1">
+                         <button 
+                           onClick={(e) => { 
+                             e.stopPropagation(); 
+                             if (replaceIndex === idx) setReplaceIndex(null); 
+                             else { setReplaceIndex(idx); setIsAddItemModalOpen(true); } 
+                           }}
+                           className={`p-1.5 rounded-lg transition-colors ${replaceIndex === idx ? 'bg-indigo-600 text-white' : 'text-indigo-500 hover:bg-indigo-50'}`}
+                           title="Ganti Item"
+                         >
+                           <RefreshCw size={12} />
+                         </button>
+                         <button 
+                           onClick={(e) => removePlaylistItem(idx, e)}
+                           className="text-red-500 hover:text-white hover:bg-red-500 p-1.5 rounded-lg transition-colors bg-red-50"
+                           title="Hapus"
+                         >
+                           <X size={12} />
+                         </button>
+                       </div>
+                     )}
+                   </div>
+                    </div>
                   </div>
                 </div>
               </div>
