@@ -1759,7 +1759,7 @@ export default function ControlPanel() {
                         else if (charCount > 35) baseSize = 7.5;
                         
                         // Prevent wrapping if user didn't press enter (shrink-to-fit line)
-                        const maxLineLength = Math.max(...lines.map(line => line.length), 1);
+                        const maxLineLength = Math.max(...lines.map((line: string) => line.length), 1);
                         const availableWidth = is2Column ? 42 : 84; 
                         let requiredSize = availableWidth / (maxLineLength * 0.55);
                         
