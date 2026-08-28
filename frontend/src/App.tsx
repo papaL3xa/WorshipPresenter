@@ -3,6 +3,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ControlPanel from './pages/ControlPanel';
 import DisplayWindow from './pages/DisplayWindow';
+import StageDisplay from './pages/StageDisplay';
 import Library from './pages/Library';
 import Settings from './pages/Settings';
 
@@ -57,6 +58,7 @@ function App() {
         {/* Rute Terbuka (Public) */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/display" element={<DisplayWindow />} />
+        <Route path="/stage" element={<StageDisplay />} />
         
         {/* Rute Terlindungi (Protected) */}
         <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />

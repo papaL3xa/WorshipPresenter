@@ -11,11 +11,34 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import { RichEditor, RichEditorRef } from '../components/RichEditor';
 import { LocalVideoPlayer } from '../components/LocalVideoPlayer';
 import { LocalImageLoader } from '../components/LocalImageLoader';
-import { initDefaultDatabases, searchLocalSongs, searchLocalBible, syncCustomSongs, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, getBibleBooksList } from '../utils/dbStorage';
+import { initDefaultDatabases, searchLocalSongs, searchLocalBible, syncCustomSongs, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, getBibleBooksList, getCrossLanguageVerses } from '../utils/dbStorage';
 
 const processText = (raw: string) => {
   if (!raw) return '';
-  let t = raw.replace(/\n/g, '<br/>');
+  let t = raw;
+  t = t.replace(/\[([A-G][#b]?[a-zA-Z0-9/]{0,6})\]([^\[\n]*)/g, ''); // ControlPanel strips chords
+  
+      // Bilingual side-by-side layout
+  if (t.includes('\n[kuning]')) {
+     const parts = t.split('\n[kuning]');
+     if (parts.length === 2 && parts[1].endsWith('[/kuning]')) {
+         const left = parts[0].replace(/\n/g, '<br/>');
+         const right = parts[1].replace('[/kuning]', '').replace(/\n/g, '<br/>');
+         return `<div class="grid grid-cols-2 gap-12 w-full relative"><div class="min-w-0 break-words text-left self-center">${left}</div><div class="absolute left-1/2 top-0 bottom-0 w-[2px] -translate-x-1/2 bg-white/30 rounded-full my-2 pointer-events-none"></div><div class="min-w-0 break-words text-right text-yellow-300 self-center">${right}</div></div>`;
+      }
+  }
+
+  // 2-Kolom Bebas (Pengumuman)
+  if (t.includes('\n[kolom2]')) {
+     const parts = t.split('\n[kolom2]');
+     if (parts.length === 2 && parts[1].endsWith('[/kolom2]')) {
+         const left = parts[0].replace(/\n/g, '<br/>');
+         const right = parts[1].replace('[/kolom2]', '').replace(/\n/g, '<br/>');
+         return `<div class="grid grid-cols-2 gap-12 w-full relative"><div class="min-w-0 break-words text-left self-center">${left}</div><div class="absolute left-1/2 top-0 bottom-0 w-[2px] -translate-x-1/2 bg-white/30 rounded-full my-2 pointer-events-none"></div><div class="min-w-0 break-words text-left self-center">${right}</div></div>`;
+     }
+  }
+
+  t = t.replace(/\n/g, '<br/>');
   t = t.replace(/\[merah\](.*?)\[\/merah\]/gi, '<span class="text-red-500 font-bold">$1</span>');
   t = t.replace(/\[kuning\](.*?)\[\/kuning\]/gi, '<span class="text-yellow-400 font-bold">$1</span>');
   t = t.replace(/\[hijau\](.*?)\[\/hijau\]/gi, '<span class="text-green-400 font-bold">$1</span>');
@@ -25,6 +48,120 @@ const processText = (raw: string) => {
   return t;
 };
 
+const renderSnippet = (text: string) => {
+  if (!text) return '';
+  let t = text.replace(/\n/g, ' - ');
+  t = t.replace(/\[([A-G][#b]?[a-zA-Z0-9/]{0,6})\]/g, ''); // strip chords
+  t = t.replace(/\[kuning\](.*?)\[\/kuning\]/gi, '<span class="text-yellow-600 dark:text-yellow-500 font-medium">$1</span>');
+  t = t.replace(/\[merah\](.*?)\[\/merah\]/gi, '<span class="text-red-600 dark:text-red-500 font-medium">$1</span>');
+  t = t.replace(/\[hijau\](.*?)\[\/hijau\]/gi, '<span class="text-green-600 dark:text-green-500 font-medium">$1</span>');
+  t = t.replace(/\[biru\](.*?)\[\/biru\]/gi, '<span class="text-blue-600 dark:text-blue-500 font-medium">$1</span>');
+  return t;
+};
+
+
+const AutoResizeTextarea = ({ value, onChange, className, rows }: any) => {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.style.height = 'auto';
+      ref.current.style.height = ref.current.scrollHeight + 'px';
+    }
+  }, [value]);
+  return <textarea ref={ref} value={value} onChange={onChange} className={className} rows={rows} />;
+};
+
+const SegmentEditor = ({ value, onChange, className }: any) => {
+  const isBilingual = value && typeof value === 'string' && value.includes('\n[kuning]') && value.endsWith('[/kuning]');
+  const is2Kolom = value && typeof value === 'string' && value.includes('\n[kolom2]') && value.endsWith('[/kolom2]');
+  const [force2Kolom, setForce2Kolom] = useState(false);
+  
+  if (isBilingual) {
+    const parts = value.split('\n[kuning]');
+    const left = parts[0];
+    const right = parts[1].replace('[/kuning]', '');
+    return (
+      <div className="flex flex-col gap-2 w-full">
+        <AutoResizeTextarea 
+          value={left}
+          onChange={(e: any) => onChange(e.target.value + '\n[kuning]' + right + '[/kuning]')}
+          className={className}
+          rows={2}
+        />
+        <div className="flex items-center gap-2">
+            <div className="h-px bg-indigo-100 dark:bg-slate-700/50 flex-1"></div>
+            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Terjemahan</span>
+            <div className="h-px bg-indigo-100 dark:bg-slate-700/50 flex-1"></div>
+        </div>
+        <AutoResizeTextarea 
+          value={right}
+          onChange={(e: any) => onChange(left + '\n[kuning]' + e.target.value + '[/kuning]')}
+          className={className.replace('text-slate-800', 'text-yellow-700').replace('dark:text-slate-200', 'dark:text-yellow-300').replace('text-slate-700', 'text-yellow-700').replace('dark:text-slate-300', 'dark:text-yellow-300')}
+          rows={2}
+        />
+      </div>
+    );
+  }
+
+  if (is2Kolom || force2Kolom) {
+    const parts = is2Kolom ? value.split('\n[kolom2]') : [value, ''];
+    const left = parts[0] || '';
+    const right = parts[1] ? parts[1].replace('[/kolom2]', '') : '';
+    
+    return (
+      <div className="flex gap-2 w-full">
+        <div className="flex-1 flex flex-col gap-1">
+            <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Kolom Kiri</div>
+            <AutoResizeTextarea 
+              value={left}
+              onChange={(e: any) => {
+                 const newLeft = e.target.value;
+                 if (!newLeft && !right) { setForce2Kolom(false); onChange(''); }
+                 else if (!right) onChange(newLeft);
+                 else onChange(newLeft + '\n[kolom2]' + right + '[/kolom2]');
+              }}
+              className={className}
+              rows={2}
+            />
+        </div>
+        <div className="flex-1 flex flex-col gap-1">
+            <div className="flex justify-between items-center">
+                <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Kolom Kanan</div>
+                <button onClick={() => { setForce2Kolom(false); onChange(left); }} className="text-[8px] text-red-400 hover:text-red-500 font-bold px-1 rounded hover:bg-red-500/10" title="Hapus Kolom Kanan">✕ Tutup</button>
+            </div>
+            <AutoResizeTextarea 
+              value={right}
+              onChange={(e: any) => {
+                 const newRight = e.target.value;
+                 if (!newRight && !left) { setForce2Kolom(false); onChange(''); }
+                 else if (!newRight) onChange(left);
+                 else onChange(left + '\n[kolom2]' + newRight + '[/kolom2]');
+              }}
+              className={className}
+              rows={2}
+            />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col w-full relative group">
+      <AutoResizeTextarea 
+        value={value}
+        onChange={(e: any) => onChange(e.target.value)}
+        className={className}
+        rows={2}
+      />
+      <button 
+        onClick={() => { setForce2Kolom(true); onChange(value + '\n[kolom2][/kolom2]'); }} 
+        className="absolute bottom-2 right-2 text-[9px] bg-white/80 dark:bg-slate-800/80 hover:bg-indigo-500 hover:text-white dark:hover:bg-indigo-600 text-slate-500 font-bold px-2 py-1 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm border border-indigo-100 dark:border-slate-700"
+      >
+        + Kolom Kanan
+      </button>
+    </div>
+  );
+};
 
 import { useLocation, useNavigate } from 'react-router-dom';
 import { globalDisplayWindow, globalIsDisplayOpen, setGlobalDisplayWindow, setGlobalIsDisplayOpen } from '../utils/displayState';
@@ -35,12 +172,31 @@ export default function ControlPanel() {
   const searchParams = new URLSearchParams(location.search);
   const urlId = searchParams.get('id');
   
-  const [playlistId] = useState<string | null>(urlId === 'new' ? 'pl_' + Date.now() : urlId);
+  const [newId] = useState('pl_' + Date.now());
+  const playlistId = urlId === 'new' ? newId : urlId;
   const [playlistDate, setPlaylistDate] = useState(new Date().toISOString().split('T')[0]);
   const [localVidLoaded, setLocalVidLoaded] = useState(false);
 
   const [playlist, setPlaylist] = useState<any[]>([]);
   const [playlistName, setPlaylistName] = useState('Memuat...');
+
+  useEffect(() => {
+    const channel = new BroadcastChannel('worship_live_sync');
+    channel.postMessage({ type: 'PLAYLIST_UPDATE', payload: playlist });
+    
+    const handleMsg = (msg: MessageEvent) => {
+      if (msg.data.type === 'REQUEST_PLAYLIST') {
+        const ch = new BroadcastChannel('worship_live_sync');
+        ch.postMessage({ type: 'PLAYLIST_UPDATE', payload: playlist });
+        ch.close();
+      }
+    };
+    channel.addEventListener('message', handleMsg);
+    return () => {
+      channel.removeEventListener('message', handleMsg);
+      channel.close();
+    };
+  }, [playlist]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [activeItem, setActiveItem] = useState(0);
@@ -92,6 +248,7 @@ export default function ControlPanel() {
   const [dbList, setDbList] = useState<DatabaseVersion[]>([]);
   const [selectedSongVersion, setSelectedSongVersion] = useState('song_LSEB');
   const [selectedBibleVersion, setSelectedBibleVersion] = useState('bible_TB');
+  const [selectedBibleVersion2, setSelectedBibleVersion2] = useState('none');
   
   const [currentBg, setCurrentBg] = useState(localStorage.getItem('custom_bg') || '');
   const { getBgUrl, refreshBackgrounds } = useBackgrounds();
@@ -165,6 +322,8 @@ export default function ControlPanel() {
 
   const [isDisplayOpen, setIsDisplayOpen] = useState(globalIsDisplayOpen);
   const displayWindowRef = useRef<Window | null>(globalDisplayWindow);
+  const stageWindowRef = useRef<Window | null>(null);
+  const [isStageOpen, setIsStageOpen] = useState(false);
   const ytPlayerRef = useRef<any>(null);
 
   useEffect(() => {
@@ -189,6 +348,10 @@ export default function ControlPanel() {
         displayWindowRef.current = null;
         setGlobalDisplayWindow(null);
         setGlobalIsDisplayOpen(false);
+      }
+      if (stageWindowRef.current && stageWindowRef.current.closed) {
+        setIsStageOpen(false);
+        stageWindowRef.current = null;
       }
     }, 1000);
     return () => clearInterval(timer);
@@ -216,6 +379,7 @@ export default function ControlPanel() {
   // Ambil playlist dari server
   useEffect(() => {
     async function fetchPlaylist() {
+      setIsLoading(true);
       if (!playlistId || urlId === 'new') {
         setPlaylistName('Ibadah Umum');
         setPlaylist([]);
@@ -235,7 +399,7 @@ export default function ControlPanel() {
           }
           if (!Array.isArray(rawItems)) rawItems = [];
           
-          const itemsWithVisibleSegments = rawItems.map((item: any) => {
+          const itemsWithVisibleSegments = await Promise.all(rawItems.map(async (item: any) => {
             if ((item.type === 'song' || item.type === 'bible') && item.customText) {
               try {
                 item.visibleSegments = JSON.parse(item.customText);
@@ -243,9 +407,62 @@ export default function ControlPanel() {
                 // ignore
               }
             }
+            
+            // Re-hydrate missing segments (in case backend stripped them to save space)
+            if ((item.type === 'song' || item.type === 'bible') && (!item.segments || item.segments.length === 0)) {
+              try {
+                if (item.type === 'bible' && item.title) {
+                  const res = await searchLocalBible(item.title, selectedBibleVersion || 'bible_TB');
+                  if (res && res.length > 0) {
+                    const bItem = res[0];
+                    let segs = bItem.isRange ? bItem.segments : [bItem.text];
+                    let labs = bItem.isRange ? bItem.segmentLabels : [`Ayat ${bItem.verse}`];
+                    if (segs.length > 0 && segs[0] !== item.title) {
+                        segs = [item.title, ...segs];
+                        labs = ['Judul', ...labs];
+                    }
+                    item.segments = segs;
+                    item.segmentLabels = labs;
+                  } else {
+                    item.segments = ['(Ayat tidak ditemukan di database lokal)'];
+                  }
+                } else if (item.type === 'song' && (item.refId || item.id)) {
+                  const res = await searchLocalSongs(item.refId || item.id, selectedSongVersion || 'song_LSEB');
+                  if (res && res.length > 0) {
+                    let segs = res[0].segments || [];
+                    let labs = res[0].segmentLabels || [];
+                    if (segs.length > 0 && segs[0] !== res[0].title) {
+                        segs = [res[0].title, ...segs];
+                        labs = ['Judul', ...labs];
+                    }
+                    item.segments = segs;
+                    item.segmentLabels = labs;
+                  } else {
+                    item.segments = ['(Lirik tidak ditemukan di database lokal)'];
+                  }
+                }
+              } catch (e) {
+                console.error("Gagal merehidrasi item", e);
+              }
+            }
+            
+            // Ensure title is prepended even if segments were loaded from backend (not rehydrated)
+            if (item.type === 'song' || item.type === 'bible') {
+               const bTitle = item.type === 'bible' ? (item.isRange ? item.title : (item.book ? `${item.book} ${item.chapter}:${item.verse}` : item.title)) : item.title;
+               if (item.segments && item.segments.length > 0 && item.segments[0] !== bTitle && item.segments[0] !== item.title) {
+                   item.segments = [bTitle || item.title, ...item.segments];
+                   item.segmentLabels = ['Judul', ...(item.segmentLabels || item.segments.slice(1).map((_:any, i:number) => `Slide ${i+1}`))];
+                   if (item.visibleSegments && item.visibleSegments.length > 0) {
+                       item.visibleSegments = [0, ...item.visibleSegments.map((v: number) => v + 1)];
+                   }
+               }
+            }
+            
             return item;
-          });
+          }));
           setPlaylist(itemsWithVisibleSegments);
+          setActiveItem(0);
+          setActiveSegment(0);
         } else {
           setErrorMsg('Playlist kosong atau tidak ditemukan.');
         }
@@ -832,19 +1049,53 @@ export default function ControlPanel() {
     try {
       if (type === 'song') {
         const results = await searchLocalSongs(query, selectedSongVersion);
-        setSearchResults(results.slice(0, 50));
+        const formattedResults = results.slice(0, 50).map(item => {
+           let segs = item.segments || [];
+           let labs = item.segmentLabels || segs.map((_:any, i:number) => `Slide ${i+1}`);
+           if (segs.length > 0 && segs[0] !== item.title) {
+               segs = [item.title, ...segs];
+               labs = ['Judul', ...labs];
+           }
+           return { ...item, segments: segs, segmentLabels: labs };
+        });
+        setSearchResults(formattedResults);
       } else {
         const results = await searchLocalBible(query, selectedBibleVersion);
-        const formattedResults = results.map((item: any, idx: number) => ({
-          id: item.isRange ? item.id : `b_${idx}`,
-          type: 'bible',
-          title: item.isRange ? item.title : `${item.book} ${item.chapter}:${item.verse}`,
-          author: 'Alkitab',
-          category: 'Alkitab',
-          segments: item.isRange ? item.segments : [item.text],
-          segmentOrder: item.isRange ? item.segments.map((_:any, i:number) => i) : [0],
-          segmentLabels: item.isRange ? item.segmentLabels : [`Ayat ${item.verse}`]
-        }));
+        let results2: any[] = [];
+        if (selectedBibleVersion2 !== 'none' && results.length > 0) {
+           results2 = await getCrossLanguageVerses(results, selectedBibleVersion, selectedBibleVersion2);
+        }
+        
+        const formattedResults = results.map((item: any, idx: number) => {
+           const bTitle = item.isRange ? item.title : `${item.book} ${item.chapter}:${item.verse}`;
+           let combinedSegments = item.isRange ? item.segments : [item.text];
+           let labs = item.isRange ? item.segmentLabels : [`Ayat ${item.verse}`];
+           
+           if (results2.length > 0 && results2[idx]) {
+             const item2 = results2[idx];
+             const segs2 = item2.isRange ? item2.segments : [item2.text];
+             combinedSegments = combinedSegments.map((seg: string, i: number) => {
+                if (segs2[i]) return `${seg}\n[kuning]${segs2[i]}[/kuning]`;
+                return seg;
+             });
+           }
+           
+           if (combinedSegments.length > 0 && combinedSegments[0] !== bTitle) {
+               combinedSegments = [bTitle, ...combinedSegments];
+               labs = ['Judul', ...labs];
+           }
+           
+           return {
+             id: item.isRange ? item.id : `b_${idx}`,
+             type: 'bible',
+             title: bTitle,
+             author: 'Alkitab',
+             category: 'Alkitab',
+             segments: combinedSegments,
+             segmentOrder: combinedSegments.map((_:any, i:number) => i),
+             segmentLabels: labs
+           };
+        });
         setSearchResults(formattedResults);
       }
     } catch (err) {
@@ -864,7 +1115,7 @@ export default function ControlPanel() {
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchQuery, searchType]);
+  }, [searchQuery, searchType, selectedBibleVersion, selectedBibleVersion2]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1042,7 +1293,7 @@ export default function ControlPanel() {
       setGlobalDisplayWindow(null);
       setGlobalIsDisplayOpen(false);
     } else {
-      displayWindowRef.current = window.open('#/display', '_blank', 'width=1280,height=720');
+      displayWindowRef.current = window.open('#/display', 'worship_display_window', 'width=1280,height=720');
       setIsDisplayOpen(true);
       setGlobalDisplayWindow(displayWindowRef.current);
       setGlobalIsDisplayOpen(true);
@@ -1084,6 +1335,17 @@ export default function ControlPanel() {
 
         channel.close();
       }, 1500);
+    }
+  };
+
+  const openStageDisplay = () => {
+    if (stageWindowRef.current && !stageWindowRef.current.closed) {
+      stageWindowRef.current.close();
+      stageWindowRef.current = null;
+      setIsStageOpen(false);
+    } else {
+      stageWindowRef.current = window.open('#/stage', 'worship_stage_window', 'width=1280,height=720');
+      setIsStageOpen(true);
     }
   };
 
@@ -1304,9 +1566,7 @@ export default function ControlPanel() {
     }
   }, [activeItem]);
 
-  if (isLoading) {
-    return <div className="h-full flex justify-center items-center"><Loader2 className="animate-spin text-indigo-900" size={48} /></div>;
-  }
+
 
 
   const renderDisplayBox = (itemIdx: number, segIdx: number, isLiveBox: boolean) => {
@@ -1433,7 +1693,7 @@ export default function ControlPanel() {
         )}
 
         {/* Title */}
-        {mode === 'content' && itemData?.title && itemData?.type !== 'video' && itemData?.type !== 'countdown' && itemData?.type !== 'image' && (
+        {mode === 'content' && itemData?.title && itemData?.type !== 'video' && itemData?.type !== 'countdown' && itemData?.type !== 'image' && itemData?.segmentLabels?.[segIdx]?.toLowerCase() !== 'judul' && (
           <h2 
             className="absolute left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-[70] transition-all duration-500"
             style={{
@@ -1448,7 +1708,7 @@ export default function ControlPanel() {
 
         {/* Content Container */}
         {itemData?.type !== 'video' && itemData?.type !== 'image' && (
-          <div className={`absolute left-0 right-0 z-[70] flex flex-col items-center w-full transition-all duration-700 ${
+          <div className={`absolute left-0 right-0 z-[70] flex flex-col items-center w-full min-h-0 transition-all duration-700 ${
             (displayTheme.position || 'center') === 'top' ? 'top-[8%] bottom-[12%] justify-start' :
             (displayTheme.position || 'center') === 'bottom' ? 'top-[18%] bottom-[8%] justify-end' :
             'top-[18%] bottom-[12%] justify-center'
@@ -1479,46 +1739,71 @@ export default function ControlPanel() {
                        ? '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)'
                        : (displayTheme.shadow === 'light') 
                        ? '1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff, 0 4px 10px rgba(255,255,255,0.8)'
-                       : 'none', 
-                     fontSize: (() => {
-                       const t = itemData?.segments[segIdx] || '';
-                       const charCount = t.length;
-                       const visualLines = t.split('\n').reduce((acc: number, line: string) => acc + Math.ceil((line.length || 1) / 32), 0);
-                       
-                       let baseSize = 9;
-                       if (visualLines >= 8 || charCount > 350) baseSize = 4.5;
-                       else if (visualLines >= 6 || charCount > 250) baseSize = 5;
-                       else if (visualLines >= 5 || charCount > 180) baseSize = 5.5;
-                       else if (visualLines >= 4 || charCount > 120) baseSize = 6;
-                       else if (visualLines >= 3 || charCount > 70) baseSize = 7;
-                       else if (charCount > 40) baseSize = 8;
-                       
-                       return `${baseSize + (displayTheme.fontSizeOffset || 0)}cqw`;
-                     })()
+                       : 'none',                      fontSize: (() => {
+                        const t = itemData?.segments[segIdx] || '';
+                        const is2Column = t.includes('\n[kuning]') || t.includes('\n[kolom2]');
+                        const charCount = is2Column ? t.length * 1.5 : t.length;
+                        const charsPerLine = is2Column ? 14 : 28;
+                        
+                        const strippedT = t.replace(/\[\/?(merah|kuning|hijau|biru|ungu|oranye|kolom2)\]/gi, '');
+                        const lines = strippedT.split('\n');
+                        const visualLines = lines.reduce((acc: number, line: string) => acc + Math.ceil((line.length || 1) / charsPerLine), 0);
+                        
+                        let baseSize = 8.5;
+                        if (visualLines >= 12 || charCount > 400) baseSize = 3;
+                        else if (visualLines >= 9 || charCount > 300) baseSize = 3.5;
+                        else if (visualLines >= 7 || charCount > 200) baseSize = 4;
+                        else if (visualLines >= 5 || charCount > 150) baseSize = 4.75;
+                        else if (visualLines >= 4 || charCount > 100) baseSize = 5.5;
+                        else if (visualLines >= 3 || charCount > 60) baseSize = 6.5;
+                        else if (charCount > 35) baseSize = 7.5;
+                        
+                        // Prevent wrapping if user didn't press enter (shrink-to-fit line)
+                        const maxLineLength = Math.max(...lines.map(line => line.length), 1);
+                        const availableWidth = is2Column ? 42 : 84; 
+                        let requiredSize = availableWidth / (maxLineLength * 0.55);
+                        
+                        if (requiredSize < baseSize) {
+                            baseSize = Math.max(requiredSize, 2); // don't go below 2cqw to stay readable
+                        }
+                        
+                        return `${baseSize + (displayTheme.fontSizeOffset || 0)}cqw`;
+                      })()
                    }}
                    dangerouslySetInnerHTML={{ __html: processText(itemData?.segments[segIdx] || '') }}
                  />
                  
                  {/* Subtitle (Bait) di bawah isi */}
-                 <div 
-                   className="text-yellow-300 font-bold mt-[1.5cqw] tracking-widest uppercase opacity-80 animate-fade-in"
-                   style={{
-                     fontSize: '1.5cqw',
-                     textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)',
-                     minHeight: '2cqw'
-                   }}
-                 >
-                   {(() => {
-                     let label = itemData?.segmentLabels?.[segIdx] || '';
-                     if (itemData?.type === 'bible' && !label) {
-                         const m = itemData.title?.match(/(.+?)\s*:\s*(\d+)/);
-                         label = m ? `Ayat ${parseInt(m[2], 10) + segIdx}` : `Ayat ${segIdx + 1}`;
+                 {(() => {
+                   let label = itemData?.segmentLabels?.[segIdx] || '';
+                   if (itemData?.type === 'bible' && !label) {
+                     const match = itemData?.title?.match(/(.+?)\s*:\s*(\d+)/);
+                     if (match) {
+                       const startVerse = parseInt(match[2], 10);
+                       label = `Ayat ${startVerse + segIdx}`;
+                     } else {
+                       label = `Ayat ${segIdx + 1}`;
                      }
-                     if (itemData?.type === 'song' && !label) label = '•';
-                     if (itemData?.type === 'song' && label.startsWith('Slide ')) label = label.replace('Slide ', 'Bait ');
-                     return label;
-                   })()}
-                 </div>
+                   }
+                   if (itemData?.type === 'song' && label.startsWith('Slide ')) {
+                     label = label.replace('Slide ', 'Bait ');
+                   }
+                   
+                   if (label.toLowerCase() === 'judul') return null;
+                   
+                   return (
+                     <div 
+                       className="text-yellow-300 font-bold mt-[1.5cqw] tracking-widest uppercase opacity-80 animate-fade-in"
+                       style={{
+                         fontSize: '1.5cqw',
+                         textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)',
+                         minHeight: '2cqw'
+                       }}
+                     >
+                       {label || (itemData?.type === 'song' ? '•' : '')}
+                     </div>
+                   );
+                 })()}
                </>
             ) : logos.filter(l => l.enabled !== false).length > 0 ? (
                <img 
@@ -1589,7 +1874,7 @@ export default function ControlPanel() {
       
       <main className="flex-1 flex gap-4 min-h-0 overflow-hidden">
         {/* Left Sidebar */}
-        <aside className="w-[12%] glass-panel flex flex-col gap-3 p-3 shadow-lg border-white/50 overflow-y-auto">
+        <aside className="w-[20%] glass-panel flex flex-col gap-3 p-3 shadow-lg border-white/50 overflow-y-auto">
           <button onClick={() => navigate('/dashboard')} className="glass-button w-full text-indigo-900 flex items-center justify-center font-bold px-2 py-4 text-[11px] uppercase tracking-wider transition-all hover:bg-white/70">
             DASHBOARD
           </button>
@@ -1606,6 +1891,112 @@ export default function ControlPanel() {
           <div className="w-full h-px bg-indigo-900/10 my-1"></div>
 
           <div className="mt-auto flex flex-col gap-2">
+            {/* Quick Edit Panel (Left Sidebar) */}
+            {(() => {
+              const item = tempLiveItem ? tempLiveItem : playlist[activeItem];
+              const segIdx = tempLiveItem ? liveSegment : activeSegment;
+              const isEditable = item && (item.type === 'song' || item.type === 'bible' || item.type === 'announcement') && item.segments && item.segments[segIdx] !== undefined;
+
+              if (isEditable) {
+                const nextInfo = getNextSlideInfo();
+                let nextItemData: any = null;
+                let nextItemIdx = -1;
+                let nextSegIdx = -1;
+
+                if (nextInfo.item !== -1) {
+                  if (nextInfo.item === -2) {
+                    nextItemData = tempLiveItem;
+                    nextItemIdx = -2;
+                  } else {
+                    nextItemData = playlist[nextInfo.item];
+                    nextItemIdx = nextInfo.item;
+                  }
+                  nextSegIdx = nextInfo.segment;
+                }
+
+                const isNextEditable = nextItemData && (nextItemData.type === 'song' || nextItemData.type === 'bible' || nextItemData.type === 'announcement') && nextItemData.segments && nextItemData.segments[nextSegIdx] !== undefined;
+
+                const updateSegmentText = (targetSegIdx: number, newText: string, targetItemIdx: number = activeItem) => {
+                  if (targetItemIdx === -2 || (tempLiveItem && targetItemIdx === activeItem)) {
+                    if (!tempLiveItem) return;
+                    const updated = { ...tempLiveItem, segments: [...tempLiveItem.segments] };
+                    updated.segments[targetSegIdx] = newText;
+                    setTempLiveItem(updated);
+                    // Push state secara instan jika kita di mode live/content
+                    if (mode === 'content') {
+                       pushTempToLive(updated, liveSegment);
+                    }
+                  } else {
+                    const newPlaylist = [...playlist];
+                    if (!newPlaylist[targetItemIdx]) return;
+                    newPlaylist[targetItemIdx] = { ...newPlaylist[targetItemIdx], segments: [...newPlaylist[targetItemIdx].segments] };
+                    newPlaylist[targetItemIdx].segments[targetSegIdx] = newText;
+                    setPlaylist(newPlaylist);
+                    if (targetItemIdx === liveItem && mode === 'content') {
+                       const stateObj = {
+                         playlistId: playlistId,
+                         currentItemId: newPlaylist[targetItemIdx].id,
+                         segmentIndex: liveSegment, // selalu kirim segment yang sedang aktif ditayangkan
+                         displayMode: 'content',
+                         item: newPlaylist[targetItemIdx],
+                         updatedAt: Date.now()
+                       };
+                       const channel = new BroadcastChannel('worship_live_sync');
+                       channel.postMessage({ type: 'STATE_UPDATE', state: stateObj });
+                       channel.close();
+                       
+                       if (syncTimeout.current) clearTimeout(syncTimeout.current);
+                       syncTimeout.current = setTimeout(async () => {
+                         try {
+                           await callApi('setLiveState', {}, { method: 'POST', payload: stateObj });
+                           setIsSyncing(false);
+                         } catch(e) {}
+                       }, 1000);
+                    }
+                  }
+                };
+
+                return (
+                  <div className="flex flex-col gap-1.5 bg-white/50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-indigo-200 dark:border-slate-700/50 shadow-inner mb-2 w-full">
+                    <span className="text-[11px] font-extrabold text-slate-500 uppercase shrink-0">Quick Edit</span>
+                    <div className="flex flex-col gap-3 w-full">
+                      {/* Current Slide */}
+                      <div className="flex flex-col gap-1 w-full">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Saat Ini (Slide {segIdx + 1})</span>
+                        <SegmentEditor 
+                          value={item.segments[segIdx]}
+                          onChange={(val: string) => updateSegmentText(segIdx, val, tempLiveItem ? -2 : activeItem)}
+                          className="w-full bg-white dark:bg-slate-800 border border-indigo-100 dark:border-white/10 rounded-lg p-2 text-[12px] leading-relaxed font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:focus:ring-[#C5A059] resize-none overflow-hidden custom-scrollbar transition-all"
+                        />
+                      </div>
+                      
+                      {/* Next Slide */}
+                      {nextItemData && (
+                        <div className="flex flex-col gap-1 w-full mt-1 border-t border-indigo-100/50 dark:border-slate-700/50 pt-2">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">
+                            {nextItemIdx === (tempLiveItem ? -2 : activeItem) ? `Selanjutnya (Slide ${nextSegIdx + 1})` : `Rundown Berikutnya`}
+                          </span>
+                          {isNextEditable ? (
+                            <SegmentEditor 
+                              value={nextItemData.segments[nextSegIdx]}
+                              onChange={(val: string) => updateSegmentText(nextSegIdx, val, nextItemIdx)}
+                              className="w-full bg-white/60 dark:bg-slate-800/60 border border-indigo-100/50 dark:border-white/5 rounded-lg p-2 text-[12px] leading-relaxed font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:focus:ring-[#C5A059] resize-none overflow-hidden custom-scrollbar transition-all"
+                            />
+                          ) : (
+                            <div className="w-full bg-slate-100/80 dark:bg-slate-800/40 border border-slate-200 dark:border-white/5 rounded-lg p-2 text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2 shadow-sm">
+                               <span className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded text-[8px] uppercase font-bold tracking-wider">{nextItemData.type === 'video' ? 'Video' : nextItemData.type === 'image' ? 'Gambar' : nextItemData.type === 'countdown' ? 'Timer' : nextItemData.type || 'Media'}</span>
+                               <span className="truncate">{nextItemData.title || 'Item Media'}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
             <button 
               onClick={() => { 
                 if (displayPanelTab === 'add' || !isRunningTextModalOpen) {
@@ -1743,6 +2134,9 @@ export default function ControlPanel() {
 
               {/* Right: Screen & Live Actions */}
               <div className="flex items-center gap-2 shrink-0">
+                <button onClick={openStageDisplay} className="flex bg-transparent border border-slate-600 text-slate-300 justify-center items-center gap-2 px-3 py-2 font-bold text-[11px] hover:bg-slate-800 rounded-lg transition-all" title="Buka Tampilan Panggung Pemimpin">
+                  <Monitor size={14}/> Pemimpin
+                </button>
                 <button onClick={openDisplay} className="flex bg-transparent border border-slate-600 text-slate-300 justify-center items-center gap-2 px-4 py-2 font-bold text-[11px] hover:bg-slate-800 rounded-lg transition-all">
                   <Monitor size={14}/> {isDisplayOpen ? 'Tutup Layar' : 'Buka Layar'}
                 </button>
@@ -1772,6 +2166,9 @@ export default function ControlPanel() {
                 </button>
               </div>
             </div>
+
+
+
           </div>
 
           {/* Bottom Settings Panel */}
@@ -1831,7 +2228,7 @@ export default function ControlPanel() {
                             <button onClick={() => { setSearchType('song'); setSearchQuery(''); }} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg transition text-xs font-semibold ${searchType === 'song' ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-md' : 'bg-white dark:bg-slate-800 text-indigo-900 dark:text-slate-300 border border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}><Music size={14}/> Lagu</button>
                             <button onClick={() => { setSearchType('bible'); setSearchQuery(''); }} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg transition text-xs font-semibold ${searchType === 'bible' ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-md' : 'bg-white dark:bg-slate-800 text-indigo-900 dark:text-slate-300 border border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}><BookOpen size={14}/> Alkitab</button>
                           </div>
-                          <div className="flex-1">
+                          <div className={`flex-1 ${searchType === 'bible' ? 'flex gap-2' : ''}`}>
                             <select 
                               className="w-full bg-white/50 dark:bg-slate-800 border border-indigo-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-indigo-900 dark:text-white font-semibold focus:outline-none focus:border-indigo-500 transition"
                               value={searchType === 'song' ? selectedSongVersion : selectedBibleVersion}
@@ -1841,6 +2238,18 @@ export default function ControlPanel() {
                                 <option key={db.id} value={db.id} className="dark:bg-[#0A1128] dark:text-[#C5A059]">{db.name}</option>
                               ))}
                             </select>
+                            {searchType === 'bible' && (
+                              <select 
+                                className="w-full bg-white/50 dark:bg-slate-800 border border-indigo-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-indigo-900 dark:text-white font-semibold focus:outline-none focus:border-indigo-500 transition"
+                                value={selectedBibleVersion2}
+                                onChange={(e) => setSelectedBibleVersion2(e.target.value)}
+                              >
+                                <option value="none" className="dark:bg-[#0A1128] dark:text-slate-400">-- Teks Tunggal --</option>
+                                {dbList.filter(d => d.type === 'bible' && d.id !== selectedBibleVersion).map(db => (
+                                  <option key={db.id} value={db.id} className="dark:bg-[#0A1128] dark:text-[#C5A059]">{db.name}</option>
+                                ))}
+                              </select>
+                            )}
                           </div>
                         </div>
                       )}
@@ -1886,7 +2295,7 @@ export default function ControlPanel() {
                                 ) : dashboardPlaylists.filter(pl => pl.name.toLowerCase().includes(searchQuery.toLowerCase())).map(pl => (
                                   <button 
                                     key={pl.id} 
-                                    onClick={() => window.location.search = '?id=' + pl.id}
+                                    onClick={() => navigate('/control?id=' + pl.id)}
                                     className="text-left p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-[#C5A059] shadow-sm transition-all flex justify-between items-center group"
                                   >
                                     <div>
@@ -1914,7 +2323,7 @@ export default function ControlPanel() {
                                       {res.category && <span title="Kategori">🏷️ {res.category}</span>}
                                     </div>
                                   )}
-                                  <div className="text-[10px] text-indigo-800/60 dark:text-slate-500 line-clamp-2 mt-1">{res.segments && res.segments[0]}</div>
+                                  <div className="text-[10px] text-indigo-800/60 dark:text-slate-500 line-clamp-2 mt-1" dangerouslySetInnerHTML={{ __html: renderSnippet(res.segments && res.segments.length > 1 ? res.segments[1] : res.segments?.[0]) }}></div>
                                 </div>
                                 <div className="flex flex-col gap-1.5 shrink-0 w-[85px]">
                                   <button 
@@ -2232,12 +2641,12 @@ export default function ControlPanel() {
         </section>
 
         {/* Right Sidebar (Rundown / Setlist) */}
-        <aside className="w-[25%] glass-panel p-4 flex flex-col overflow-hidden shadow-lg border-white/50">
-          <div className="mb-4 flex w-full justify-between items-center gap-2">
-            <div className="flex-1">
+        <aside className="w-[20%] glass-panel p-4 flex flex-col overflow-hidden shadow-lg border-white/50">
+          <div className="mb-4 flex flex-col w-full gap-2">
+            <div className="w-full">
               <FooterClock />
             </div>
-            <div className="flex flex-col gap-1.5 shrink-0 w-24">
+            <div className="flex gap-2 w-full">
               <button 
                 onClick={() => {
                   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(playlist, null, 2));
@@ -2249,13 +2658,13 @@ export default function ControlPanel() {
                   downloadAnchorNode.click();
                   downloadAnchorNode.remove();
                 }}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white w-full py-1.5 px-1 rounded-lg text-[10px] font-bold shadow-md shadow-indigo-600/30 transition flex justify-center items-center uppercase tracking-wider text-center leading-tight"
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-1 rounded-lg text-[10px] font-bold shadow-md shadow-indigo-600/30 transition flex justify-center items-center uppercase tracking-wider text-center leading-tight"
               >
-                Simpan Rundown
+                Simpan
               </button>
               
-              <label className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 w-full py-1.5 px-1 rounded-lg text-[10px] font-bold shadow-sm transition flex justify-center items-center uppercase tracking-wider text-center leading-tight cursor-pointer">
-                Import Rundown
+              <label className="flex-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-2 px-1 rounded-lg text-[10px] font-bold shadow-sm transition flex justify-center items-center uppercase tracking-wider text-center leading-tight cursor-pointer">
+                Import
                 <input 
                   type="file" 
                   accept=".json" 
@@ -2331,10 +2740,13 @@ export default function ControlPanel() {
           <div className="text-xs font-bold text-indigo-900/50 dark:text-indigo-200/50 mb-2 uppercase tracking-wider">RUNDOWN</div>
           
           <div className="space-y-2 overflow-y-auto pr-2 pb-4 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent flex-1">
-            {playlist.length === 0 && (
+            {isLoading ? (
+              <div className="flex justify-center items-center h-40">
+                <Loader2 className="animate-spin text-indigo-600 dark:text-[#C5A059]" size={36} />
+              </div>
+            ) : playlist.length === 0 ? (
               <div className="text-center text-sm font-semibold text-indigo-900/40 dark:text-indigo-200/40 mt-10">Rundown kosong.</div>
-            )}
-            {playlist.map((item, idx) => (
+            ) : playlist.map((item, idx) => (
               <div 
                 id={`rundown-item-${idx}`}
                 key={item.id || idx} 
@@ -2682,17 +3094,50 @@ export default function ControlPanel() {
                 <div className="flex flex-col gap-3">
                   {/* Segment Tabs */}
                   <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-                    {(playlist[editItemIndex].segments as any[]).map((_: any, i: number) => (
-                      <button
-                        key={i}
-                        onClick={() => setEditSegmentIndex(i)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-bold whitespace-nowrap transition-all ${
-                          editSegmentIndex === i ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-                        }`}
-                      >
-                        {playlist[editItemIndex].segmentLabels?.[i] || (playlist[editItemIndex].type === 'announcement' ? `Slide ${i + 1}` : `Bait ${i + 1}`)}
-                      </button>
-                    ))}
+                    {(playlist[editItemIndex].segments as any[]).map((_: any, i: number) => {
+                      const isMulti = playlist[editItemIndex].segments.length > 1;
+                      const isActive = editSegmentIndex === i;
+                      return (
+                      <div key={i} className="flex relative group">
+                        <button
+                          onClick={() => setEditSegmentIndex(i)}
+                          className={`px-3 py-1.5 text-sm font-bold whitespace-nowrap transition-all ${
+                            isActive ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                          } ${isActive && isMulti ? 'rounded-l-lg pr-2' : 'rounded-lg'}`}
+                        >
+                          {playlist[editItemIndex].segmentLabels?.[i] || (playlist[editItemIndex].type === 'announcement' ? `Slide ${i + 1}` : `Bait ${i + 1}`)}
+                        </button>
+                        {isActive && isMulti && (
+                          <button
+                            onClick={() => {
+                              if (confirm('Hapus ' + (playlist[editItemIndex].type === 'announcement' ? 'slide' : 'bait') + ' ini?')) {
+                                setPlaylist(prev => {
+                                  const pl = [...prev];
+                                  const item = { ...pl[editItemIndex] };
+                                  item.segments = item.segments.filter((_: any, idx: number) => idx !== i);
+                                  if (item.segmentLabels) {
+                                    item.segmentLabels = item.segmentLabels.filter((_: any, idx: number) => idx !== i);
+                                  }
+                                  if (item.visibleSegments) {
+                                    item.visibleSegments = item.visibleSegments
+                                      .filter((idx: number) => idx !== i)
+                                      .map((idx: number) => idx > i ? idx - 1 : idx);
+                                  }
+                                  pl[editItemIndex] = item;
+                                  return pl;
+                                });
+                                setEditSegmentIndex(Math.max(0, i - 1));
+                              }
+                            }}
+                            className="bg-indigo-700 hover:bg-red-500 text-white/80 hover:text-white px-2 py-1.5 rounded-r-lg transition-colors flex items-center justify-center border-l border-indigo-500/50"
+                            title="Hapus"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </div>
+                      );
+                    })}
                     {(playlist[editItemIndex].type === 'song' || playlist[editItemIndex].type === 'announcement') && (
                       <button
                         onClick={() => {
@@ -2718,22 +3163,80 @@ export default function ControlPanel() {
                   
                   {/* Rich Editor */}
                   <div className="flex flex-col gap-2">
-                    <RichEditor
-                      ref={editorRef}
-                      className="w-full min-h-[150px] bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/20 text-indigo-900 dark:text-white whitespace-pre-wrap leading-relaxed transition-all resize-y"
-                      value={playlist[editItemIndex].segments[editSegmentIndex] || ''}
-                      onChange={(val) => {
+                    {(() => {
+                      const val = playlist[editItemIndex].segments[editSegmentIndex] || '';
+                      const is2Kolom = val.includes('\n[kolom2]') && val.endsWith('[/kolom2]');
+                      
+                      const setVal = (newVal: string) => {
                         setPlaylist(prev => {
                           const pl = [...prev];
                           pl[editItemIndex] = { ...pl[editItemIndex], segments: [...pl[editItemIndex].segments] };
-                          pl[editItemIndex].segments[editSegmentIndex] = val;
+                          pl[editItemIndex].segments[editSegmentIndex] = newVal;
                           return pl;
                         });
-                      }}
-                      onSelectChange={setHasSelection}
-                      placeholder="Ketik teks di sini (blok teks untuk mewarnai)..."
-                    />
+                      };
 
+                      if (is2Kolom) {
+                        const parts = val.split('\n[kolom2]');
+                        const left = parts[0] || '';
+                        const right = parts[1] ? parts[1].replace('[/kolom2]', '') : '';
+                        return (
+                          <div className="flex gap-4 w-full">
+                            <div className="flex-1 flex flex-col gap-1">
+                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Kolom Kiri</span>
+                              <RichEditor
+                                ref={editorRef}
+                                className="w-full min-h-[150px] bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/20 text-indigo-900 dark:text-white whitespace-pre-wrap leading-relaxed transition-all resize-y"
+                                value={left}
+                                onChange={(v) => {
+                                  if (!v && !right) setVal('');
+                                  else if (!right) setVal(v);
+                                  else setVal(v + '\n[kolom2]' + right + '[/kolom2]');
+                                }}
+                                onSelectChange={setHasSelection}
+                                placeholder="Teks kiri..."
+                              />
+                            </div>
+                            <div className="flex-1 flex flex-col gap-1">
+                              <div className="flex justify-between items-center px-1">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Kolom Kanan</span>
+                                <button onClick={() => setVal(left)} className="text-[10px] font-bold text-red-400 hover:text-red-500 px-2 py-0.5 rounded hover:bg-red-500/10 transition">✕ Tutup</button>
+                              </div>
+                              <RichEditor
+                                className="w-full min-h-[150px] bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/20 text-indigo-900 dark:text-white whitespace-pre-wrap leading-relaxed transition-all resize-y"
+                                value={right}
+                                onChange={(v) => {
+                                  if (!v && !left) setVal('');
+                                  else if (!v) setVal(left);
+                                  else setVal(left + '\n[kolom2]' + v + '[/kolom2]');
+                                }}
+                                onSelectChange={setHasSelection}
+                                placeholder="Teks kanan..."
+                              />
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="relative group w-full">
+                          <RichEditor
+                            ref={editorRef}
+                            className="w-full min-h-[150px] bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/20 text-indigo-900 dark:text-white whitespace-pre-wrap leading-relaxed transition-all resize-y"
+                            value={val}
+                            onChange={setVal}
+                            onSelectChange={setHasSelection}
+                            placeholder="Ketik teks di sini (blok teks untuk mewarnai)..."
+                          />
+                          <button 
+                            onClick={() => setVal(val + '\n[kolom2][/kolom2]')}
+                            className="absolute bottom-4 right-4 text-xs font-bold text-indigo-600 dark:text-indigo-300 bg-white/90 dark:bg-slate-700/90 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-slate-600 px-3 py-1.5 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm"
+                          >
+                            + Kolom Kanan
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}

@@ -12,7 +12,7 @@ const callIpc = async (action: string, payload: any) => {
 
 export const saveSlideBackground = async (id: string, base64DataUrl: string) => {
   if (hasElectron) {
-    await callIpc('saveMediaFile', { id, dataUrl: base64DataUrl, type: 'image' });
+    await callIpc('saveMediaFile', { id, dataUrl: base64DataUrl, type: 'background' });
     return;
   }
   try {
@@ -28,7 +28,7 @@ export const saveVideoBackground = async (id: string, fileBlob: Blob | File) => 
     // Jika fileBlob adalah File (punya path fisik), kirim path-nya agar lebih cepat di copy
     const file = fileBlob as any;
     if (file.path) {
-      await callIpc('saveMediaFile', { id, filePath: file.path, type: 'video' });
+      await callIpc('saveMediaFile', { id, filePath: file.path, type: 'background-video' });
       return;
     }
     // Jika Blob biasa, kita ubah jadi base64/dataURL dulu
@@ -37,7 +37,7 @@ export const saveVideoBackground = async (id: string, fileBlob: Blob | File) => 
       reader.onload = () => resolve(reader.result as string);
       reader.readAsDataURL(fileBlob);
     });
-    await callIpc('saveMediaFile', { id, dataUrl, type: 'video' });
+    await callIpc('saveMediaFile', { id, dataUrl, type: 'background-video' });
     return;
   }
   
@@ -75,7 +75,8 @@ export const getSlideBackground = async (id: string) => {
 
 export const removeSlideBackground = async (id: string) => {
   if (hasElectron) {
-    await callIpc('deleteMediaFile', { id });
+    const isVid = id.startsWith('slide_bg_vid_') || id.includes('_vid_');
+    await callIpc('deleteMediaFile', { id, type: isVid ? 'background-video' : 'background' });
     // Tetap coba hapus di indexedDB sekadar jaga-jaga
   }
   try {
@@ -91,7 +92,7 @@ export const removeSlideBackground = async (id: string) => {
 
 export const getAllSlideBackgrounds = async () => {
   if (hasElectron) {
-    const res = await callIpc('listMediaFiles', {});
+    const res = await callIpc('listMediaFiles', { type: 'background' });
     if (res && res.success) return res.data;
     return [];
   }
@@ -104,6 +105,33 @@ export const getAllSlideBackgrounds = async () => {
     for (const k of bgKeys) {
       const data = await get(k);
       if (k.startsWith('slide_bg_vid_') && data instanceof Blob) {
+        results.push({ id: k, url: URL.createObjectURL(data), type: 'video' });
+      } else {
+        results.push({ id: k, url: data as string, type: 'image' });
+      }
+    }
+    return results;
+  } catch (e) {
+    console.warn("IndexedDB not available or failed:", e);
+    return [];
+  }
+};
+
+export const getAllLocalMedia = async () => {
+  if (hasElectron) {
+    const res = await callIpc('listMediaFiles', {});
+    if (res && res.success) return res.data;
+    return [];
+  }
+  
+  try {
+    const allKeys = await keys();
+    const bgKeys = allKeys.filter(k => typeof k === 'string' && (k.startsWith('local_img_') || k.startsWith('local_vid_'))) as string[];
+    
+    const results = [];
+    for (const k of bgKeys) {
+      const data = await get(k);
+      if (k.startsWith('local_vid_') && data instanceof Blob) {
         results.push({ id: k, url: URL.createObjectURL(data), type: 'video' });
       } else {
         results.push({ id: k, url: data as string, type: 'image' });
@@ -181,7 +209,7 @@ export const saveLocalVideo = async (id: string, fileBlob: Blob | File) => {
 
 export const getLocalVideo = async (id: string): Promise<Blob | string | undefined> => {
   if (hasElectron) {
-    const list = await getAllSlideBackgrounds();
+    const list = await getAllLocalMedia();
     const item = list.find((i: any) => i.id === id || i.id === `local_vid_${id}`);
     if (item) return item.url;
     return undefined;
@@ -231,7 +259,7 @@ export const saveLocalImage = async (id: string, fileBlob: Blob | File) => {
 
 export const getLocalImage = async (id: string): Promise<Blob | string | undefined> => {
   if (hasElectron) {
-    const list = await getAllSlideBackgrounds();
+    const list = await getAllLocalMedia();
     const item = list.find((i: any) => i.id === id || i.id === `local_img_${id}`);
     if (item) return item.url;
     return undefined;

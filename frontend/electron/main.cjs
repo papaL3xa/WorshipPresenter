@@ -14,9 +14,12 @@ const documentsPath = app.getPath('documents');
 const appDocumentsDir = path.join(documentsPath, appName);
 const mediaImagesDir = path.join(appDocumentsDir, 'Media', 'Images');
 const mediaVideosDir = path.join(appDocumentsDir, 'Media', 'Videos');
+const mediaBackgroundsDir = path.join(appDocumentsDir, 'Media', 'Backgrounds');
+const databasesDir = path.join(appDocumentsDir, 'Databases');
+const playlistsDir = path.join(appDocumentsDir, 'Playlists');
 
 // Pastikan struktur folder ada
-[appDocumentsDir, mediaImagesDir, mediaVideosDir].forEach(dir => {
+[appDocumentsDir, mediaImagesDir, mediaVideosDir, mediaBackgroundsDir, databasesDir, playlistsDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -25,40 +28,6 @@ const mediaVideosDir = path.join(appDocumentsDir, 'Media', 'Videos');
 let dbPath = path.join(appDocumentsDir, 'database.json');
 const oldDbPath = path.join(app.getPath('userData'), 'database.json');
 
-// SQLite Init
-let sqliteDbPath = path.join(appDocumentsDir, 'worship.sqlite');
-let sqliteDb = null;
-try {
-  const Database = require('better-sqlite3');
-  sqliteDb = new Database(sqliteDbPath);
-  sqliteDb.pragma('journal_mode = WAL');
-  sqliteDb.exec(`
-    CREATE TABLE IF NOT EXISTS songs (
-      id TEXT PRIMARY KEY,
-      title TEXT,
-      author TEXT,
-      category TEXT,
-      version_id TEXT,
-      segments_json TEXT,
-      searchable_text TEXT
-    );
-    CREATE TABLE IF NOT EXISTS bibles (
-      id TEXT PRIMARY KEY,
-      version_id TEXT,
-      book TEXT,
-      chapter INTEGER,
-      verse INTEGER,
-      text TEXT
-    );
-    CREATE INDEX IF NOT EXISTS idx_bibles_version ON bibles(version_id);
-    CREATE INDEX IF NOT EXISTS idx_songs_version ON songs(version_id);
-  `);
-} catch (err) {
-  console.error("Failed to initialize SQLite. Ensure better-sqlite3 is compiled.", err);
-  const { dialog } = require('electron');
-  dialog.showErrorBox("Database Error", "Failed to initialize better-sqlite3: " + err.message);
-}
-
 // Migrasi database lama jika ada dan database baru belum ada
 if (!fs.existsSync(dbPath) && fs.existsSync(oldDbPath)) {
   try {
@@ -66,6 +35,30 @@ if (!fs.existsSync(dbPath) && fs.existsSync(oldDbPath)) {
     console.log('Migrasi database lama berhasil');
   } catch (err) {
     console.error('Gagal migrasi database lama:', err);
+  }
+}
+
+// Migrasi Playlists lama dari database.json ke folder fisik Playlists
+if (fs.existsSync(dbPath)) {
+  try {
+    const rawDb = fs.readFileSync(dbPath, 'utf8');
+    const dbObj = JSON.parse(rawDb);
+    if (dbObj.playlists && Array.isArray(dbObj.playlists)) {
+      console.log('Migrating old playlists to physical folder...');
+      dbObj.playlists.forEach(pl => {
+        if (pl.id) {
+          const safeName = (pl.name || 'Untitled').replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '_');
+          const filename = `${safeName}_${pl.id}.json`;
+          fs.writeFileSync(path.join(playlistsDir, filename), JSON.stringify(pl, null, 2), 'utf8');
+        }
+      });
+      // Hapus playlists dari database.json agar tidak dimigrasi ulang
+      delete dbObj.playlists;
+      fs.writeFileSync(dbPath, JSON.stringify(dbObj, null, 2), 'utf8');
+      console.log('Playlist migration complete.');
+    }
+  } catch (err) {
+    console.error('Failed to migrate playlists:', err);
   }
 }
 
@@ -194,7 +187,7 @@ function loadDb() {
     }
   }
   
-  return { customSongs: [], playlists: [] };
+  return { customSongs: [] };
 }
 
 function saveDb(data) {
@@ -225,158 +218,40 @@ function saveDb(data) {
 // In-memory live state (tidak perlu disimpan ke disk, hanya untuk sesi aktif)
 let inMemoryLiveState = { displayMode: 'content', segmentIndex: 0, updatedAt: 0 };
 
-ipcMain.handle('api-call', async (event, { action, params, payload }) => {
+ipcMain.handle('api-call', async (event, args) => {
+  console.log("api-call arguments:", Object.keys(args || {}));
+  const { action, params, payload } = args || {};
+  if (!action) return { success: false, message: 'Action is required' };
   const db = loadDb();
 
   // ----------------------------------------------------
-  // SQLITE HANDLERS
+  // TSV DATABASE HANDLERS
   // ----------------------------------------------------
-  if (action === 'init-sqlite') {
-    if (!sqliteDb) return { success: false, message: 'SQLite not initialized' };
+  if (action === 'read-database-folder') {
     try {
-      const type = payload.type; // 'song' or 'bible'
-      const versionId = payload.versionId;
-      const data = payload.data;
-      
-      if (type === 'song') {
-        const insert = sqliteDb.prepare('INSERT OR REPLACE INTO songs (id, title, author, category, version_id, segments_json, searchable_text) VALUES (?, ?, ?, ?, ?, ?, ?)');
-        const insertMany = sqliteDb.transaction((songs) => {
-          for (const song of songs) {
-            const searchableText = (song.segments ? song.segments.join(' ') : '') + ' ' + song.title;
-            insert.run(song.id, song.title, song.author, song.category, versionId, JSON.stringify(song.segments || []), searchableText);
-          }
-        });
-        insertMany(data);
-      } else if (type === 'bible') {
-        const count = sqliteDb.prepare('SELECT COUNT(*) as c FROM bibles WHERE version_id = ?').get(versionId);
-        if (count.c === 0) {
-          const insert = sqliteDb.prepare('INSERT INTO bibles (id, version_id, book, chapter, verse, text) VALUES (?, ?, ?, ?, ?, ?)');
-          const insertMany = sqliteDb.transaction((verses) => {
-            for (const v of verses) {
-              const vId = `${versionId}_${v.book}_${v.chapter}_${v.verse}`;
-              insert.run(vId, versionId, v.book, v.chapter, v.verse, v.text);
-            }
-          });
-          insertMany(data);
-        }
+      const files = fs.readdirSync(databasesDir);
+      const tsvFiles = files.filter(f => f.toLowerCase().endsWith('.tsv'));
+      return { success: true, files: tsvFiles };
+    } catch (e) {
+      return { success: false, message: e.message };
+    }
+  }
+
+  if (action === 'read-tsv-file') {
+    try {
+      const filePath = path.join(databasesDir, payload.filename);
+      if (!fs.existsSync(filePath)) {
+        return { success: false, message: 'File not found' };
       }
-      return { success: true };
-    } catch (err) {
-      console.error(err);
-      return { success: false, message: err.message };
+      const content = fs.readFileSync(filePath, 'utf8');
+      return { success: true, content };
+    } catch (e) {
+      return { success: false, message: e.message };
     }
   }
 
-  if (action === 'search-sqlite-song') {
-    if (!sqliteDb) return { success: false, data: [] };
-    const { query, versionId, category } = payload;
-    let sql = 'SELECT * FROM songs WHERE version_id = ?';
-    const args = [versionId];
-    if (category && category !== 'Semua') {
-      sql += ' AND category = ?';
-      args.push(category);
-    }
-    if (query) {
-       sql += ' AND (searchable_text LIKE ? COLLATE NOCASE OR id LIKE ? COLLATE NOCASE)';
-       args.push('%' + query + '%', '%' + query + '%');
-    }
-    sql += ' LIMIT 2000';
-    try {
-      const rows = sqliteDb.prepare(sql).all(...args);
-      const formatted = rows.map(r => {
-         const segs = JSON.parse(r.segments_json || '[]');
-         return {
-          id: r.id,
-          title: r.title,
-          author: r.author,
-          category: r.category,
-          segments: segs,
-          segmentOrder: Array.from({length: segs.length}, (_, i) => i)
-         };
-      });
-      return { success: true, data: formatted };
-    } catch(err) { return { success: false, data: [] }; }
-  }
-
-  if (action === 'search-sqlite-bible') {
-    if (!sqliteDb) return { success: false, data: [] };
-    const { structuredQuery, versionId } = payload;
-    let sql = 'SELECT * FROM bibles WHERE version_id = ?';
-    let args = [versionId];
-
-    if (structuredQuery) {
-       if (structuredQuery.type === 'range') {
-          sql += ' AND book LIKE ? COLLATE NOCASE AND chapter = ? AND verse >= ? AND verse <= ?';
-          args.push('%' + structuredQuery.book + '%', structuredQuery.chapter, structuredQuery.startVerse, structuredQuery.endVerse);
-       } else if (structuredQuery.type === 'verse') {
-          sql += ' AND book LIKE ? COLLATE NOCASE AND chapter = ? AND verse = ?';
-          args.push('%' + structuredQuery.book + '%', structuredQuery.chapter, structuredQuery.verse);
-       } else if (structuredQuery.type === 'chapter') {
-          sql += ' AND book LIKE ? COLLATE NOCASE AND chapter = ?';
-          args.push('%' + structuredQuery.book + '%', structuredQuery.chapter);
-       } else if (structuredQuery.type === 'book') {
-          sql += ' AND book LIKE ? COLLATE NOCASE';
-          args.push('%' + structuredQuery.book + '%');
-       } else if (structuredQuery.type === 'free') {
-          sql += ' AND text LIKE ? COLLATE NOCASE';
-          args.push('%' + structuredQuery.query + '%');
-       }
-    }
-    sql += ' LIMIT 100';
-    try {
-      const rows = sqliteDb.prepare(sql).all(...args);
-      const formatted = rows.map(r => ({
-        book: r.book,
-        chapter: r.chapter,
-        verse: r.verse,
-        text: r.text
-      }));
-      return { success: true, data: formatted };
-    } catch(err) { return { success: false, data: [] }; }
-  }
-
-  if (action === 'get-sqlite-song-titles') {
-     if (!sqliteDb) return { success: false, data: [] };
-     try {
-       const rows = sqliteDb.prepare('SELECT id, title, category, author FROM songs WHERE version_id = ?').all(payload.versionId);
-       return { success: true, data: rows };
-     } catch (e) { return { success: false, data: [] }; }
-  }
-  
-  if (action === 'get-sqlite-song-categories') {
-     if (!sqliteDb) return { success: false, data: [] };
-     try {
-       const rows = sqliteDb.prepare('SELECT DISTINCT category FROM songs WHERE version_id = ? AND category IS NOT NULL').all(payload.versionId);
-       return { success: true, data: rows.map(r => r.category) };
-     } catch (e) { return { success: false, data: [] }; }
-  }
-  
-  if (action === 'get-sqlite-bible-books') {
-     if (!sqliteDb) return { success: false, data: [] };
-     try {
-       // get ordered list of books in correct biblical order, but DISTINCT only gives alphabetical if no order by.
-       // actually the best is to group by book and min(id)
-       const rows = sqliteDb.prepare('SELECT book FROM bibles WHERE version_id = ? GROUP BY book ORDER BY MIN(ROWID)').all(payload.versionId);
-       return { success: true, data: rows.map(r => r.book) };
-     } catch (e) { return { success: false, data: [] }; }
-  }
-  
-  if (action === 'get-sqlite-bible-book-meta') {
-     if (!sqliteDb) return { success: false, data: 0 };
-     try {
-       const row = sqliteDb.prepare('SELECT MAX(chapter) as maxC FROM bibles WHERE version_id = ? AND book = ? COLLATE NOCASE').get(payload.versionId, payload.book);
-       return { success: true, data: row ? row.maxC : 0 };
-     } catch (e) { return { success: false, data: 0 }; }
-  }
-  
-  if (action === 'get-sqlite-bible-chapter-meta') {
-     if (!sqliteDb) return { success: false, data: 0 };
-     try {
-       const row = sqliteDb.prepare('SELECT MAX(verse) as maxV FROM bibles WHERE version_id = ? AND book = ? COLLATE NOCASE AND chapter = ?').get(payload.versionId, payload.book, payload.chapter);
-       return { success: true, data: row ? row.maxV : 0 };
-     } catch (e) { return { success: false, data: 0 }; }
-  }
-  
+  // ----------------------------------------------------
+  // JSON DATABASE HANDLERS (Playlists & Custom Songs)
   // ----------------------------------------------------
 
   if (action === 'getLiveState') {
@@ -427,43 +302,90 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
   }
   
   if (action === 'getPlaylists') {
-    return { success: true, data: db.playlists || [] };
+    try {
+      const files = fs.readdirSync(playlistsDir).filter(f => f.endsWith('.json'));
+      const playlists = [];
+      for (const f of files) {
+        try {
+          const content = fs.readFileSync(path.join(playlistsDir, f), 'utf8');
+          const pl = JSON.parse(content);
+          playlists.push({
+            id: pl.id,
+            name: pl.name,
+            date: pl.date || ''
+            // do not send items for list view for performance
+          });
+        } catch (err) {
+          console.error(`Gagal membaca playlist ${f}`, err);
+        }
+      }
+      return { success: true, data: playlists };
+    } catch (e) {
+      return { success: false, message: e.message };
+    }
   }
   
   if (action === 'savePlaylist') {
-    if (!db.playlists) db.playlists = [];
-    const idx = db.playlists.findIndex(p => p.id === payload.id);
-    const newPlaylist = {
-      id: payload.id || `pl_${Date.now()}`,
-      name: payload.name,
-      date: payload.date || '',
-      items: payload.items || []
-    };
-    if (idx >= 0) db.playlists[idx] = newPlaylist;
-    else db.playlists.push(newPlaylist);
-    saveDb(db);
-    return { success: true, playlistId: newPlaylist.id, status: payload.id ? 'updated' : 'saved' };
+    try {
+      const id = payload.id || `pl_${Date.now()}`;
+      const newPlaylist = {
+        id,
+        name: payload.name || 'Untitled Playlist',
+        date: payload.date || '',
+        items: payload.items || []
+      };
+      
+      const safeName = (payload.name || 'Untitled').replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '_');
+      const filename = `${safeName}_${id}.json`;
+      
+      // If updating, delete the old file if the name changed
+      if (payload.id) {
+         const oldFiles = fs.readdirSync(playlistsDir).filter(f => f.endsWith(`_${payload.id}.json`));
+         oldFiles.forEach(f => {
+            if (f !== filename) fs.unlinkSync(path.join(playlistsDir, f));
+         });
+      }
+      
+      fs.writeFileSync(path.join(playlistsDir, filename), JSON.stringify(newPlaylist, null, 2), 'utf8');
+      
+      return { success: true, playlistId: id, status: payload.id ? 'updated' : 'saved' };
+    } catch (e) {
+      return { success: false, message: e.message };
+    }
   }
   
   if (action === 'getPlaylistItems') {
-    const pl = (db.playlists || []).find(p => p.id === params.id);
-    return { 
-      success: true, 
-      data: pl ? {
-        playlistId: pl.id,
-        name: pl.name,
-        date: pl.date || '',
-        items: typeof pl.items === 'string' ? JSON.parse(pl.items) : (pl.items || [])
-      } : { items: [] } 
-    };
+    try {
+      const plId = params.id;
+      const files = fs.readdirSync(playlistsDir).filter(f => f.endsWith(`_${plId}.json`));
+      if (files.length > 0) {
+        const content = fs.readFileSync(path.join(playlistsDir, files[0]), 'utf8');
+        const pl = JSON.parse(content);
+        return { 
+          success: true, 
+          data: {
+            playlistId: pl.id,
+            name: pl.name,
+            date: pl.date || '',
+            items: typeof pl.items === 'string' ? JSON.parse(pl.items) : (pl.items || [])
+          }
+        };
+      }
+      return { success: true, data: { items: [] } };
+    } catch (e) {
+      return { success: false, message: e.message };
+    }
   }
   
   if (action === 'deletePlaylist') {
-    if (db.playlists) {
-      db.playlists = db.playlists.filter(p => p.id !== payload.id);
-      saveDb(db);
+    try {
+      const plId = payload.id;
+      const files = fs.readdirSync(playlistsDir).filter(f => f.endsWith(`_${plId}.json`));
+      files.forEach(f => fs.unlinkSync(path.join(playlistsDir, f)));
+      return { success: true, status: 'deleted' };
+    } catch (e) {
+      return { success: false, message: e.message };
     }
-    return { success: true, status: 'deleted' };
   }
   
   if (action === 'getLibraryStats') {
@@ -490,8 +412,12 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
         return { success: false, message: 'Payload atau ID tidak valid' };
       }
       
-      const isVideo = payload.type === 'video' || payload.id.includes('_vid_');
-      const targetDir = isVideo ? mediaVideosDir : mediaImagesDir;
+      const isVideo = payload.type === 'video' || payload.type === 'background-video' || payload.id.includes('_vid_');
+      const isBackground = payload.type === 'background' || payload.type === 'background-video';
+      
+      let targetDir = mediaImagesDir;
+      if (isVideo) targetDir = mediaVideosDir;
+      if (isBackground) targetDir = mediaBackgroundsDir;
 
       // Helper: detect extension from mime type or dataUrl header
       const getExtFromMime = (mime) => {
@@ -539,9 +465,17 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
   
   if (action === 'deleteMediaFile') {
     try {
-      const isVideo = payload.id.includes('_vid_');
-      const targetDir = isVideo ? mediaVideosDir : mediaImagesDir;
-      // Cari file dengan id tersebut, karena extensinya bisa beda
+      if (!payload || typeof payload.id !== 'string') {
+        return { success: false, message: 'Invalid payload in deleteMediaFile' };
+      }
+      
+      const isVideo = payload.type === 'video' || payload.type === 'background-video' || payload.id.includes('_vid_');
+      const isBackground = payload.type === 'background' || payload.type === 'background-video';
+      
+      let targetDir = mediaImagesDir;
+      if (isVideo) targetDir = mediaVideosDir;
+      if (isBackground) targetDir = mediaBackgroundsDir;
+      
       const files = fs.readdirSync(targetDir);
       const targetFile = files.find(f => f.startsWith(payload.id + '.'));
       if (targetFile) {
@@ -555,37 +489,23 @@ ipcMain.handle('api-call', async (event, { action, params, payload }) => {
   
   if (action === 'listMediaFiles') {
     try {
-      const results = [];
-      const images = fs.existsSync(mediaImagesDir) ? fs.readdirSync(mediaImagesDir) : [];
-      images.forEach(f => {
-        // ID = filename without extension (e.g. "local_img_img-1234567")
-        const ext = path.extname(f);
-        const id = f.slice(0, f.length - ext.length);
-        const formattedPath = path.join(mediaImagesDir, f).replace(/\\/g, '/');
-        const fileUrl = formattedPath.startsWith('/') ? `file://${formattedPath}` : `file:///${formattedPath}`;
-        results.push({
-          id,
-          url: fileUrl,
-          type: 'image'
-        });
-      });
+      let results = [];
+      const isBackground = payload && payload.type === 'background';
+      const dirsToScan = isBackground ? [mediaBackgroundsDir] : [mediaImagesDir, mediaVideosDir];
       
-      const videos = fs.existsSync(mediaVideosDir) ? fs.readdirSync(mediaVideosDir) : [];
-      videos.forEach(f => {
-        const ext = path.extname(f);
-        const id = f.slice(0, f.length - ext.length);
-        const formattedPath = path.join(mediaVideosDir, f).replace(/\\/g, '/');
-        const fileUrl = formattedPath.startsWith('/') ? `file://${formattedPath}` : `file:///${formattedPath}`;
-        results.push({
-          id,
-          url: fileUrl,
-          type: 'video'
-        });
-      });
-      
+      for (const dir of dirsToScan) {
+        if (!fs.existsSync(dir)) continue;
+        const files = fs.readdirSync(dir);
+        for (const file of files) {
+          const id = path.parse(file).name;
+          const formattedPath = path.join(dir, file).replace(/\\/g, '/');
+          const fileUrl = formattedPath.startsWith('/') ? `file://${formattedPath}` : `file:///${formattedPath}`;
+          results.push({ id, url: fileUrl });
+        }
+      }
       return { success: true, data: results };
-    } catch (err) {
-      return { success: false, message: err.message };
+    } catch (e) {
+      return { success: false, message: e.message };
     }
   }
 

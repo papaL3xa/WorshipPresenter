@@ -3,7 +3,7 @@
 
 cd "$(dirname "$0")/frontend"
 
-VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "1.0.0")
+VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "1.0.3")
 TAG="v${VERSION}"
 EXE_FILE=$(ls release/Worship\ Presenter\ Setup\ *.exe 2>/dev/null | head -n 1)
 

@@ -6,7 +6,7 @@ import { callApi } from '../api';
 import { FooterClock } from '../components/FooterClock';
 import { ThemeToggle } from '../components/ThemeToggle';
 
-const CURRENT_VERSION = '1.0.2';
+const CURRENT_VERSION = '1.0.3';
 const GITHUB_RELEASES_API = 'https://api.github.com/repos/pisgahbisdac/pisgahbisdac/releases';
 const GITHUB_RELEASE_URL = 'https://github.com/pisgahbisdac/pisgahbisdac/releases/tag/Stable';
 

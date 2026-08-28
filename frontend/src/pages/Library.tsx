@@ -237,18 +237,36 @@ export default function Library() {
       let resultsData: any[] = [];
       if (type === 'song') {
         const res = await searchLocalSongs(query, selectedSongVersion, selectedSongCategory);
-        resultsData = res.slice(0, 2000).map((item: any) => ({ ...item, type: 'song' }));
+        resultsData = res.slice(0, 2000).map((item: any) => {
+           let segs = item.segments || [];
+           let labs = item.segmentLabels || segs.map((_:any, i:number) => `Slide ${i+1}`);
+           if (segs.length > 0 && segs[0] !== item.title) {
+               segs = [item.title, ...segs];
+               labs = ['Judul', ...labs];
+           }
+           return { ...item, type: 'song', segments: segs, segmentLabels: labs, segmentOrder: segs.map((_:any, i:number) => i) };
+        });
       } else {
         const res = await searchLocalBible(query, selectedBibleVersion);
-        resultsData = res.map((item: any, idx: number) => ({
-          id: item.isRange ? item.id : `b_${idx}`,
-          type: 'bible',
-          title: item.isRange ? item.title : `${item.book} ${item.chapter}:${item.verse}`,
-          author: 'Alkitab',
-          category: 'Alkitab',
-          segments: item.isRange ? item.segments : [item.text],
-          segmentOrder: item.isRange ? item.segments.map((_:any, i:number) => i) : [0]
-        }));
+        resultsData = res.map((item: any, idx: number) => {
+          const bTitle = item.isRange ? item.title : `${item.book} ${item.chapter}:${item.verse}`;
+          let segs = item.isRange ? item.segments : [item.text];
+          let labs = item.isRange ? item.segmentLabels : [`Ayat ${item.verse}`];
+          if (segs.length > 0 && segs[0] !== bTitle) {
+              segs = [bTitle, ...segs];
+              labs = ['Judul', ...labs];
+          }
+          return {
+            id: item.isRange ? item.id : `b_${idx}`,
+            type: 'bible',
+            title: bTitle,
+            author: 'Alkitab',
+            category: 'Alkitab',
+            segments: segs,
+            segmentLabels: labs,
+            segmentOrder: segs.map((_:any, i:number) => i)
+          };
+        });
       }
       
       let processedData = resultsData;
@@ -634,7 +652,7 @@ export default function Library() {
                   className="flex-1 text-left p-3"
                 >
                   <div className="font-semibold text-indigo-900 dark:text-[#D4B872]">{res.title}</div>
-                  <div className="text-xs text-indigo-800/60 dark:text-slate-400 line-clamp-1">{res.segments[0]}</div>
+                  <div className="text-xs text-indigo-800/60 dark:text-slate-400 line-clamp-1">{res.segments && res.segments.length > 1 ? res.segments[1] : res.segments?.[0]}</div>
                 </button>
                 <button
                   onClick={(e) => {

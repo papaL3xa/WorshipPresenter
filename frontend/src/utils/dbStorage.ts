@@ -1,6 +1,6 @@
 import { get, set, keys, del } from 'idb-keyval';
 import { callApi } from '../api';
-
+import Papa from 'papaparse';
 export interface DatabaseVersion {
   id: string; // e.g. "song_LSEB", "bible_TB"
   name: string; // e.g. "Lagu Sion / Buku Ende", "Terjemahan Baru (TB)"
@@ -29,31 +29,56 @@ export interface BibleVerse {
 }
 
 // ------------------------------------------------------------------
-// INIT DEFAULT DATABASES
+// INIT DATABASES FROM FOLDER
 // ------------------------------------------------------------------
 export const initDefaultDatabases = async () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any;
+
+  if (w.electronAPI) {
+    console.log("Memindai folder Databases untuk file TSV...");
+    try {
+      const res = await w.electronAPI.callApi('read-database-folder');
+      if (res.success && res.files && res.files.length > 0) {
+        for (const file of res.files) {
+          const contentRes = await w.electronAPI.callApi('read-tsv-file', {}, { filename: file });
+          if (contentRes.success) {
+            const isBible = file.toLowerCase().includes('bible') || file.toLowerCase().includes('alkitab');
+            const idSuffix = file.replace(/\.tsv$/i, '').replace(/[^a-zA-Z0-9]/g, '_');
+            const type = isBible ? 'bible' : 'song';
+            const info: DatabaseVersion = {
+              id: `${type}_${idSuffix}`,
+              name: file.replace(/\.tsv$/i, ''),
+              type,
+              isDefault: false
+            };
+            try {
+              await addCustomDatabase(info, contentRes.content);
+              console.log(`Berhasil memuat TSV: ${file}`);
+            } catch (e) {
+              console.error(`Gagal memparsing file TSV: ${file}`, e);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Gagal membaca folder Databases", e);
+    }
+  }
+
+  // Always load default DBs if they don't exist in IndexedDB yet
   const existingKeys = await keys();
   const dbKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbinfo_')) as string[];
   const dataKeys = existingKeys.filter(k => typeof k === 'string' && k.startsWith('dbdata_')) as string[];
 
-  const currentDbVersion = '1.0.8'; // Update this when default files change
+  const currentDbVersion = '1.0.9'; // Increment version
   const savedDbVersion = localStorage.getItem('worship_db_version');
 
   const isOutdated = savedDbVersion !== currentDbVersion;
 
-  // Cek info DAN data, jika salah satu hilang atau versi usang → re-init
   if (isOutdated || !dbKeys.includes('dbinfo_song_LSEB') || !dataKeys.includes('dbdata_song_LSEB')) {
-    console.log("Initializing LSEB song database...");
+    console.log("Initializing LSEB song database dari data internal...");
     await loadDefaultSongDatabase();
-  } else {
-    // Auto-repair if segmentLabels are missing
-    const songData = await get('dbdata_song_LSEB');
-    if (songData && Array.isArray(songData) && songData.length > 0) {
-      if (!songData[0].segmentLabels) {
-        console.log("Song database missing labels, auto-repairing...");
-        await loadDefaultSongDatabase();
-      }
-    }
   }
   
   if (isOutdated || !dbKeys.includes('dbinfo_bible_TB') || !dataKeys.includes('dbdata_bible_TB')) {
@@ -61,41 +86,10 @@ export const initDefaultDatabases = async () => {
     await loadDefaultBibleDatabase('TB', 'Terjemahan Baru (TB)', 'data/BibleVerses_TB.tsv');
   }
 
-  // Init Kidung Jemaat
-  if (isOutdated || !dbKeys.includes('dbinfo_song_KJ') || !dataKeys.includes('dbdata_song_KJ')) {
-    console.log("Initializing Kidung Jemaat song database...");
-    await loadDefaultFlatSongDatabase('song_KJ', 'Kidung Jemaat', 'data/Kidung_Jemaat.tsv');
-  }
-
-  // Init SDA Hymnal (SDAH)
-  if (isOutdated || !dbKeys.includes('dbinfo_song_SDAH') || !dataKeys.includes('dbdata_song_SDAH')) {
-    console.log("Initializing SDA Hymnal (SDAH) song database...");
-    await loadDefaultFlatSongDatabase('song_SDAH', 'SDA Hymnal (SDAH)', 'data/SDAH_Hymnal.tsv');
-  }
-
-  if (isOutdated || !dbKeys.includes('dbinfo_bible_AYT') || !dataKeys.includes('dbdata_bible_AYT')) {
-    console.log("Initializing AYT bible database...");
-    await loadDefaultBibleDatabase('AYT', 'Alkitab Yang Terbuka (AYT)', 'data/BibleVerses_AYT.tsv');
-  }
-
-  // Init KJV
-  if (isOutdated || !dbKeys.includes('dbinfo_bible_KJV') || !dataKeys.includes('dbdata_bible_KJV')) {
-    console.log("Initializing KJV bible database...");
-    await loadDefaultBibleDatabase('KJV', 'King James Version (KJV)', 'data/BibleVerses_KJV.tsv');
-  }
-
-  // Init NET
-  if (isOutdated || !dbKeys.includes('dbinfo_bible_NET') || !dataKeys.includes('dbdata_bible_NET')) {
-    console.log("Initializing NET bible database...");
-    await loadDefaultBibleDatabase('NET', 'New English Translation (NET)', 'data/BibleVerses_NET.tsv');
-  }
-
   if (isOutdated) {
     localStorage.setItem('worship_db_version', currentDbVersion);
   }
 };
-
-import Papa from 'papaparse';
 
 const parseTsv = (tsvContent: string, isBible: boolean = false) => {
   // Pre-process: if user had \n literally typed as strings in TSV, we replace them with actual newlines temporarily
@@ -195,9 +189,6 @@ const loadDefaultSongDatabase = async () => {
     
     await set('dbinfo_song_LSEB', { id: 'song_LSEB', name: 'Lagu Sion / Buku Ende', type: 'song', isDefault: true } as DatabaseVersion);
     await set('dbdata_song_LSEB', finalSongs);
-    if ((window as any).electronAPI) {
-      (window as any).electronAPI.callApi('init-sqlite', {}, { type: 'song', versionId: 'song_LSEB', data: finalSongs }).catch(console.error);
-    }
   } catch (error) {
     console.error("Failed to load default song db", error);
   }
@@ -227,9 +218,6 @@ const loadDefaultBibleDatabase = async (idSuffix: string, name: string, fileRela
     
     await set(`dbinfo_bible_${idSuffix}`, { id: `bible_${idSuffix}`, name: name, type: 'bible', isDefault: true } as DatabaseVersion);
     await set(`dbdata_bible_${idSuffix}`, finalVerses);
-    if ((window as any).electronAPI) {
-      (window as any).electronAPI.callApi('init-sqlite', {}, { type: 'bible', versionId: `bible_${idSuffix}`, data: finalVerses }).catch(console.error);
-    }
   } catch (error) {
     console.error(`Failed to load default bible db ${idSuffix}`, error);
   }
@@ -255,9 +243,6 @@ export const addCustomDatabase = async (info: DatabaseVersion, tsvContent: strin
       text: v.text
     }));
     await set(`dbdata_${info.id}`, finalVerses);
-    if ((window as any).electronAPI) {
-      (window as any).electronAPI.callApi('init-sqlite', {}, { type: 'bible', versionId: info.id, data: finalVerses }).catch(console.error);
-    }
   } else {
     // For custom songs, we assume a simple flat TSV structure for user upload: 
     // songId, title, author, segment1, segment2, segment3...
@@ -299,9 +284,6 @@ export const addCustomDatabase = async (info: DatabaseVersion, tsvContent: strin
       };
     });
     await set(`dbdata_${info.id}`, finalSongs);
-    if ((window as any).electronAPI) {
-      (window as any).electronAPI.callApi('init-sqlite', {}, { type: 'song', versionId: info.id, data: finalSongs }).catch(console.error);
-    }
   }
 };
 
@@ -346,27 +328,20 @@ export const syncCustomSongs = async () => {
 export const searchLocalSongs = async (query: string, versionId: string, category: string = 'Semua'): Promise<any[]> => {
   let baseSongs: SongData[] = [];
   
-  if ((window as any).electronAPI) {
-    const res = await (window as any).electronAPI.callApi('search-sqlite-song', {}, { query, versionId, category });
-    if (res && res.success) {
-       baseSongs = res.data;
-    }
-  } else {
-    baseSongs = (await get(`dbdata_${versionId}`)) || [];
-    let allBase = baseSongs.filter((s:any) => !s.deleted);
-    if (category && category !== 'Semua') {
-      allBase = allBase.filter(s => s.category === category);
-    }
-    if (query) {
-      const q = query.toLowerCase();
-      allBase = allBase.filter(s => 
-         s.id.toLowerCase().includes(q) || 
-         s.title.toLowerCase().includes(q) ||
-         s.segments.some((seg:string) => seg.toLowerCase().includes(q))
-      );
-    }
-    baseSongs = allBase;
+  baseSongs = (await get(`dbdata_${versionId}`)) || [];
+  let allBase = baseSongs.filter((s:any) => !s.deleted);
+  if (category && category !== 'Semua') {
+    allBase = allBase.filter(s => s.category === category);
   }
+  if (query) {
+    const q = query.toLowerCase();
+    allBase = allBase.filter(s => 
+       s.id.toLowerCase().includes(q) || 
+       s.title.toLowerCase().includes(q) ||
+       s.segments.some((seg:string) => seg.toLowerCase().includes(q))
+    );
+  }
+  baseSongs = allBase;
   
   const rawGas = await get('dbdata_song_GAS_SYNC');
   const gasSongs: SongData[] = Array.isArray(rawGas) ? rawGas : [];
@@ -410,22 +385,6 @@ export const searchLocalBible = async (query: string, versionId: string): Promis
   else if (chapMatch) structuredQuery = { type: 'chapter', book: chapMatch[1].trim(), chapter: parseInt(chapMatch[2], 10) };
   else structuredQuery = { type: 'free', query: q };
 
-  if ((window as any).electronAPI) {
-     const res = await (window as any).electronAPI.callApi('search-sqlite-bible', {}, { structuredQuery, versionId });
-     if (res && res.success) {
-        if (structuredQuery.type === 'range' && res.data.length > 0) {
-           return [{
-              isRange: true,
-              id: `r_${Date.now()}`,
-              title: `${res.data[0].book} ${structuredQuery.chapter}:${structuredQuery.startVerse}-${structuredQuery.endVerse}`,
-              segments: res.data.map((v:any) => v.text),
-              segmentLabels: res.data.map((v:any) => `Ayat ${v.verse}`)
-           }];
-        }
-        return res.data;
-     }
-  }
-
   const verses: BibleVerse[] = (await get(`dbdata_${versionId}`)) || [];
   
   if (structuredQuery.type === 'range') {
@@ -436,7 +395,11 @@ export const searchLocalBible = async (query: string, versionId: string): Promis
         id: `r_${Date.now()}`,
         title: `${foundVerses[0].book} ${structuredQuery.chapter}:${structuredQuery.startVerse}-${structuredQuery.endVerse}`,
         segments: foundVerses.map(v => v.text),
-        segmentLabels: foundVerses.map(v => `Ayat ${v.verse}`)
+        segmentLabels: foundVerses.map(v => `Ayat ${v.verse}`),
+        book: foundVerses[0].book,
+        chapter: structuredQuery.chapter,
+        startVerse: structuredQuery.startVerse,
+        endVerse: structuredQuery.endVerse
       }];
     }
     return [];
@@ -454,19 +417,11 @@ export const searchLocalBible = async (query: string, versionId: string): Promis
 };
 
 export const getAllLocalSongTitles = async (versionId: string) => {
-  if ((window as any).electronAPI) {
-    const res = await (window as any).electronAPI.callApi('get-sqlite-song-titles', {}, { versionId });
-    if (res && res.success) return res.data;
-  }
   const songs = await searchLocalSongs('', versionId);
   return songs.map((s:any) => ({ id: s.id, title: s.title, category: s.category, author: s.author, key: s.key, beat: s.beat }));
 };
 
 export const getLocalSongCategories = async (versionId: string): Promise<string[]> => {
-  if ((window as any).electronAPI) {
-    const res = await (window as any).electronAPI.callApi('get-sqlite-song-categories', {}, { versionId });
-    if (res && res.success) return res.data;
-  }
   const baseSongs: SongData[] = (await get(`dbdata_${versionId}`)) || [];
   const rawGas = await get('dbdata_song_GAS_SYNC');
   const gasSongs: SongData[] = Array.isArray(rawGas) ? rawGas : [];
@@ -482,14 +437,38 @@ export const getLocalSongCategories = async (versionId: string): Promise<string[
   });
   return Array.from(categories).sort();
 };
+
+export const getCrossLanguageVerses = async (
+  results: any[], 
+  versionId1: string, 
+  versionId2: string
+): Promise<any[]> => {
+  const verses1: BibleVerse[] = (await get(`dbdata_${versionId1}`)) || [];
+  const verses2: BibleVerse[] = (await get(`dbdata_${versionId2}`)) || [];
+  
+  const books1 = Array.from(new Set(verses1.map(v => v.book)));
+  const books2 = Array.from(new Set(verses2.map(v => v.book)));
+
+  return results.map(item => {
+    if (item.isRange) {
+      const bookIdx = books1.indexOf(item.book);
+      const book2Name = books2[bookIdx];
+      if (!book2Name) return null;
+      const rangeVerses = verses2.filter(v => v.book === book2Name && v.chapter === item.chapter && v.verse >= item.startVerse && v.verse <= item.endVerse);
+      return { isRange: true, segments: rangeVerses.map(v => v.text) };
+    } else {
+      const bookIdx = books1.indexOf(item.book);
+      const book2Name = books2[bookIdx];
+      if (!book2Name) return null;
+      const verse = verses2.find(v => v.book === book2Name && v.chapter === item.chapter && v.verse === item.verse);
+      return verse ? { text: verse.text } : null;
+    }
+  });
+};
 // ------------------------------------------------------------------
 // BIBLE METADATA HELPERS
 // ------------------------------------------------------------------
 export const getBibleBooksList = async (versionId: string): Promise<string[]> => {
-  if ((window as any).electronAPI) {
-    const res = await (window as any).electronAPI.callApi('get-sqlite-bible-books', {}, { versionId });
-    if (res && res.success) return res.data;
-  }
   const verses: BibleVerse[] = (await get(`dbdata_${versionId}`)) || [];
   const booksMap = new Set<string>();
   for (const v of verses) {
@@ -499,10 +478,6 @@ export const getBibleBooksList = async (versionId: string): Promise<string[]> =>
 };
 
 export const getBibleBookMetadata = async (versionId: string, bookName: string): Promise<number> => {
-  if ((window as any).electronAPI) {
-    const res = await (window as any).electronAPI.callApi('get-sqlite-bible-book-meta', {}, { versionId, book: bookName });
-    if (res && res.success) return res.data;
-  }
   const verses: BibleVerse[] = (await get(`dbdata_${versionId}`)) || [];
   let maxChapter = 0;
   const b = bookName.toLowerCase();
@@ -515,10 +490,6 @@ export const getBibleBookMetadata = async (versionId: string, bookName: string):
 };
 
 export const getBibleChapterMetadata = async (versionId: string, bookName: string, chapter: number): Promise<number> => {
-  if ((window as any).electronAPI) {
-    const res = await (window as any).electronAPI.callApi('get-sqlite-bible-chapter-meta', {}, { versionId, book: bookName, chapter });
-    if (res && res.success) return res.data;
-  }
   const verses: BibleVerse[] = (await get(`dbdata_${versionId}`)) || [];
   let maxVerse = 0;
   const b = bookName.toLowerCase();

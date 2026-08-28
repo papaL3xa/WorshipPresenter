@@ -6,6 +6,54 @@ import { LocalVideoPlayer } from '../components/LocalVideoPlayer';
 import { LocalImageLoader } from '../components/LocalImageLoader';
 import YouTube from 'react-youtube';
 
+const CrossfadeText = ({ text, processText, displayTheme, calculatedFontSize }: any) => {
+  const [renderList, setRenderList] = useState([{ id: Date.now(), text, fontSize: calculatedFontSize, theme: displayTheme }]);
+
+  useEffect(() => {
+    setRenderList(prev => {
+      if (prev.length > 0 && prev[prev.length - 1].text === text) {
+        const newPrev = [...prev];
+        newPrev[newPrev.length - 1] = { ...newPrev[newPrev.length - 1], fontSize: calculatedFontSize, theme: displayTheme };
+        return newPrev;
+      }
+      return [...prev.slice(-1), { id: Date.now(), text, fontSize: calculatedFontSize, theme: displayTheme }];
+    });
+  }, [text, calculatedFontSize, displayTheme]);
+
+  return (
+    <div className="grid w-full place-items-center">
+      {renderList.map((item, index) => {
+        const isLatest = index === renderList.length - 1;
+        const theme = item.theme || displayTheme;
+        return (
+          <div
+            key={item.id}
+            className={`text-center whitespace-pre-wrap drop-shadow-xl w-full ${theme.bold !== false ? 'font-bold' : 'font-medium'}`}
+            style={{
+              gridArea: '1 / 1',
+              lineHeight: theme.lineHeight ?? 1.15,
+              color: theme.color || 'white',
+              textShadow: (theme.shadow || 'dark') === 'dark' 
+                ? '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)'
+                : (theme.shadow === 'light') 
+                ? '1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff, 0 4px 10px rgba(255,255,255,0.8)'
+                : 'none', 
+              fontSize: item.fontSize || calculatedFontSize,
+              animation: isLatest ? (renderList.length > 1 ? 'fadeIn 0.5s ease-out forwards' : 'none') : 'fadeOut 0.5s ease-out forwards',
+            }}
+            onAnimationEnd={() => {
+              if (!isLatest) {
+                setRenderList(prev => prev.filter(p => p.id !== item.id));
+              }
+            }}
+            dangerouslySetInnerHTML={{ __html: processText(item.text) }}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
 export default function DisplayWindow() {
   
 
@@ -83,6 +131,7 @@ export default function DisplayWindow() {
   useEffect(() => {
     // 1. Terima update cepat via BroadcastChannel lokal
     const channel = new BroadcastChannel('worship_live_sync');
+    channel.postMessage({ type: 'REQUEST_PLAYLIST' });
     channel.onmessage = (msg) => {
       if (msg.data.type === 'STATE_UPDATE') {
         const newState = msg.data.state;
@@ -132,6 +181,12 @@ export default function DisplayWindow() {
         if (ytPlayerRef.current) ytPlayerRef.current.pauseVideo();
       } else if (msg.data.type === 'THEME_UPDATE') {
         setDisplayTheme(msg.data.payload);
+      } else if (msg.data.type === 'PLAYLIST_UPDATE') {
+        const newMap: Record<string, any> = {};
+        msg.data.payload.forEach((item: any) => {
+          newMap[item.id] = item;
+        });
+        setPlaylistMap(newMap);
       }
     };
 
@@ -366,7 +421,30 @@ export default function DisplayWindow() {
 
   const processText = (raw: string) => {
     if (!raw) return '';
-    let t = raw.replace(/\n/g, '<br/>');
+    let t = raw;
+    t = t.replace(/\[([A-G][#b]?[a-zA-Z0-9/]{0,6})\]([^\[\n]*)/g, ''); // ControlPanel strips chords
+    
+    // Bilingual side-by-side layout
+    if (t.includes('\n[kuning]')) {
+       const parts = t.split('\n[kuning]');
+       if (parts.length === 2 && parts[1].endsWith('[/kuning]')) {
+           const left = parts[0].replace(/\n/g, '<br/>');
+           const right = parts[1].replace('[/kuning]', '').replace(/\n/g, '<br/>');
+           return `<div class="grid grid-cols-2 gap-12 w-full relative"><div class="min-w-0 break-words text-left self-center">${left}</div><div class="absolute left-1/2 top-0 bottom-0 w-[2px] -translate-x-1/2 bg-white/30 rounded-full my-2 pointer-events-none"></div><div class="min-w-0 break-words text-right text-yellow-300 self-center">${right}</div></div>`;
+        }
+    }
+    
+    // 2-Kolom Bebas (Pengumuman)
+    if (t.includes('\n[kolom2]')) {
+       const parts = t.split('\n[kolom2]');
+       if (parts.length === 2 && parts[1].endsWith('[/kolom2]')) {
+           const left = parts[0].replace(/\n/g, '<br/>');
+           const right = parts[1].replace('[/kolom2]', '').replace(/\n/g, '<br/>');
+           return `<div class="grid grid-cols-2 gap-12 w-full relative"><div class="min-w-0 break-words text-left self-center">${left}</div><div class="absolute left-1/2 top-0 bottom-0 w-[2px] -translate-x-1/2 bg-white/30 rounded-full my-2 pointer-events-none"></div><div class="min-w-0 break-words text-left self-center">${right}</div></div>`;
+       }
+    }
+
+    t = t.replace(/\n/g, '<br/>');
     t = t.replace(/\[merah\](.*?)\[\/merah\]/gi, '<span class="text-red-500 font-bold">$1</span>');
     t = t.replace(/\[kuning\](.*?)\[\/kuning\]/gi, '<span class="text-yellow-400 font-bold">$1</span>');
     t = t.replace(/\[hijau\](.*?)\[\/hijau\]/gi, '<span class="text-green-400 font-bold">$1</span>');
@@ -472,7 +550,8 @@ export default function DisplayWindow() {
       {/* Background that fills the entire viewport */}
       {actualBgUrl !== '#00FF00' && (
         <div 
-          className="absolute inset-0 z-0 bg-gray-900"
+          key={actualBgUrl || 'none'}
+          className="absolute inset-0 z-0 bg-gray-900 animate-fade-slow"
           style={bgType === 'image' ? {
             backgroundImage: actualBgUrl ? `url(${actualBgUrl})` : 'none',
             backgroundSize: 'cover',
@@ -524,9 +603,9 @@ export default function DisplayWindow() {
       )}
 
       {/* Judul (Header) */}
-      {liveState.displayMode === 'content' && (
-        <>
-          {itemType !== 'video' && title && (itemType === 'song' || itemType === 'bible' || itemType === 'announcement') && (
+      <div className={`transition-opacity duration-700 absolute inset-0 w-full h-full flex flex-col items-center justify-center ${liveState.displayMode === 'content' ? 'opacity-100 pointer-events-auto z-[60]' : 'opacity-0 pointer-events-none -z-10'}`}>
+
+          {itemType !== 'video' && title && (itemType === 'song' || itemType === 'bible' || itemType === 'announcement') && displayLabel.toLowerCase() !== 'judul' && (
             <h2 
               key={`title-${title}-${liveState.segmentIndex}`}
               className="absolute left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-20 transition-all duration-500"
@@ -702,7 +781,7 @@ export default function DisplayWindow() {
           })()}
         </div>
       ) : (
-        <div className={`absolute left-0 right-0 z-[70] flex flex-col items-center w-full transition-all duration-700 ${
+        <div className={`absolute left-0 right-0 z-[70] flex flex-col items-center w-full min-h-0 transition-all duration-700 ${
           (displayTheme.position || 'center') === 'top' ? 'top-[8%] bottom-[12%] justify-start' :
           (displayTheme.position || 'center') === 'bottom' ? 'top-[18%] bottom-[8%] justify-end' :
           'top-[18%] bottom-[12%] justify-center'
@@ -715,48 +794,54 @@ export default function DisplayWindow() {
             </div>
           ) : text ? (
             <>
-              <div 
-                key={`text-${text}`}
-                className={`text-center whitespace-pre-wrap drop-shadow-xl w-full animate-fade-in ${
-                  displayTheme.bold !== false ? 'font-bold' : 'font-medium'
-                }`} 
-                style={{ 
-                  lineHeight: displayTheme.lineHeight ?? 1.15,
-                  color: displayTheme.color || 'white',
-                  textShadow: (displayTheme.shadow || 'dark') === 'dark' 
-                    ? '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)'
-                    : (displayTheme.shadow === 'light') 
-                    ? '1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff, 0 4px 10px rgba(255,255,255,0.8)'
-                    : 'none', 
-                  fontSize: (() => {
-                    const t = text || '';
-                    const charCount = t.length;
-                    const visualLines = t.split('\n').reduce((acc: number, line: string) => acc + Math.ceil((line.length || 1) / 32), 0);
-                    
-                    let baseSize = 9;
-                    if (visualLines >= 8 || charCount > 350) baseSize = 4.5;
-                    else if (visualLines >= 6 || charCount > 250) baseSize = 5;
-                    else if (visualLines >= 5 || charCount > 180) baseSize = 5.5;
-                    else if (visualLines >= 4 || charCount > 120) baseSize = 6;
-                    else if (visualLines >= 3 || charCount > 70) baseSize = 7;
-                    else if (charCount > 40) baseSize = 8;
-                    
-                    return `${baseSize + (displayTheme.fontSizeOffset || 0)}cqw`;
-                  })()
-                }}
-                dangerouslySetInnerHTML={{ __html: processText(text) }}
+              <CrossfadeText 
+                text={text} 
+                processText={processText} 
+                displayTheme={displayTheme} 
+                calculatedFontSize={(() => {
+                  const t = text || '';
+                  const is2Column = t.includes('\n[kuning]') || t.includes('\n[kolom2]');
+                  const charCount = is2Column ? t.length * 1.5 : t.length;
+                  const charsPerLine = is2Column ? 14 : 28;
+                  
+                  const strippedT = t.replace(/\[\/?(merah|kuning|hijau|biru|ungu|oranye|kolom2)\]/gi, '');
+                  const lines = strippedT.split('\n');
+                  const visualLines = lines.reduce((acc: number, line: string) => acc + Math.ceil((line.length || 1) / charsPerLine), 0);
+                  
+                  let baseSize = 8.5;
+                  if (visualLines >= 12 || charCount > 400) baseSize = 3;
+                  else if (visualLines >= 9 || charCount > 300) baseSize = 3.5;
+                  else if (visualLines >= 7 || charCount > 200) baseSize = 4;
+                  else if (visualLines >= 5 || charCount > 150) baseSize = 4.75;
+                  else if (visualLines >= 4 || charCount > 100) baseSize = 5.5;
+                  else if (visualLines >= 3 || charCount > 60) baseSize = 6.5;
+                  else if (charCount > 35) baseSize = 7.5;
+                  
+                  // Prevent wrapping if user didn't press enter (shrink-to-fit line)
+                  const maxLineLength = Math.max(...lines.map(line => line.length), 1);
+                  const availableWidth = is2Column ? 42 : 84; 
+                  let requiredSize = availableWidth / (maxLineLength * 0.55);
+                  
+                  if (requiredSize < baseSize) {
+                      baseSize = Math.max(requiredSize, 2); // don't go below 2cqw to stay readable
+                  }
+                  
+                  return `${baseSize + (displayTheme.fontSizeOffset || 0)}cqw`;
+                })()} 
               />
               {/* Bait Label di bawah isi */}
-              <div 
-                className="text-yellow-300 font-bold mt-[1.5cqw] tracking-widest uppercase animate-fade-in opacity-80"
-                style={{
-                  fontSize: '1.5cqw',
-                  textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)',
-                  minHeight: '2cqw'
-                }}
-              >
-                {displayLabel || (itemType === 'song' ? '•' : '')}
-              </div>
+              {displayLabel.toLowerCase() !== 'judul' && (
+                <div 
+                  className="text-yellow-300 font-bold mt-[1.5cqw] tracking-widest uppercase animate-fade-in opacity-80"
+                  style={{
+                    fontSize: '1.5cqw',
+                    textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)',
+                    minHeight: '2cqw'
+                  }}
+                >
+                  {displayLabel || (itemType === 'song' ? '•' : '')}
+                </div>
+              )}
             </>
           ) : enabledLogos.length > 0 ? (
             <img 
@@ -769,8 +854,7 @@ export default function DisplayWindow() {
         </div>
       )}
 
-        </>
-      )}
+      </div>
 
       </div>
 
