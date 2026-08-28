@@ -40,6 +40,7 @@ npx electron-builder --win --x64
 if [ $? -eq 0 ]; then
     echo "Membersihkan file-file sementara..."
     mkdir -p release
+    rm -f release/*.exe
     mv release-installer/*.exe release/ 2>/dev/null
     rm -rf release-installer
 
@@ -61,7 +62,7 @@ if [ $? -eq 0 ]; then
 
     VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "1.0.3")
     TAG="v${VERSION}"
-    EXE_FILE=$(ls release/Worship\ Presenter\ Setup\ *.exe 2>/dev/null | head -n 1)
+    EXE_FILE=$(ls release/Worship\ Presenter\ Setup\ ${VERSION}.exe 2>/dev/null || ls release/Worship\ Presenter\ Setup\ *.exe 2>/dev/null | head -n 1)
 
     # Ambil token dari git remote URL
     REPO_URL=$(git -C .. remote get-url origin)
