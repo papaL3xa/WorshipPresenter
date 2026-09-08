@@ -269,6 +269,8 @@ export default function ControlPanel() {
     lineHeight?: number;
     titleOffsetY?: number;
     contentOffsetY?: number;
+    headerTitleFontSizeOffset?: number;
+    transitionStyle?: 'crossfade' | 'slideUp' | 'slideDown' | 'zoom';
   }>(loadTheme);
 
   const broadcastTheme = (newTheme: typeof displayTheme) => {

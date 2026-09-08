@@ -132,6 +132,8 @@ export default function DisplayWindow() {
     contentOffsetY?: number;
     paddingHorizontal?: number;
     lineHeight?: number | string;
+    headerTitleFontSizeOffset?: number;
+    transitionStyle?: 'crossfade' | 'slideUp' | 'slideDown' | 'zoom';
   }>(loadTheme);
 
   const [playlistMap, setPlaylistMap] = useState<Record<string, any>>({});
