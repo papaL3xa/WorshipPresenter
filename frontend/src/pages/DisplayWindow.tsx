@@ -109,6 +109,7 @@ export default function DisplayWindow() {
   const [isCursorVisible, setIsCursorVisible] = useState(false);
   const cursorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [scale, setScale] = useState(1);
+  const [windowSize, setWindowSize] = useState({ w: 1920, h: 1080 });
 
   const [rtState, setRtState] = useState({
     text: localStorage.getItem('worship_rt_text') || '',
@@ -134,6 +135,7 @@ export default function DisplayWindow() {
     lineHeight?: number | string;
     headerTitleFontSizeOffset?: number;
     transitionStyle?: 'crossfade' | 'slideUp' | 'slideDown' | 'zoom';
+    aspectRatio?: 'full' | '16:9' | '16:10' | '4:3';
   }>(loadTheme);
 
   const [playlistMap, setPlaylistMap] = useState<Record<string, any>>({});
@@ -552,6 +554,7 @@ export default function DisplayWindow() {
       } else {
         setScale(windowWidth / 1920);
       }
+      setWindowSize({ w: windowWidth, h: windowHeight });
     };
 
     window.addEventListener('resize', handleResize);
@@ -560,44 +563,73 @@ export default function DisplayWindow() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const getAspectRatioStyle = () => {
+    const ratio = displayTheme.aspectRatio;
+    if (!ratio || ratio === 'full') return { width: '100%', height: '100%' };
+    const rNum = ratio === '16:9' ? 16/9 : ratio === '16:10' ? 16/10 : 4/3;
+    return {
+      aspectRatio: `${rNum}`,
+      maxWidth: `calc(100vh * ${rNum})`,
+      maxHeight: `calc(100vw / ${rNum})`,
+      width: '100%',
+      height: '100%',
+      margin: 'auto'
+    };
+  };
+
+  const getAspectPct = () => {
+    const ratio = displayTheme.aspectRatio;
+    if (ratio === '16:9') return 56.25;
+    if (ratio === '16:10') return 62.5;
+    if (ratio === '4:3') return 75;
+    return windowSize.w > 0 ? (windowSize.h / windowSize.w) * 100 : 56.25;
+  };
+  const aspectPct = getAspectPct();
+
   return (
     <div className={`fixed inset-0 flex items-center justify-center ${actualBgUrl === '#00FF00' ? 'bg-[#00FF00]' : 'bg-black'} overflow-hidden ${isCursorVisible ? 'cursor-default' : 'cursor-none'}`}>
       
-      {/* Background that fills the entire viewport */}
-      {actualBgUrl !== '#00FF00' && (
-        <div 
-          key={actualBgUrl || 'none'}
-          className="absolute inset-0 z-0 bg-gray-900 animate-fade-slow"
-          style={bgType === 'image' ? {
-            backgroundImage: actualBgUrl ? `url(${actualBgUrl})` : 'none',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat'
-          } : undefined}
-        >
-          {bgType === 'video' && actualBgUrl && (
-            <video 
-              src={actualBgUrl} 
-              autoPlay 
-              loop 
-              muted 
-              playsInline 
-              className="absolute inset-0 w-full h-full object-cover z-0"
-            />
-          )}
-          <div className="absolute inset-0 bg-black/40 z-0"></div>
-        </div>
-      )}
-
-      {/* Container utama yang mengisi seluruh area aman (di luar running text) */}
+      {/* Wrapper untuk Aspect Ratio Letterboxing */}
       <div 
-        className="absolute left-0 right-0 z-10 flex flex-col items-center justify-center pointer-events-none transition-all duration-500"
-        style={{ 
-          containerType: 'inline-size',
-          top: rtState.isVisible && rtState.position === 'top' ? `${((rtState.height || 7) / 56.25) * 100}%` : '0',
-          bottom: rtState.isVisible && rtState.position === 'bottom' ? `${((rtState.height || 7) / 56.25) * 100}%` : '0'
-        }}
+        className="relative overflow-hidden"
+        style={getAspectRatioStyle()}
       >
+
+        {/* Background that fills the entire viewport (or letterboxed area) */}
+        {actualBgUrl !== '#00FF00' && (
+          <div 
+            key={actualBgUrl || 'none'}
+            className="absolute inset-0 z-0 bg-gray-900 animate-fade-slow"
+            style={bgType === 'image' ? {
+              backgroundImage: actualBgUrl ? `url(${actualBgUrl})` : 'none',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat'
+            } : undefined}
+          >
+            {bgType === 'video' && actualBgUrl && (
+              <video 
+                src={actualBgUrl} 
+                autoPlay 
+                loop 
+                muted 
+                playsInline 
+                className="absolute inset-0 w-full h-full object-cover z-0"
+              />
+            )}
+            <div className="absolute inset-0 bg-black/40 z-0"></div>
+          </div>
+        )}
+
+        {/* Container utama yang mengisi seluruh area aman (di luar running text) */}
+        <div 
+          className="absolute left-0 right-0 z-10 flex flex-col items-center justify-center pointer-events-none transition-all duration-500"
+          style={{ 
+            containerType: 'inline-size',
+            top: rtState.isVisible && rtState.position === 'top' ? `${((rtState.height || 7) / aspectPct) * 100}%` : '0',
+            bottom: rtState.isVisible && rtState.position === 'bottom' ? `${((rtState.height || 7) / aspectPct) * 100}%` : '0'
+          }}
+        >
       {enabledLogos.length > 0 && (text || itemType === 'video') && (
         <div 
           className="absolute inset-0 pointer-events-none z-[60]"
@@ -880,21 +912,23 @@ export default function DisplayWindow() {
           className={`absolute left-0 right-0 z-50 bg-black/60 backdrop-blur-md border-y border-white/10 overflow-hidden flex items-center ${
             rtState.position === 'top' ? 'top-0' : 'bottom-0'
           }`}
-          style={{ height: `${((rtState.height || 7) / 56.25) * 100}%` }}
+          style={{ height: `${((rtState.height || 7) / aspectPct) * 100}%` }}
         >
           <div 
             className="animate-marquee-seamless shrink-0"
             style={{ animationDuration: `${calculatedDuration}s` }}
           >
-            <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtState.height || 7) / 56.25 * 100) * 0.35}cqw` }}>
+            <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtState.height || 7) / aspectPct * 100) * 0.35}cqw` }}>
               {rtBlockText}
             </div>
-            <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtState.height || 7) / 56.25 * 100) * 0.35}cqw` }}>
+            <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtState.height || 7) / aspectPct * 100) * 0.35}cqw` }}>
               {rtBlockText}
             </div>
           </div>
         </div>
       )}
+
+      </div> {/* Penutup Wrapper Aspect Ratio */}
 
       {/* Blank Mode Overlay - menutupi semua konten tanpa unmount komponen */}
       {isBlank && (

@@ -271,6 +271,7 @@ export default function ControlPanel() {
     contentOffsetY?: number;
     headerTitleFontSizeOffset?: number;
     transitionStyle?: 'crossfade' | 'slideUp' | 'slideDown' | 'zoom';
+    aspectRatio?: 'full' | '16:9' | '16:10' | '4:3';
   }>(loadTheme);
 
   const broadcastTheme = (newTheme: typeof displayTheme) => {
@@ -2673,8 +2674,23 @@ export default function ControlPanel() {
                         </div>
                       </div>
 
+                      <div>
+                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">🖥️ Rasio Aspek Layar Jemaat</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {([['full', 'Penuh (Default)'], ['16:9', '16:9 (1920x1080)'], ['16:10', '16:10 (1920x1200)'], ['4:3', '4:3 (1024x768)']] as const).map(([val, label]) => (
+                            <button 
+                              key={val}
+                              onClick={() => updateTheme({ aspectRatio: val as any })}
+                              className={`py-2 rounded-xl font-bold text-xs border-2 transition-all ${(displayTheme.aspectRatio || 'full') === val ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white/50 dark:bg-white/5 text-indigo-900 dark:text-indigo-200 border-white/50 dark:border-white/10 hover:bg-white/70'}`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       <button
-                        onClick={() => updateTheme({ color: '#ffffff', fontSizeOffset: 0, headerTitleFontSizeOffset: 0.5, position: 'center', bold: true, shadow: 'dark', transitionStyle: 'crossfade', lineHeight: 1.6, titleOffsetY: 0, contentOffsetY: 0 })}
+                        onClick={() => updateTheme({ color: '#ffffff', fontSizeOffset: 0, headerTitleFontSizeOffset: 0.5, position: 'center', bold: true, shadow: 'dark', transitionStyle: 'crossfade', aspectRatio: 'full', lineHeight: 1.6, titleOffsetY: 0, contentOffsetY: 0 })}
                         className="w-full py-2.5 rounded-xl border-2 border-dashed border-indigo-300 dark:border-slate-600 text-xs font-bold text-indigo-500 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-white/5 transition-all mt-2"
                       >
                         ↺ Reset ke Default
