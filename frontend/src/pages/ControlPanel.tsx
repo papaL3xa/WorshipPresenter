@@ -1692,16 +1692,16 @@ export default function ControlPanel() {
           </div>
         )}
 
-        {/* Title */}
-        {mode === 'content' && itemData?.title && itemData?.type !== 'video' && itemData?.type !== 'countdown' && itemData?.type !== 'image' && itemData?.segmentLabels?.[segIdx]?.toLowerCase() !== 'judul' && (
-          <h2 
-            className="absolute left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-[70] transition-all duration-500"
-            style={{
-              top: `${6 + (displayTheme.titleOffsetY ?? 0)}%`,
-              fontSize: '1.5cqw',
-              textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)'
-            }}
-          >
+      {/* Control Panel Preview: Header Title */}
+      {mode === 'content' && itemData?.type !== 'video' && itemData?.title && !itemData?.hideHeaderTitle && (itemData?.type === 'song' || itemData?.type === 'bible' || itemData?.type === 'announcement') && itemData?.segmentLabels?.[segIdx]?.toLowerCase() !== 'judul' && (
+        <h2 
+          className="absolute left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-20 transition-all duration-500"
+          style={{
+            top: `${6 + (displayTheme.titleOffsetY ?? 0)}%`,
+            fontSize: `${1.5 + (displayTheme.headerTitleFontSizeOffset !== undefined ? displayTheme.headerTitleFontSizeOffset : 0.5) + (itemData?.headerTitleFontSizeOffset || 0)}cqw`,
+            textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
+          }}
+        >
             {itemData?.title}
           </h2>
         )}
@@ -1729,17 +1729,25 @@ export default function ControlPanel() {
             ) : mode === 'content' ? (
                <>
                  <div 
-                   className={`text-center whitespace-pre-wrap drop-shadow-xl w-full animate-fade-in ${
-                     displayTheme.bold !== false ? 'font-bold' : 'font-medium'
-                   }`} 
-                   style={{ 
-                     lineHeight: displayTheme.lineHeight ?? 1.15,
-                     color: displayTheme.color || 'white',
-                     textShadow: (displayTheme.shadow || 'dark') === 'dark' 
-                       ? '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)'
-                       : (displayTheme.shadow === 'light') 
-                       ? '1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff, 0 4px 10px rgba(255,255,255,0.8)'
-                       : 'none',                      fontSize: (() => {
+                    key={`preview-${itemData?.title}-${segIdx}-${displayTheme.transitionStyle}`} // Force re-render on style change
+                    className={`text-center whitespace-pre-wrap drop-shadow-xl w-full ${
+                      displayTheme.bold !== false ? 'font-bold' : 'font-medium'
+                    }`} 
+                    style={{ 
+                      lineHeight: displayTheme.lineHeight ?? 1.15,
+                      color: displayTheme.color || 'white',
+                      textShadow: (displayTheme.shadow || 'dark') === 'dark' 
+                        ? '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)'
+                        : (displayTheme.shadow === 'light') 
+                        ? '1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff, 0 4px 10px rgba(255,255,255,0.8)'
+                        : 'none',
+                      animation: (() => {
+                         if (displayTheme.transitionStyle === 'slideUp') return 'slideUpIn 0.5s ease-out forwards';
+                         if (displayTheme.transitionStyle === 'slideDown') return 'slideDownIn 0.5s ease-out forwards';
+                         if (displayTheme.transitionStyle === 'zoom') return 'zoomInIn 0.5s ease-out forwards';
+                         return 'fadeIn 0.5s ease-out forwards';
+                      })(),
+                      fontSize: (() => {
                         const t = itemData?.segments[segIdx] || '';
                         const is2Column = t.includes('\n[kuning]') || t.includes('\n[kolom2]');
                         const charCount = is2Column ? t.length * 1.5 : t.length;
@@ -2502,7 +2510,7 @@ export default function ControlPanel() {
                   )}
 
                   {displayPanelTab === 'theme' && (
-                    <div className="flex flex-col gap-5 p-1 overflow-y-auto h-full">
+                    <div className="flex flex-col gap-5 p-1 pb-8">
                       <div>
                         <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">🎨 Warna Teks Lirik</label>
                         <div className="flex items-center gap-3">
@@ -2545,6 +2553,27 @@ export default function ControlPanel() {
                           >Reset</button>
                         </div>
                       </div>
+
+                      <div>
+                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">📏 Ukuran Font Judul Header (Global)</label>
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="range" 
+                            min={-1} max={5} step={0.5}
+                            value={displayTheme.headerTitleFontSizeOffset !== undefined ? displayTheme.headerTitleFontSizeOffset : 0.5}
+                            onChange={(e) => updateTheme({ headerTitleFontSizeOffset: parseFloat(e.target.value) })}
+                            className="flex-1 accent-purple-600"
+                          />
+                          <span className="text-sm font-bold text-indigo-900 dark:text-indigo-200 w-10 text-center">
+                            {(displayTheme.headerTitleFontSizeOffset !== undefined ? displayTheme.headerTitleFontSizeOffset : 0.5) > 0 ? '+' : ''}{displayTheme.headerTitleFontSizeOffset !== undefined ? displayTheme.headerTitleFontSizeOffset : 0.5}
+                          </span>
+                          <button 
+                            onClick={() => updateTheme({ headerTitleFontSizeOffset: 0.5 })}
+                            className="text-xs text-indigo-500 hover:text-indigo-700 font-bold px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-900/30"
+                          >Reset</button>
+                        </div>
+                      </div>
+
 
                       <div>
                         <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">📍 Posisi Teks</label>
@@ -2594,6 +2623,21 @@ export default function ControlPanel() {
                         </div>
                       </div>
 
+                      <div>
+                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">✨ Gaya Transisi Teks</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {([['crossfade', 'Pudar (Fade)'], ['slideUp', 'Naik (Slide Up)'], ['slideDown', 'Turun (Slide Down)'], ['zoom', 'Memperbesar (Zoom)']] as const).map(([val, label]) => (
+                            <button 
+                              key={val}
+                              onClick={() => updateTheme({ transitionStyle: val as any })}
+                              className={`py-2 rounded-xl font-bold text-xs border-2 transition-all ${(displayTheme.transitionStyle || 'crossfade') === val ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' : 'bg-white/50 dark:bg-white/5 text-indigo-900 dark:text-indigo-200 border-white/50 dark:border-white/10 hover:bg-white/70'}`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
 
                       <div>
                         <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">↕️ Geser Posisi Judul (Naik/Turun)</label>
@@ -2628,7 +2672,7 @@ export default function ControlPanel() {
                       </div>
 
                       <button
-                        onClick={() => updateTheme({ color: '#ffffff', fontSizeOffset: 0, position: 'center', bold: true, shadow: 'dark', lineHeight: 1.6, titleOffsetY: 0, contentOffsetY: 0 })}
+                        onClick={() => updateTheme({ color: '#ffffff', fontSizeOffset: 0, headerTitleFontSizeOffset: 0.5, position: 'center', bold: true, shadow: 'dark', transitionStyle: 'crossfade', lineHeight: 1.6, titleOffsetY: 0, contentOffsetY: 0 })}
                         className="w-full py-2.5 rounded-xl border-2 border-dashed border-indigo-300 dark:border-slate-600 text-xs font-bold text-indigo-500 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-white/5 transition-all mt-2"
                       >
                         ↺ Reset ke Default
@@ -3038,21 +3082,72 @@ export default function ControlPanel() {
             
             <div className="flex-1 overflow-y-auto space-y-4 pr-2">
               {/* Title Input */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Judul (Opsional)</label>
-                <input 
-                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-indigo-900 dark:text-white font-semibold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/20 transition-all"
-                  value={playlist[editItemIndex].title || ''}
-                  onChange={(e) => {
-                    setPlaylist(prev => {
-                      const pl = [...prev];
-                      pl[editItemIndex] = { ...pl[editItemIndex], title: e.target.value };
-                      return pl;
-                    });
-                  }}
-                  placeholder="Masukkan Judul..."
-                />
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Judul (Opsional)</label>
+                  <input 
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-indigo-900 dark:text-white font-semibold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/20 transition-all"
+                    value={playlist[editItemIndex].title || ''}
+                    onChange={(e) => {
+                      setPlaylist(prev => {
+                        const pl = [...prev];
+                        pl[editItemIndex] = { ...pl[editItemIndex], title: e.target.value };
+                        return pl;
+                      });
+                    }}
+                    placeholder="Masukkan Judul..."
+                  />
+                </div>
+                {(playlist[editItemIndex].type === 'song' || playlist[editItemIndex].type === 'bible') && (
+                  <div className="flex-none">
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 text-center">Sembunyikan<br/>Judul Header</label>
+                    <div className="flex items-center justify-center h-12">
+                      <input 
+                        type="checkbox"
+                        className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        checked={playlist[editItemIndex].hideHeaderTitle || false}
+                        onChange={(e) => {
+                          setPlaylist(prev => {
+                            const pl = [...prev];
+                            pl[editItemIndex] = { ...pl[editItemIndex], hideHeaderTitle: e.target.checked };
+                            return pl;
+                          });
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* Title Font Size Control */}
+              {(playlist[editItemIndex].type === 'song' || playlist[editItemIndex].type === 'bible') && !playlist[editItemIndex].hideHeaderTitle && (
+                <div>
+                  <div className="flex justify-between text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                    <span>Ukuran Font Judul Header (Khusus Item Ini)</span>
+                    <span>{(playlist[editItemIndex].headerTitleFontSizeOffset || 0) > 0 ? '+' : ''}{playlist[editItemIndex].headerTitleFontSizeOffset || 0}</span>
+                  </div>
+                  <input 
+                    type="range"
+                    min="-1"
+                    max="5"
+                    step="0.5"
+                    value={playlist[editItemIndex].headerTitleFontSizeOffset || 0}
+                    onChange={(e) => {
+                      setPlaylist(prev => {
+                        const pl = [...prev];
+                        pl[editItemIndex] = { ...pl[editItemIndex], headerTitleFontSizeOffset: Number(e.target.value) };
+                        return pl;
+                      });
+                    }}
+                    className="w-full accent-indigo-600 dark:accent-[#C5A059]"
+                  />
+                  <div className="flex justify-between text-xs text-slate-500 mt-1">
+                    <span>Kecil (-1)</span>
+                    <span>Normal (0)</span>
+                    <span>Besar (+5)</span>
+                  </div>
+                </div>
+              )}
 
               {/* Countdown Inputs */}
               {playlist[editItemIndex].type === 'countdown' ? (

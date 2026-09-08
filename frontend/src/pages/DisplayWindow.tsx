@@ -39,7 +39,20 @@ const CrossfadeText = ({ text, processText, displayTheme, calculatedFontSize }: 
                 ? '1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff, 0 4px 10px rgba(255,255,255,0.8)'
                 : 'none', 
               fontSize: item.fontSize || calculatedFontSize,
-              animation: isLatest ? (renderList.length > 1 ? 'fadeIn 0.5s ease-out forwards' : 'none') : 'fadeOut 0.5s ease-out forwards',
+              animation: (() => {
+                 if (isLatest) {
+                     if (renderList.length <= 1) return 'none';
+                     if (theme.transitionStyle === 'slideUp') return 'slideUpIn 0.5s ease-out forwards';
+                     if (theme.transitionStyle === 'slideDown') return 'slideDownIn 0.5s ease-out forwards';
+                     if (theme.transitionStyle === 'zoom') return 'zoomInIn 0.5s ease-out forwards';
+                     return 'fadeIn 0.5s ease-out forwards';
+                 } else {
+                     if (theme.transitionStyle === 'slideUp') return 'slideUpOut 0.5s ease-out forwards';
+                     if (theme.transitionStyle === 'slideDown') return 'slideDownOut 0.5s ease-out forwards';
+                     if (theme.transitionStyle === 'zoom') return 'zoomInOut 0.5s ease-out forwards';
+                     return 'fadeOut 0.5s ease-out forwards';
+                 }
+              })(),
             }}
             onAnimationEnd={() => {
               if (!isLatest) {
@@ -606,13 +619,13 @@ export default function DisplayWindow() {
       {/* Judul (Header) */}
       <div className={`transition-opacity duration-700 absolute inset-0 w-full h-full flex flex-col items-center justify-center ${liveState.displayMode === 'content' ? 'opacity-100 pointer-events-auto z-[60]' : 'opacity-0 pointer-events-none -z-10'}`}>
 
-          {itemType !== 'video' && title && (itemType === 'song' || itemType === 'bible' || itemType === 'announcement') && displayLabel.toLowerCase() !== 'judul' && (
+          {itemType !== 'video' && title && !liveState.item?.hideHeaderTitle && (itemType === 'song' || itemType === 'bible' || itemType === 'announcement') && displayLabel.toLowerCase() !== 'judul' && (
             <h2 
               key={`title-${title}-${liveState.segmentIndex}`}
               className="absolute left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-20 transition-all duration-500"
               style={{
                 top: `${6 + (displayTheme.titleOffsetY ?? 0)}%`,
-                fontSize: '1.5cqw',
+                fontSize: `${1.5 + (displayTheme.headerTitleFontSizeOffset !== undefined ? displayTheme.headerTitleFontSizeOffset : 0.5) + (liveState.item?.headerTitleFontSizeOffset || 0)}cqw`,
                 textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
               }}
             >
