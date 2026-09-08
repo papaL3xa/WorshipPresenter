@@ -254,6 +254,9 @@ export default function ControlPanel() {
   const { getBgUrl, refreshBackgrounds } = useBackgrounds();
 
   const [dragOverItem, setDragOverItem] = useState<number | null>(null);
+  
+  const [dragSegItem, setDragSegItem] = useState<number | null>(null);
+  const [dragOverSegItem, setDragOverSegItem] = useState<number | null>(null);
 
   // Theme state (Poin 4)
   const loadTheme = () => {
@@ -793,6 +796,27 @@ export default function ControlPanel() {
     setDragOverItem(null);
   };
 
+  const handleSegDrop = (e: React.DragEvent, dropVisualIdx: number, itemIdx: number) => {
+    e.preventDefault();
+    if (dragSegItem === null || dragSegItem === dropVisualIdx) return;
+    
+    const item = playlist[itemIdx];
+    if (!item || !item.segments) return;
+
+    const newVisibleSegments = item.visibleSegments ? [...item.visibleSegments] : [...Array(item.segments.length).keys()];
+    
+    const [draggedIdx] = newVisibleSegments.splice(dragSegItem, 1);
+    newVisibleSegments.splice(dropVisualIdx, 0, draggedIdx);
+    
+    const newPlaylist = [...playlist];
+    newPlaylist[itemIdx] = { ...item, visibleSegments: newVisibleSegments };
+    setPlaylist(newPlaylist);
+    saveRundown(newPlaylist);
+    
+    setDragSegItem(null);
+    setDragOverSegItem(null);
+  };
+
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [videoUrlInput, setVideoUrlInput] = useState('');
   const [isVideoUploading, setIsVideoUploading] = useState(false);
@@ -861,7 +885,8 @@ export default function ControlPanel() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     
-    const selectedFiles = Array.from(files).slice(0, 2);
+    // Allow unlimited files, sort alphabetically to ensure correct slide order (Slide1.jpg, Slide2.jpg, etc)
+    const selectedFiles = Array.from(files).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const isElectron = !!(window as any).electronAPI;
     
@@ -893,13 +918,14 @@ export default function ControlPanel() {
         segments.push(savedIds[0], savedIds[1]);
       }
     } else {
-      segments.push(savedIds[0]);
+      // 1 or >2 files: one slide per segment
+      segments.push(...savedIds);
     }
 
     const newItem = {
       id: 'image-' + Date.now(),
       type: 'image',
-      title: 'Gambar',
+      title: imageInfos.length > 2 ? 'Slideshow / Gambar' : 'Gambar',
       segments: segments
     } as any;
     
@@ -2076,9 +2102,18 @@ export default function ControlPanel() {
                 
                 return item?.segments && item.segments.length > 1 ? (
                   <div className="flex-1 bg-transparent border border-indigo-500/30 dark:border-white/20 rounded-xl p-1.5 flex items-center gap-1.5 overflow-x-auto min-w-0 custom-scrollbar">
-                    {(item.visibleSegments || [...Array(item.segments.length).keys()]).map((idx: number) => (
+                    {(item.visibleSegments || [...Array(item.segments.length).keys()]).map((idx: number, visualIdx: number) => (
                       <button 
-                        key={idx}
+                        key={`${idx}-${visualIdx}`}
+                        draggable={true}
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', visualIdx.toString());
+                          setDragSegItem(visualIdx);
+                        }}
+                        onDragOver={(e) => { e.preventDefault(); setDragOverSegItem(visualIdx); }}
+                        onDrop={(e) => handleSegDrop(e, visualIdx, tempLiveItem ? liveItem : activeItem)}
+                        onDragEnd={() => { setDragSegItem(null); setDragOverSegItem(null); }}
+                        onDragLeave={() => setDragOverSegItem(null)}
                         onClick={() => { 
                           if (tempLiveItem) {
                             pushTempToLive(tempLiveItem, idx);
@@ -2091,10 +2126,12 @@ export default function ControlPanel() {
                           }
                         }}
                         className={`px-3 py-1.5 font-bold text-[11px] rounded-lg transition-all duration-200 border shrink-0 whitespace-nowrap ${
-                          seg === idx && mode === 'content' 
+                          dragOverSegItem === visualIdx && dragSegItem !== visualIdx
+                            ? 'bg-blue-100 dark:bg-blue-900/50 border-blue-400 text-blue-800 dark:text-blue-200 shadow-[0_0_10px_rgba(96,165,250,0.4)]'
+                            : seg === idx && mode === 'content' 
                             ? 'bg-[#C5A059] text-black border-transparent shadow-[0_0_10px_rgba(197,160,89,0.3)]' 
                             : 'bg-transparent text-slate-500 dark:text-[#C5A059]/60 border-slate-300 dark:border-[#C5A059]/30 hover:bg-slate-200 dark:hover:bg-[#C5A059]/10 hover:text-slate-800 dark:hover:text-[#C5A059]'
-                        }`}
+                        } ${dragSegItem === visualIdx ? 'opacity-30' : ''}`}
                       >
                         {item?.segmentLabels ? item.segmentLabels[idx] : `Slide ${idx + 1}`}
                       </button>
@@ -2945,9 +2982,9 @@ export default function ControlPanel() {
               <button 
                 onClick={() => { setReplaceIndex(replaceIndex); document.getElementById('rundown-img-upload')?.click(); }}
                 className="w-full glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
-                title="Tambah Gambar (Maks 2)"
+                title="Tambah Gambar atau File Presentasi (Bisa pilih banyak)"
               >
-                <ImageIcon size={16} /> GAMBAR
+                <ImageIcon size={16} /> GAMBAR / SLIDESHOW
               </button>
               <button 
                 onClick={addCountdown}
