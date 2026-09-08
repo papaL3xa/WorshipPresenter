@@ -1827,23 +1827,24 @@ export default function ControlPanel() {
             }`}
             style={{ height: `${((rtHeight || 7) / 56.25) * 100}%` }}
           >
-            <div className="animate-marquee-seamless shrink-0" style={{ animationDuration: `${Math.max(10, 80 - ((rtSpeed || 15) * 2))}s` }}>
               {(() => {
-                const spacer = "  ●  ";
-                const textBlock = (runningText || '').split('\n').join(spacer);
-                const rtBlockText = Array(20).fill(textBlock).join(spacer);
+                const rtSeparator = '\u00A0\u00A0\u00A0\u00A0|\u00A0\u00A0\u00A0\u00A0\u00A0';
+                const formattedRtText = runningText ? runningText.split('\n').filter((t: string) => t.trim() !== '').join(rtSeparator) : '';
+                const rtBlockText = formattedRtText ? Array(15).fill(formattedRtText).join(rtSeparator) + rtSeparator : '';
+                const rtCharCount = rtBlockText.length;
+                const speedMultiplier = Math.max(5, (rtSpeed || 15));
+                const calculatedDuration = Math.max(5, (rtCharCount / 100) * speedMultiplier);
                 return (
-                  <>
+                  <div className="animate-marquee-seamless shrink-0" style={{ animationDuration: `${calculatedDuration}s` }}>
                     <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtHeight || 7) / 56.25 * 100) * 0.35}cqw` }}>
                       {rtBlockText}
                     </div>
                     <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtHeight || 7) / 56.25 * 100) * 0.35}cqw` }}>
                       {rtBlockText}
                     </div>
-                  </>
+                  </div>
                 );
               })()}
-            </div>
           </div>
         )}
       </div>

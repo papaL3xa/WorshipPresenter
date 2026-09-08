@@ -416,9 +416,10 @@ export default function DisplayWindow() {
 
   const rtBlockText = formattedRtText ? Array(15).fill(formattedRtText).join(rtSeparator) + rtSeparator : '';
   const rtCharCount = rtBlockText.length;
-  // rtState.speed (5-40s) adalah patokan waktu untuk melewati ~100 karakter (kira-kira 1 lebar layar)
-  const calculatedDuration = (rtCharCount / 100) * rtState.speed;
-
+  // Speed slider: 5 (Left, Cepat) to 40 (Right, Lambat).
+  // Higher value = higher duration = slower animation.
+  const speedMultiplier = Math.max(5, (rtState.speed || 15));
+  const calculatedDuration = Math.max(5, (rtCharCount / 100) * speedMultiplier);
   const processText = (raw: string) => {
     if (!raw) return '';
     let t = raw;
