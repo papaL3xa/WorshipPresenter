@@ -7,5 +7,5 @@ export const CONFIG = {
   POLLING_INTERVAL_MS: 1500,
 
   // Versi Aplikasi
-  APP_VERSION: '1.0.9',
+  APP_VERSION: '1.1.0',
 };
