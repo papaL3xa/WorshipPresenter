@@ -5,8 +5,9 @@ import { SyncButton } from '../components/SyncButton';
 import { callApi } from '../api';
 import { FooterClock } from '../components/FooterClock';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { CONFIG } from '../config';
 
-const CURRENT_VERSION = '1.0.8';
+const CURRENT_VERSION = CONFIG.APP_VERSION;
 const GITHUB_RELEASES_API = 'https://api.github.com/repos/pisgahbisdac/pisgahbisdac/releases';
 const GITHUB_RELEASE_URL = 'https://github.com/pisgahbisdac/pisgahbisdac/releases/tag/Stable';
 

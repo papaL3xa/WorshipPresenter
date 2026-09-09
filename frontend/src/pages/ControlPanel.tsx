@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Monitor, Square, Play, Pause, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, Video, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock, Layout, Power, FileText, Repeat, Volume2, VolumeX, List, GripVertical, Palette, AlignCenter, AlignLeft, AlignRight, Bold } from 'lucide-react';
 import { callApi } from '../api';
+import { CONFIG } from '../config';
 import { SyncButton } from '../components/SyncButton';
 import { useBackgrounds } from '../hooks/useBackgrounds';
 import YouTube from 'react-youtube';
@@ -1896,9 +1897,14 @@ export default function ControlPanel() {
           <div className="bg-white/10 dark:bg-white/90 p-1 rounded-lg shadow-md border border-white/20 w-8 h-8 flex items-center justify-center overflow-hidden">
             <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Logo" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-xl font-heading font-extrabold text-indigo-900 dark:text-[#C5A059] tracking-tight drop-shadow-sm flex items-center">
-            WorshipPresenter
-          </h1>
+          <div className="flex flex-col">
+            <h1 className="text-xl font-heading font-extrabold text-indigo-900 dark:text-[#C5A059] tracking-tight drop-shadow-sm flex items-center">
+              WorshipPresenter
+            </h1>
+            <span className="text-[10px] font-bold text-indigo-900/50 dark:text-[#C5A059]/50 -mt-1 tracking-widest">
+              v{CONFIG.APP_VERSION}
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-4">
           <ThemeToggle />

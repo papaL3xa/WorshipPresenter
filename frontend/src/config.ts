@@ -5,4 +5,7 @@ export const CONFIG = {
   // Interval waktu polling untuk sinkronisasi Live (ms)
   // Tidak disarankan kurang dari 1000ms untuk menghindari kuota GAS habis
   POLLING_INTERVAL_MS: 1500,
+
+  // Versi Aplikasi
+  APP_VERSION: '1.0.9',
 };
