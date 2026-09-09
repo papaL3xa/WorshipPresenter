@@ -177,6 +177,25 @@ export default function ControlPanel() {
   const playlistId = urlId === 'new' ? newId : urlId;
   const [playlistDate, setPlaylistDate] = useState(new Date().toISOString().split('T')[0]);
   const [localVidLoaded, setLocalVidLoaded] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<{available: boolean, version: string, url: string} | null>(null);
+
+  useEffect(() => {
+    fetch('https://api.github.com/repos/papaL3xa/WorshipPresenter/releases/latest')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.tag_name) {
+          const latestVersion = data.tag_name.replace('v', '');
+          if (latestVersion !== CONFIG.APP_VERSION) {
+            setUpdateInfo({
+              available: true,
+              version: latestVersion,
+              url: data.html_url
+            });
+          }
+        }
+      })
+      .catch(err => console.error('Failed to check for updates', err));
+  }, []);
 
   const [playlist, setPlaylist] = useState<any[]>([]);
   const [playlistName, setPlaylistName] = useState('Memuat...');
@@ -1960,6 +1979,17 @@ export default function ControlPanel() {
           </div>
         </div>
         <div className="flex items-center gap-4">
+          {updateInfo && updateInfo.available && (
+            <a 
+              href={updateInfo.url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white transition-colors text-xs font-bold shadow-md animate-pulse"
+              title="Unduh versi terbaru di GitHub"
+            >
+              🚀 Update v{updateInfo.version} Tersedia!
+            </a>
+          )}
           <button 
             onClick={() => setShowHotkeyHelp(true)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 transition-colors text-xs font-bold"
