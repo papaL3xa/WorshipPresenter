@@ -130,12 +130,17 @@ export default function Dashboard() {
     <div className="min-h-full flex flex-col p-4 md:p-8 gap-4 overflow-hidden relative">
       <header className="glass-panel p-5 flex flex-col md:flex-row justify-between items-center gap-4">
         <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-heading font-extrabold text-indigo-950 dark:text-white drop-shadow-md tracking-tight flex items-center gap-3">
-            <div className="bg-indigo-600/10 dark:bg-white/90 p-1.5 rounded-xl backdrop-blur-sm border border-indigo-600/20 dark:border-white/30 overflow-hidden w-10 h-10 flex items-center justify-center shadow-sm">
-              <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Logo" className="w-full h-full object-contain" />
-            </div>
-            WorshipPresenter
-          </h1>
+          <div className="flex flex-col">
+            <h1 className="text-3xl font-heading font-extrabold text-indigo-950 dark:text-white drop-shadow-md tracking-tight flex items-center gap-3">
+              <div className="bg-indigo-600/10 dark:bg-white/90 p-1.5 rounded-xl backdrop-blur-sm border border-indigo-600/20 dark:border-white/30 overflow-hidden w-10 h-10 flex items-center justify-center shadow-sm">
+                <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Logo" className="w-full h-full object-contain" />
+              </div>
+              WorshipPresenter
+            </h1>
+            <span className="text-xs font-bold text-indigo-950/50 dark:text-white/50 mt-0 tracking-widest pl-14">
+              v{CURRENT_VERSION}
+            </span>
+          </div>
           <FooterClock />
         </div>
         <div className="flex flex-wrap justify-center items-center gap-2 md:gap-4">
