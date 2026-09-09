@@ -279,6 +279,7 @@ export default function ControlPanel() {
     transitionStyle?: 'crossfade' | 'slideUp' | 'slideDown' | 'zoom';
     aspectRatio?: 'full' | '16:9' | '16:10' | '4:3';
     layout?: 'full' | 'lower-third';
+    blankImageUrl?: string;
   }>(loadTheme);
 
   const broadcastTheme = (newTheme: typeof displayTheme) => {
