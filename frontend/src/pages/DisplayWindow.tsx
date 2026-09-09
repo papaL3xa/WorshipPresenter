@@ -136,6 +136,7 @@ export default function DisplayWindow() {
     headerTitleFontSizeOffset?: number;
     transitionStyle?: 'crossfade' | 'slideUp' | 'slideDown' | 'zoom';
     aspectRatio?: 'full' | '16:9' | '16:10' | '4:3';
+    layout?: 'full' | 'lower-third';
   }>(loadTheme);
 
   const [playlistMap, setPlaylistMap] = useState<Record<string, any>>({});
@@ -301,7 +302,7 @@ export default function DisplayWindow() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'ArrowLeft', 'ArrowUp', 'PageUp', 'b', 'B', '.'].includes(e.key)) {
+      if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'ArrowLeft', 'ArrowUp', 'PageUp', 'b', 'B', '.', 'l', 'L'].includes(e.key)) {
         e.preventDefault();
         const ch = new BroadcastChannel('worship_live_sync');
         ch.postMessage({ type: 'REMOTE_KEYDOWN', key: e.key });
@@ -411,6 +412,12 @@ export default function DisplayWindow() {
     } else {
       text = 'Selamat Datang';
     }
+  }
+
+  // Force text to empty if we are in logo mode, so the logo block renders
+  if (liveState.displayMode === 'logo') {
+    text = '';
+    itemType = '';
   }
 
   // Hitung ukuran font dinamis berdasarkan panjang teks
@@ -596,7 +603,7 @@ export default function DisplayWindow() {
       >
 
         {/* Background that fills the entire viewport (or letterboxed area) */}
-        {actualBgUrl !== '#00FF00' && (
+        {actualBgUrl !== '#00FF00' && displayTheme.layout !== 'lower-third' && (
           <div 
             key={actualBgUrl || 'none'}
             className="absolute inset-0 z-0 bg-gray-900 animate-fade-slow"
@@ -830,9 +837,11 @@ export default function DisplayWindow() {
         </div>
       ) : (
         <div className={`absolute left-0 right-0 z-[70] flex flex-col items-center w-full min-h-0 transition-all duration-700 ${
-          (displayTheme.position || 'center') === 'top' ? 'top-[8%] bottom-[12%] justify-start' :
-          (displayTheme.position || 'center') === 'bottom' ? 'top-[18%] bottom-[8%] justify-end' :
-          'top-[18%] bottom-[12%] justify-center'
+          displayTheme.layout === 'lower-third' 
+          ? 'bottom-[5%] justify-end'
+          : (displayTheme.position || 'center') === 'top' ? 'top-[8%] bottom-[12%] justify-start' 
+          : (displayTheme.position || 'center') === 'bottom' ? 'top-[18%] bottom-[8%] justify-end' 
+          : 'top-[18%] bottom-[12%] justify-center'
         }`}
         style={{ paddingLeft: `${displayTheme.paddingHorizontal ?? 8}%`, paddingRight: `${displayTheme.paddingHorizontal ?? 8}%`, marginTop: `${displayTheme.contentOffsetY ?? 0}%` }}>
           {itemType === 'countdown' && countdownRemaining !== null ? (
@@ -841,7 +850,7 @@ export default function DisplayWindow() {
               {String(Math.floor(countdownRemaining / 60)).padStart(2, '0')}:{String(countdownRemaining % 60).padStart(2, '0')}
             </div>
           ) : text ? (
-            <>
+            <div className={`${displayTheme.layout === 'lower-third' ? 'bg-black/60 backdrop-blur-sm px-10 py-4 rounded-3xl w-full border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)] h-[20cqw] flex flex-col justify-center items-center overflow-hidden relative' : 'w-full flex flex-col items-center relative'}`}>
               <CrossfadeText 
                 text={text} 
                 processText={processText} 
@@ -874,23 +883,40 @@ export default function DisplayWindow() {
                       baseSize = Math.max(requiredSize, 2); // don't go below 2cqw to stay readable
                   }
                   
+                  if (displayTheme.layout === 'lower-third') {
+                      // Container height is fixed at h-[20cqw].
+                      // Since the bait label is absolute, it doesn't take up document flow.
+                      // padding y is py-4 (approx 1.5cqw). So available height is ~17cqw.
+                      const maxAvailableHeight = 17.5; 
+                      const lineHeightMultiplier = Number(displayTheme.lineHeight) || 1.15;
+                      const maxVerticalSize = maxAvailableHeight / (Math.max(visualLines, 1) * lineHeightMultiplier);
+                      
+                      // Use the smallest size: normal width constraint, max vertical constraint, or absolute max (5.5cqw)
+                      // We don't artificially shrink width constraint (baseSize) anymore, so it can stretch fully.
+                      baseSize = Math.min(baseSize, maxVerticalSize, 5.5); 
+                  }
+                  
                   return `${baseSize + (displayTheme.fontSizeOffset || 0)}cqw`;
                 })()} 
               />
-              {/* Bait Label di bawah isi */}
+              {/* Bait Label */}
               {displayLabel.toLowerCase() !== 'judul' && (
                 <div 
-                  className="text-yellow-300 font-bold mt-[1.5cqw] tracking-widest uppercase animate-fade-in opacity-80"
+                  className={`text-yellow-300 font-bold tracking-widest uppercase animate-fade-in opacity-90 ${
+                    displayTheme.layout === 'lower-third' 
+                      ? 'absolute top-[1.5cqw] left-[2.5cqw] mt-0' 
+                      : 'mt-[1.5cqw] opacity-80'
+                  }`}
                   style={{
-                    fontSize: '1.5cqw',
+                    fontSize: displayTheme.layout === 'lower-third' ? '1.4cqw' : '1.5cqw',
                     textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)',
-                    minHeight: '2cqw'
+                    minHeight: displayTheme.layout === 'lower-third' ? '0' : '2cqw'
                   }}
                 >
                   {displayLabel || (itemType === 'song' ? '•' : '')}
                 </div>
               )}
-            </>
+            </div>
           ) : enabledLogos.length > 0 ? (
             <img 
               src={enabledLogos[0].url} 
@@ -934,7 +960,7 @@ export default function DisplayWindow() {
       {isBlank && (
         <div className="absolute inset-0 bg-black z-[999] cursor-none flex items-center justify-center overflow-hidden">
           <img 
-            src={import.meta.env.BASE_URL + "blank_logo.png"} 
+            src={displayTheme.blankImageUrl || import.meta.env.BASE_URL + "blank_logo.png"} 
             alt="Blank Logo" 
             className="w-full h-full object-cover"
           />

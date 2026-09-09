@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Monitor, Square, Play, Pause, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, Video, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock, Layout, Power, FileText, Repeat, Volume2, VolumeX, List, GripVertical, Palette, AlignCenter, AlignLeft, AlignRight, Bold } from 'lucide-react';
+import { Monitor, Square, Play, Pause, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, Video, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock, Layout, Power, FileText, Repeat, Volume2, VolumeX, List, GripVertical, Palette, AlignCenter, AlignLeft, AlignRight, Bold, Keyboard } from 'lucide-react';
 import { callApi } from '../api';
 import { CONFIG } from '../config';
 import { SyncButton } from '../components/SyncButton';
@@ -259,6 +259,8 @@ export default function ControlPanel() {
   const [dragSegItem, setDragSegItem] = useState<number | null>(null);
   const [dragOverSegItem, setDragOverSegItem] = useState<number | null>(null);
 
+  const [showHotkeyHelp, setShowHotkeyHelp] = useState(false);
+
   // Theme state (Poin 4)
   const loadTheme = () => {
     try { return JSON.parse(localStorage.getItem('worship_display_theme') || '{}'); } catch { return {}; }
@@ -276,6 +278,7 @@ export default function ControlPanel() {
     headerTitleFontSizeOffset?: number;
     transitionStyle?: 'crossfade' | 'slideUp' | 'slideDown' | 'zoom';
     aspectRatio?: 'full' | '16:9' | '16:10' | '4:3';
+    layout?: 'full' | 'lower-third';
   }>(loadTheme);
 
   const broadcastTheme = (newTheme: typeof displayTheme) => {
@@ -1428,6 +1431,44 @@ export default function ControlPanel() {
     }
   };
 
+  const blankInputRef = useRef<HTMLInputElement>(null);
+  const handleBlankUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File terlalu besar. Maksimal 5MB.'); return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        updateTheme({ blankImageUrl: event.target?.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const logoLInputRef = useRef<HTMLInputElement>(null);
+  const handleLogoLUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File terlalu besar. Maksimal 5MB.'); return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        if (logos.length > 0) {
+           updateLogo(logos[0].id, { url: base64 });
+        } else {
+           const newLogo = { id: 'logo-' + Date.now(), url: base64, x: 50, y: 50, scale: 1, enabled: true };
+           const newLogos = [newLogo];
+           setLogos(newLogos);
+           broadcastLogos(newLogos);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const updateLogo = (id: string, updates: any) => {
     const newLogos = logos.map(l => l.id === id ? { ...l, ...updates } : l);
     setLogos(newLogos);
@@ -1564,10 +1605,21 @@ export default function ControlPanel() {
           break;
         case 'b':
         case 'B':
-        case '.':
+        case '.': {
           e.preventDefault();
-          setMode(m => m === 'blank' ? 'content' : 'blank');
+          const newMode = mode === 'blank' ? 'content' : 'blank';
+          setMode(newMode);
+          pushStateToLive(activeItem, activeSegment, newMode);
           break;
+        }
+        case 'l':
+        case 'L': {
+          e.preventDefault();
+          const newMode = mode === 'logo' ? 'content' : 'logo';
+          setMode(newMode);
+          pushStateToLive(activeItem, activeSegment, newMode);
+          break;
+        }
       }
     };
 
@@ -1586,7 +1638,7 @@ export default function ControlPanel() {
       channel.removeEventListener('message', handleRemoteKey);
       channel.close();
     };
-  }, [playlist, activeItem, activeSegment]);
+  }, [playlist, activeItem, activeSegment, mode]);
 
   // Auto-scroll rundown ke item yang aktif
   useEffect(() => {
@@ -1907,6 +1959,13 @@ export default function ControlPanel() {
           </div>
         </div>
         <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setShowHotkeyHelp(true)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 transition-colors text-xs font-bold"
+            title="Bantuan Pintasan Keyboard"
+          >
+            <Keyboard size={16} /> Hotkeys
+          </button>
           <ThemeToggle />
           {errorMsg && <div className="text-red-700 bg-red-100/90 px-3 py-1 rounded-lg text-xs border border-red-300 font-medium whitespace-nowrap">{errorMsg}</div>}
           <SyncButton isParentSyncing={isSyncing} />
@@ -2262,7 +2321,7 @@ export default function ControlPanel() {
                       ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-sm' 
                       : 'bg-white/50 dark:bg-slate-800/80 text-indigo-900 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700/80 border border-indigo-200 dark:border-slate-700'
                   }`}
-                >Tema Lirik</button>
+                >Tema Display</button>
               </div>
             )}
 
@@ -2732,8 +2791,46 @@ export default function ControlPanel() {
                         </div>
                       </div>
 
+                      <div>
+                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">🖼️ Gambar Layar Blank & Logo</label>
+                        <div className="flex gap-2">
+                          <input type="file" accept="image/*" ref={blankInputRef} onChange={handleBlankUpload} className="hidden" />
+                          <button 
+                            onClick={() => blankInputRef.current?.click()}
+                            className="flex-1 py-2.5 rounded-xl text-xs font-bold border-2 border-indigo-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800 text-indigo-900 dark:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-all flex flex-col items-center justify-center gap-1"
+                          >
+                            <ImageIcon size={14}/>
+                            Ganti Layar Blank (B)
+                          </button>
+                          
+                          <input type="file" accept="image/*" ref={logoLInputRef} onChange={handleLogoLUpload} className="hidden" />
+                          <button 
+                            onClick={() => logoLInputRef.current?.click()}
+                            className="flex-1 py-2.5 rounded-xl text-xs font-bold border-2 border-indigo-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800 text-indigo-900 dark:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-all flex flex-col items-center justify-center gap-1"
+                          >
+                            <ImageIcon size={14}/>
+                            Ganti Layar Logo (L)
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">📋 Layout Layar (OBS)</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {([['full', 'Layar Penuh'], ['lower-third', 'Lower Third (Bawah)']] as const).map(([val, label]) => (
+                            <button 
+                              key={val}
+                              onClick={() => updateTheme({ layout: val as 'full' | 'lower-third' })}
+                              className={`py-2 rounded-xl font-bold text-xs border-2 transition-all ${(displayTheme.layout || 'full') === val ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white/50 dark:bg-white/5 text-indigo-900 dark:text-indigo-200 border-white/50 dark:border-white/10 hover:bg-white/70'}`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       <button
-                        onClick={() => updateTheme({ color: '#ffffff', fontSizeOffset: 0, headerTitleFontSizeOffset: 0.5, position: 'center', bold: true, shadow: 'dark', transitionStyle: 'crossfade', aspectRatio: 'full', lineHeight: 1.6, titleOffsetY: 0, contentOffsetY: 0 })}
+                        onClick={() => updateTheme({ color: '#ffffff', fontSizeOffset: 0, headerTitleFontSizeOffset: 0.5, position: 'center', bold: true, shadow: 'dark', transitionStyle: 'crossfade', aspectRatio: 'full', layout: 'full', lineHeight: 1.6, titleOffsetY: 0, contentOffsetY: 0 })}
                         className="w-full py-2.5 rounded-xl border-2 border-dashed border-indigo-300 dark:border-slate-600 text-xs font-bold text-indigo-500 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-white/5 transition-all mt-2"
                       >
                         ↺ Reset ke Default
@@ -3012,6 +3109,43 @@ export default function ControlPanel() {
           </div>
         </aside>
       </main>
+      {/* Hotkey Help Modal */}
+      {showHotkeyHelp && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowHotkeyHelp(false)}>
+          <div className="glass-panel w-[90%] max-w-md p-6 relative rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowHotkeyHelp(false)} className="absolute top-4 right-4 p-2 bg-slate-200 dark:bg-slate-700 rounded-full hover:bg-red-500 hover:text-white transition-all text-slate-500 dark:text-slate-300">
+              <X size={18} />
+            </button>
+            <h2 className="text-xl font-heading font-extrabold text-indigo-950 dark:text-white mb-6 flex items-center gap-2">
+              <Keyboard className="text-indigo-600 dark:text-indigo-400" /> Pintasan Keyboard
+            </h2>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-slate-700">
+                <span className="font-bold text-slate-700 dark:text-slate-300 text-sm">Slide / Segmen Berikutnya</span>
+                <div className="flex gap-1">
+                  <kbd className="px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded-lg text-xs font-mono font-bold text-slate-800 dark:text-slate-200 border-b-2 border-slate-300 dark:border-slate-900">Spasi</kbd>
+                  <kbd className="px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded-lg text-xs font-mono font-bold text-slate-800 dark:text-slate-200 border-b-2 border-slate-300 dark:border-slate-900">→</kbd>
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-slate-700">
+                <span className="font-bold text-slate-700 dark:text-slate-300 text-sm">Slide / Segmen Sebelumnya</span>
+                <kbd className="px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded-lg text-xs font-mono font-bold text-slate-800 dark:text-slate-200 border-b-2 border-slate-300 dark:border-slate-900">←</kbd>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-slate-700">
+                <span className="font-bold text-slate-700 dark:text-slate-300 text-sm">Layar Gelap (Blank)</span>
+                <kbd className="px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded-lg text-xs font-mono font-bold text-slate-800 dark:text-slate-200 border-b-2 border-slate-300 dark:border-slate-900">B</kbd>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-slate-700">
+                <span className="font-bold text-slate-700 dark:text-slate-300 text-sm">Tampilan Logo Utama</span>
+                <kbd className="px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded-lg text-xs font-mono font-bold text-slate-800 dark:text-slate-200 border-b-2 border-slate-300 dark:border-slate-900">L</kbd>
+              </div>
+            </div>
+            <p className="mt-6 text-xs text-slate-500 dark:text-slate-400 text-center font-medium">Pintasan ini bisa dijalankan dari jarak jauh menggunakan Wireless Presenter / Pointer (karena tombol Next/Prev pada alat tersebut setara dengan panah kanan/kiri).</p>
+          </div>
+        </div>
+      )}
+
+      {/* Video Modal (Existing) */}
       {isVideoModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
           <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-2xl max-w-xl w-full border border-white/50 dark:border-slate-700/50 relative">
