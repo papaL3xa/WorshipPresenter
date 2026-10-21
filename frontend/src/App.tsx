@@ -27,6 +27,10 @@ function App() {
       if (isDark === null) localStorage.setItem('worship_dark_mode', 'true');
     }
 
+    if (!localStorage.getItem('worship_role')) {
+      localStorage.setItem('worship_role', 'admin');
+    }
+
     // Auto-scale UI so it never overflows when zoomed in browsers
     const handleResize = () => {
       const baseWidth = 1536; // Gunakan 1536 untuk menampung seluruh tombol header tanpa terpotong
