@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Heart } from 'lucide-react';
 
 export function FooterClock() {
   const [currentTime, setCurrentTime] = useState(new Date());

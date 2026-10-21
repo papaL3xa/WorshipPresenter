@@ -1,11 +1,10 @@
 export const CONFIG = {
-  // Ganti URL ini setiap kali Anda melakukan New Deployment di GAS
-  GAS_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbyA1nRhxjs3G62bwBpTGdj_chV_g4qKPIQr_PJ2Du6LAGybkKfYYpPNb119Ibh-SfrO/exec',
+  // Versi Aplikasi Desktop
+  APP_VERSION: '1.1.1',
 
-  // Interval waktu polling untuk sinkronisasi Live (ms)
-  // Tidak disarankan kurang dari 1000ms untuk menghindari kuota GAS habis
+  // Mode Desktop Offline-First (100% Lokal, Bebas Ketergantungan Eksternal)
+  IS_DESKTOP_OFFLINE: true,
+
+  // Interval waktu polling fallback (ms) jika BroadcastChannel tidak aktif
   POLLING_INTERVAL_MS: 1500,
-
-  // Versi Aplikasi
-  APP_VERSION: '1.1.0',
 };

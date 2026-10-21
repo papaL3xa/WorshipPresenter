@@ -4,7 +4,7 @@ import { RefreshCw } from 'lucide-react';
 export function SyncButton({ isParentSyncing = false }: { isParentSyncing?: boolean }) {
   const isDesktop = typeof window !== 'undefined' && (window as any).electronAPI;
   const [syncing, setSyncing] = useState(false);
-  
+
   if (isDesktop) return null;
 
   const activeSync = syncing || isParentSyncing;
@@ -19,15 +19,14 @@ export function SyncButton({ isParentSyncing = false }: { isParentSyncing?: bool
   };
 
   return (
-    <button 
+    <button
       onClick={handleSync}
       disabled={activeSync}
-      className={`flex items-center gap-2 px-3 py-1.5 rounded-full font-bold text-sm transition-all shadow-sm border ${
-        activeSync 
-          ? 'bg-slate-300/50 text-slate-500 border-slate-300/50 cursor-not-allowed dark:bg-slate-700/50 dark:text-slate-400 dark:border-slate-700/50' 
+      className={`flex items-center gap-2 px-3 py-1.5 rounded-full font-bold text-sm transition-all shadow-sm border ${activeSync
+          ? 'bg-slate-300/50 text-slate-500 border-slate-300/50 cursor-not-allowed dark:bg-slate-700/50 dark:text-slate-400 dark:border-slate-700/50'
           : 'glass-button text-indigo-900'
-      }`}
-      title="Sinkronisasi data dengan Google Sheets"
+        }`}
+      title="Muat Ulang / Sinkronkan Data Lokal"
     >
       {activeSync ? (
         <>

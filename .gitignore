@@ -11,6 +11,7 @@ frontend/dist-electron/
 
 # File TSV hasil konversi (bisa dibuat ulang)
 BibleVerses_*.tsv
+!frontend/public/data/BibleVerses_*.tsv
 BibleVerses_backup_*.tsv
 Songs_new.tsv
 SongSegments_new.tsv
@@ -24,3 +25,5 @@ frontend/scripts/*.sqlite
 # Temp files
 *.tmp
 *.log
+khotbah*.json
+sabat*.json

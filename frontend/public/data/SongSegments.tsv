@@ -2055,11 +2055,11 @@ LSEB_1_s0	LSEB_1	Bait 1	Di hadapan hadirat -Mu \nKami umat-Mu menyembah \nMengak
 LSEB_1_s1	LSEB_1	Bait 2	Dari debu dan tanahlah \nkita dijadikan Tuhan \nDan bila tersesat kita \nTuhan tak akan tinggalkan	
 LSEB_1_s2	LSEB_1	Bait 3	Kuasa serta kasih Allah \nMemenuhi seg’nap dunia \nTetap teguhlah firman-Nya \nHingga penuh hadirat-Nya	
 LSEB_1_s3	LSEB_1	Bait 4	Di pintu Surga yang suci \nmenyanyi beribu lidah \nPada Tuhan kita puji \nSekarang dan selamanya	
-new_1787129577065	LSEB_1787129577065	Bait 1	Kita terpanggil, untuk britakan\nHanya Yesuslah jalan\nRendahkan hati, lakukan tugas\nKerjakanlah tiap hari\nNubuat dig’napi, janganlah lengah\nKabarkan tentang Yesus\nYang Mahakasih, S’rahkan hidup-Nya\nDialah Jurus’lamat	1
-new_1787129685943	LSEB_1787129577065	Chorus	Berdasar Alkitab, tekun pada misi\nHingga lihat Tuhan datang\nDengar suara trompet, merdu membahana\nMulia kedatangan-Nya\nRaja s’gala Raja, agung dan berjaya\nSungguh mulia hari itu!	2
-new_1787129708980	LSEB_1787129577065	Bait 2	Mari berdoa, ‘tuk hujan akhir\nBersatu kita jalan\nBergandeng tangan, pergi kabarkan\nAgar dunia percaya\nDi-alah Tuhan, yang Mahatinggi\nSembah puji pada-Nya\nMujizat nyata, oleh kuasa roh\nBila kita setia	3
-dup_1787129725900	LSEB_1787129577065	Chorus	Berdasar Alkitab, tekun pada misi\nHingga lihat Tuhan datang\nDengar suara trompet, merdu membahana\nMulia kedatangan-Nya\nRaja s’gala Raja, agung dan berjaya\nSungguh mulia hari itu!	3
-new_1787130029834	LSEB_1787130029834		Dengar suara t'rompet membahana\nTanda Yesus datang s'bagai Raja\nMenjemput kita anak yang setia\nDiangkat, dibawa, ke surga	1
-new_1787130120303	LSEB_1787130029834		Ayo kita siap dan sedia\nB'ritakanlah ke seluruh dunia\nAgar dunia mau percaya\nYesuslah jalan kes'lamatan	2
-new_1787130144540	LSEB_1787130029834		Misi kita agar dunia\nDengar berita kita\n\nYesus mati mengganti kita\nAgar kita masuk surga	3
-new_1787130174127	LSEB_1787130029834		Ayo kita siap dan sedia\nB'ritakanlah ke seluruh dunia\nAgar dunia mau percaya\nYesuslah jalan kes'lamatan\nYesuslah jalan kes'lamatan	4
+new_1787129577065	LSEB_MISI_KITA	Bait 1	Kita terpanggil, untuk britakan\nHanya Yesuslah jalan\nRendahkan hati, lakukan tugas\nKerjakanlah tiap hari\nNubuat dig’napi, janganlah lengah\nKabarkan tentang Yesus\nYang Mahakasih, S’rahkan hidup-Nya\nDialah Jurus’lamat	1
+new_1787129685943	LSEB_MISI_KITA	Chorus	Berdasar Alkitab, tekun pada misi\nHingga lihat Tuhan datang\nDengar suara trompet, merdu membahana\nMulia kedatangan-Nya\nRaja s’gala Raja, agung dan berjaya\nSungguh mulia hari itu!	2
+new_1787129708980	LSEB_MISI_KITA	Bait 2	Mari berdoa, ‘tuk hujan akhir\nBersatu kita jalan\nBergandeng tangan, pergi kabarkan\nAgar dunia percaya\nDi-alah Tuhan, yang Mahatinggi\nSembah puji pada-Nya\nMujizat nyata, oleh kuasa roh\nBila kita setia	3
+dup_1787129725900	LSEB_MISI_KITA	Chorus	Berdasar Alkitab, tekun pada misi\nHingga lihat Tuhan datang\nDengar suara trompet, merdu membahana\nMulia kedatangan-Nya\nRaja s’gala Raja, agung dan berjaya\nSungguh mulia hari itu!	3
+new_1787130029834	LSEB_MISI_KITA_AA		Dengar suara t'rompet membahana\nTanda Yesus datang s'bagai Raja\nMenjemput kita anak yang setia\nDiangkat, dibawa, ke surga	1
+new_1787130120303	LSEB_MISI_KITA_AA		Ayo kita siap dan sedia\nB'ritakanlah ke seluruh dunia\nAgar dunia mau percaya\nYesuslah jalan kes'lamatan	2
+new_1787130144540	LSEB_MISI_KITA_AA		Misi kita agar dunia\nDengar berita kita\n\nYesus mati mengganti kita\nAgar kita masuk surga	3
+new_1787130174127	LSEB_MISI_KITA_AA		Ayo kita siap dan sedia\nB'ritakanlah ke seluruh dunia\nAgar dunia mau percaya\nYesuslah jalan kes'lamatan\nYesuslah jalan kes'lamatan	4

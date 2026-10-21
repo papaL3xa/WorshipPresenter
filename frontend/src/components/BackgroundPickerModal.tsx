@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Upload, Loader2, Image as ImageIcon, Trash2, Video } from 'lucide-react';
-import { getAllSlideBackgrounds, saveSlideBackground, saveVideoBackground, compressImage } from '../utils/imageStorage';
+import { getAllSlideBackgrounds, saveSlideBackground, saveVideoBackground, compressImage, removeSlideBackground } from '../utils/imageStorage';
 
 interface DriveImage {
   id: string;
@@ -82,7 +82,7 @@ export function BackgroundPickerInline({ onSelect, currentBgUrl }: Omit<Backgrou
         newId = `slide_bg_${Date.now()}`;
         await saveSlideBackground(newId, dataUrl);
       }
-      
+
       onSelect(newId);
       loadImages();
     } catch (err: any) {
@@ -117,8 +117,8 @@ export function BackgroundPickerInline({ onSelect, currentBgUrl }: Omit<Backgrou
             )}
           </label>
 
-          <button 
-            onClick={() => { onSelect(null); }} 
+          <button
+            onClick={() => { onSelect(null); }}
             className="flex-1 py-4 rounded-xl border border-red-500/30 bg-red-900/20 hover:bg-red-900/40 text-red-400 flex flex-col items-center justify-center transition"
           >
             <Trash2 size={24} className="mb-2" />
@@ -139,8 +139,8 @@ export function BackgroundPickerInline({ onSelect, currentBgUrl }: Omit<Backgrou
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-6">
           {PRESET_BACKGROUNDS.map((img) => (
-            <div 
-              key={img.id} 
+            <div
+              key={img.id}
               onClick={() => { onSelect(img.url); }}
               className={`relative aspect-video rounded-xl overflow-hidden cursor-pointer border-2 hover:shadow-[0_0_10px_rgba(197,160,89,0.3)] transition-all group ${currentBgUrl === img.url ? 'border-[#C5A059] shadow-md shadow-[#C5A059]/30' : 'border-slate-700'}`}
             >
@@ -169,8 +169,8 @@ export function BackgroundPickerInline({ onSelect, currentBgUrl }: Omit<Backgrou
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {images.map((img) => (
-            <div 
-              key={img.id} 
+            <div
+              key={img.id}
               onClick={() => { onSelect(img.id); }}
               className={`relative aspect-video rounded-xl overflow-hidden cursor-pointer border-2 hover:shadow-[0_0_10px_rgba(197,160,89,0.3)] transition-all group ${currentBgUrl === img.id ? 'border-[#C5A059] shadow-md shadow-[#C5A059]/30' : 'border-slate-700'}`}
             >
@@ -184,13 +184,11 @@ export function BackgroundPickerInline({ onSelect, currentBgUrl }: Omit<Backgrou
               ) : (
                 <img src={img.url} alt="Lokal" className="w-full h-full object-cover bg-slate-900" />
               )}
-              <button 
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if(confirm('Hapus gambar ini?')) {
-                    import('../utils/imageStorage').then(m => {
-                      m.removeSlideBackground(img.id).then(loadImages);
-                    });
+                  if (confirm('Hapus gambar ini?')) {
+                    removeSlideBackground(img.id).then(loadImages);
                   }
                 }}
                 className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
@@ -214,18 +212,18 @@ export function BackgroundPickerModal({ isOpen, onClose, onSelect, currentBgUrl 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex justify-center items-center p-4">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex justify-center items-center p-4">
       <div className="bg-slate-900 backdrop-blur-md rounded-2xl w-full max-w-4xl h-[90vh] flex flex-col shadow-2xl border border-slate-700">
         <div className="flex justify-between items-center p-4 border-b border-slate-800">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <ImageIcon size={24} className="text-[#C5A059]"/> Pilih Background
+            <ImageIcon size={24} className="text-[#C5A059]" /> Pilih Background
           </h2>
           <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-slate-400 transition">
             <X size={24} />
           </button>
         </div>
         <div className="flex-1 overflow-hidden p-2">
-           <BackgroundPickerInline onSelect={(id) => { onSelect(id); onClose(); }} currentBgUrl={currentBgUrl} />
+          <BackgroundPickerInline onSelect={(id) => { onSelect(id); onClose(); }} currentBgUrl={currentBgUrl} />
         </div>
       </div>
     </div>

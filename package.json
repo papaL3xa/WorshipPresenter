@@ -1,7 +1,15 @@
 {
   "name": "worship-presenter",
-  "version": "1.0.2",
-  "main": "main.js",
+  "version": "1.1.1",
+  "description": "WorshipPresenter - Offline-First Desktop Church Presentation Software",
+  "scripts": {
+    "start": "npm --prefix frontend run electron:dev",
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "electron:dev": "npm --prefix frontend run electron:dev",
+    "electron:build": "npm --prefix frontend run electron:build",
+    "electron:installer": "npm --prefix frontend run electron:installer"
+  },
   "dependencies": {
     "papaparse": "^5.5.4"
   }

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { callApi } from '../api';
 import { CONFIG } from '../config';
 import { getSlideBackground } from '../utils/imageStorage';
+import { calculateOptimalFontSize } from '../utils/fontCalculator';
 import { LocalVideoPlayer } from '../components/LocalVideoPlayer';
 import { LocalImageLoader } from '../components/LocalImageLoader';
 import YouTube from 'react-youtube';
@@ -31,27 +32,27 @@ const CrossfadeText = ({ text, processText, displayTheme, calculatedFontSize }: 
             className={`text-center whitespace-pre-wrap drop-shadow-xl w-full ${theme.bold !== false ? 'font-bold' : 'font-medium'}`}
             style={{
               gridArea: '1 / 1',
-              lineHeight: theme.lineHeight ?? 1.15,
+              lineHeight: theme.lineHeight ? Math.min(1.25, Math.max(1.12, Number(theme.lineHeight))) : 1.16,
               color: theme.color || 'white',
-              textShadow: (theme.shadow || 'dark') === 'dark' 
+              textShadow: (theme.shadow || 'dark') === 'dark'
                 ? '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)'
-                : (theme.shadow === 'light') 
-                ? '1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff, 0 4px 10px rgba(255,255,255,0.8)'
-                : 'none', 
+                : (theme.shadow === 'light')
+                  ? '1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff, 0 4px 10px rgba(255,255,255,0.8)'
+                  : 'none',
               fontSize: item.fontSize || calculatedFontSize,
               animation: (() => {
-                 if (isLatest) {
-                     if (renderList.length <= 1) return 'none';
-                     if (theme.transitionStyle === 'slideUp') return 'slideUpIn 0.5s ease-out forwards';
-                     if (theme.transitionStyle === 'slideDown') return 'slideDownIn 0.5s ease-out forwards';
-                     if (theme.transitionStyle === 'zoom') return 'zoomInIn 0.5s ease-out forwards';
-                     return 'fadeIn 0.5s ease-out forwards';
-                 } else {
-                     if (theme.transitionStyle === 'slideUp') return 'slideUpOut 0.5s ease-out forwards';
-                     if (theme.transitionStyle === 'slideDown') return 'slideDownOut 0.5s ease-out forwards';
-                     if (theme.transitionStyle === 'zoom') return 'zoomInOut 0.5s ease-out forwards';
-                     return 'fadeOut 0.5s ease-out forwards';
-                 }
+                if (isLatest) {
+                  if (renderList.length <= 1) return 'none';
+                  if (theme.transitionStyle === 'slideUp') return 'slideUpIn 0.5s ease-out forwards';
+                  if (theme.transitionStyle === 'slideDown') return 'slideDownIn 0.5s ease-out forwards';
+                  if (theme.transitionStyle === 'zoom') return 'zoomInIn 0.5s ease-out forwards';
+                  return 'fadeIn 0.5s ease-out forwards';
+                } else {
+                  if (theme.transitionStyle === 'slideUp') return 'slideUpOut 0.5s ease-out forwards';
+                  if (theme.transitionStyle === 'slideDown') return 'slideDownOut 0.5s ease-out forwards';
+                  if (theme.transitionStyle === 'zoom') return 'zoomInOut 0.5s ease-out forwards';
+                  return 'fadeOut 0.5s ease-out forwards';
+                }
               })(),
             }}
             onAnimationEnd={() => {
@@ -68,7 +69,7 @@ const CrossfadeText = ({ text, processText, displayTheme, calculatedFontSize }: 
 };
 
 export default function DisplayWindow() {
-  
+
 
   const [liveState, setLiveState] = useState<{
     playlistId?: string;
@@ -85,7 +86,7 @@ export default function DisplayWindow() {
     bgUrl: localStorage.getItem('custom_bg'),
     logoUrl: localStorage.getItem('worship_logo_b64')
   });
-  
+
   const [logos, setLogos] = useState<any[]>(() => {
     const saved = localStorage.getItem('worship_logos_array');
     if (saved) return JSON.parse(saved);
@@ -103,9 +104,9 @@ export default function DisplayWindow() {
   });
   const [actualBgUrl, setActualBgUrl] = useState<string | null>(null);
   const [bgType, setBgType] = useState<'image' | 'video'>('image');
-  
+
   const [countdownRemaining, setCountdownRemaining] = useState<number | null>(null);
-  
+
   const [isCursorVisible, setIsCursorVisible] = useState(false);
   const cursorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [scale, setScale] = useState(1);
@@ -137,7 +138,12 @@ export default function DisplayWindow() {
     transitionStyle?: 'crossfade' | 'slideUp' | 'slideDown' | 'zoom';
     aspectRatio?: 'full' | '16:9' | '16:10' | '4:3';
     layout?: 'full' | 'lower-third';
+    lowerThirdStyle?: 'dark-glass' | 'gradient' | 'minimal' | 'solid';
     blankImageUrl?: string;
+    blankImageFit?: 'contain' | 'cover';
+    logoScreenUrl?: string;
+    backgroundDim?: number;
+    enableVignette?: boolean;
   }>(loadTheme);
 
   const [playlistMap, setPlaylistMap] = useState<Record<string, any>>({});
@@ -145,7 +151,7 @@ export default function DisplayWindow() {
   const currentPlaylistIdRef = useRef<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const ytPlayerRef = useRef<any>(null);
-  const pendingVideoAction = useRef<'play'|'pause'|null>(null);
+  const pendingVideoAction = useRef<'play' | 'pause' | null>(null);
 
   useEffect(() => {
     // 1. Terima update cepat via BroadcastChannel lokal
@@ -216,34 +222,34 @@ export default function DisplayWindow() {
         const res = await callApi('getLiveState');
         if (res.success && res.data) {
           const gasState = res.data;
-          
+
           // Cek apakah ada perubahan Playlist ID, jika ya, fetch seluruh liriknya!
           if (gasState.playlistId && gasState.playlistId !== currentPlaylistIdRef.current) {
-             currentPlaylistIdRef.current = gasState.playlistId;
-             try {
-                const plRes = await callApi('getPlaylistItems', { id: gasState.playlistId });
-                if (plRes.success && plRes.data && plRes.data.items) {
-                   const newMap: Record<string, any> = {};
-                   plRes.data.items.forEach((item: any) => {
-                     newMap[item.id] = item;
-                   });
-                   setPlaylistMap(newMap);
-                }
-             } catch(e) {
-                console.error("Gagal menarik data playlist untuk display", e);
-             }
+            currentPlaylistIdRef.current = gasState.playlistId;
+            try {
+              const plRes = await callApi('getPlaylistItems', { id: gasState.playlistId });
+              if (plRes.success && plRes.data && plRes.data.items) {
+                const newMap: Record<string, any> = {};
+                plRes.data.items.forEach((item: any) => {
+                  newMap[item.id] = item;
+                });
+                setPlaylistMap(newMap);
+              }
+            } catch (e) {
+              console.error("Gagal menarik data playlist untuk display", e);
+            }
           }
 
           // Cek apakah data dari server lebih baru (timestamp guard mencegah override state lokal)
           if (gasState.updatedAt && gasState.updatedAt > lastUpdateRef.current) {
-             lastUpdateRef.current = gasState.updatedAt;
-             setLiveState(prev => ({
-               ...prev,
-               playlistId: gasState.playlistId,
-               currentItemId: gasState.currentItemId,
-               segmentIndex: gasState.segmentIndex || 0,
-               displayMode: gasState.displayMode || 'content',
-             }));
+            lastUpdateRef.current = gasState.updatedAt;
+            setLiveState(prev => ({
+              ...prev,
+              playlistId: gasState.playlistId,
+              currentItemId: gasState.currentItemId,
+              segmentIndex: gasState.segmentIndex || 0,
+              displayMode: gasState.displayMode || 'content',
+            }));
           }
         }
       } catch (err) {
@@ -269,7 +275,7 @@ export default function DisplayWindow() {
             });
             ch.close();
           }
-        } catch(e) {}
+        } catch (e) { }
       }
     }, 500);
 
@@ -328,7 +334,7 @@ export default function DisplayWindow() {
   let categoryLabel = '';
   let totalSegments = 1;
   let isVideoLoop = false;
-  
+
   // 1. Prioritaskan item yang datang dari BroadcastChannel (liveState.item)
   if (liveState.item && liveState.item.segments) {
     text = liveState.item.segments[liveState.segmentIndex];
@@ -345,7 +351,7 @@ export default function DisplayWindow() {
     }
     totalSegments = liveState.item.segments.length;
 
-  } 
+  }
   // 2. Jika tidak ada, ambil dari dictionary hasil download server (playlistMap)
   else if (liveState.currentItemId && playlistMap[liveState.currentItemId]) {
     const pItem = playlistMap[liveState.currentItemId];
@@ -370,9 +376,9 @@ export default function DisplayWindow() {
   if ((itemType === 'song' || itemType === 'bible' || itemType === 'announcement') && title) {
     // Treat as announcement if type is announcement OR title is exactly "Pengumuman"
     const isAnnouncement = itemType === 'announcement' || title.toLowerCase().includes('pengumuman');
-    
+
     let label = segmentLabel || '';
-    
+
     if (itemType === 'bible' && !label) {
       const match = title.match(/(.+?)\s*:\s*(\d+)/);
       if (match) {
@@ -382,22 +388,22 @@ export default function DisplayWindow() {
         label = `Ayat ${liveState.segmentIndex + 1}`;
       }
     }
-    
+
     if (!isAnnouncement && itemType === 'song' && label.startsWith('Slide ')) {
-       label = label.replace('Slide ', 'Bait ');
+      label = label.replace('Slide ', 'Bait ');
     }
     displayLabel = label;
-    
+
     if (!isAnnouncement) {
       const allLabels = liveState.item?.segmentLabels || playlistMap[liveState.currentItemId || '']?.segmentLabels || [];
       const isBait = (l: string) => l.toLowerCase().includes('bait') || l.toLowerCase().includes('verse') || l.toLowerCase().includes('slide');
-      
+
       if (isBait(label)) {
-         const totalBait = allLabels.filter(isBait).length || totalSegments;
-         const currentBaitNum = allLabels.slice(0, liveState.segmentIndex + 1).filter(isBait).length || (liveState.segmentIndex + 1);
-         progressText = `bait ${currentBaitNum} dari ${totalBait}`;
+        const totalBait = allLabels.filter(isBait).length || totalSegments;
+        const currentBaitNum = allLabels.slice(0, liveState.segmentIndex + 1).filter(isBait).length || (liveState.segmentIndex + 1);
+        progressText = `bait ${currentBaitNum} dari ${totalBait}`;
       } else {
-         progressText = ''; 
+        progressText = '';
       }
     } else {
       progressText = '';
@@ -406,7 +412,7 @@ export default function DisplayWindow() {
 
   // 3. Jika belum dapat juga, tampilkan loading/not found
   const isItemResolved = (liveState.item && liveState.item.segments) || (liveState.currentItemId && playlistMap[liveState.currentItemId]);
-  
+
   if (!isItemResolved) {
     if (liveState.currentItemId) {
       text = 'Memuat Lirik...';
@@ -433,10 +439,10 @@ export default function DisplayWindow() {
 
   // Hitung durasi animasi yang proporsional dengan panjang teks agar kecepatan stabil
   const rtSeparator = '\u00A0\u00A0\u00A0\u00A0|\u00A0\u00A0\u00A0\u00A0\u00A0'; // 4 spasi + 1 pipe + 5 spasi = 10 karakter
-  
+
   // Ubah baris baru (Enter) menjadi pemisah (separator) agar bisa multi pengumuman
-  const formattedRtText = rtState.text 
-    ? rtState.text.split('\n').filter(t => t.trim() !== '').join(rtSeparator) 
+  const formattedRtText = rtState.text
+    ? rtState.text.split('\n').filter(t => t.trim() !== '').join(rtSeparator)
     : '';
 
   const rtBlockText = formattedRtText ? Array(15).fill(formattedRtText).join(rtSeparator) + rtSeparator : '';
@@ -449,25 +455,41 @@ export default function DisplayWindow() {
     if (!raw) return '';
     let t = raw;
     t = t.replace(/\[([A-G][#b]?[a-zA-Z0-9/]{0,6})\]([^\[\n]*)/g, ''); // ControlPanel strips chords
-    
+
     // Bilingual side-by-side layout
     if (t.includes('\n[kuning]')) {
-       const parts = t.split('\n[kuning]');
-       if (parts.length === 2 && parts[1].endsWith('[/kuning]')) {
-           const left = parts[0].replace(/\n/g, '<br/>');
-           const right = parts[1].replace('[/kuning]', '').replace(/\n/g, '<br/>');
-           return `<div class="grid grid-cols-2 gap-12 w-full relative"><div class="min-w-0 break-words text-left self-center">${left}</div><div class="absolute left-1/2 top-0 bottom-0 w-[2px] -translate-x-1/2 bg-white/30 rounded-full my-2 pointer-events-none"></div><div class="min-w-0 break-words text-right text-yellow-300 self-center">${right}</div></div>`;
-        }
+      const parts = t.split('\n[kuning]');
+      if (parts.length === 2 && parts[1].endsWith('[/kuning]')) {
+        const left = parts[0].replace(/\n/g, '<br/>');
+        const right = parts[1].replace('[/kuning]', '').replace(/\n/g, '<br/>');
+        return `<div class="grid grid-cols-2 gap-12 w-full relative">
+          <div class="min-w-0 break-words text-left self-center text-white font-medium">${left}</div>
+          <div class="absolute left-1/2 top-2 bottom-2 w-[2px] -translate-x-1/2 bg-white/30 rounded-full pointer-events-none"></div>
+          <div class="min-w-0 break-words text-right text-yellow-300 font-semibold self-center">${right}</div>
+        </div>`;
+      }
     }
-    
+
     // 2-Kolom Bebas (Pengumuman)
     if (t.includes('\n[kolom2]')) {
-       const parts = t.split('\n[kolom2]');
-       if (parts.length === 2 && parts[1].endsWith('[/kolom2]')) {
-           const left = parts[0].replace(/\n/g, '<br/>');
-           const right = parts[1].replace('[/kolom2]', '').replace(/\n/g, '<br/>');
-           return `<div class="grid grid-cols-2 gap-12 w-full relative"><div class="min-w-0 break-words text-left self-center">${left}</div><div class="absolute left-1/2 top-0 bottom-0 w-[2px] -translate-x-1/2 bg-white/30 rounded-full my-2 pointer-events-none"></div><div class="min-w-0 break-words text-left self-center">${right}</div></div>`;
-       }
+      const parts = t.split('\n[kolom2]');
+      if (parts.length === 2 && parts[1].endsWith('[/kolom2]')) {
+        const left = parts[0].replace(/\n/g, '<br/>');
+        const right = parts[1].replace('[/kolom2]', '').replace(/\n/g, '<br/>');
+        return `<div class="grid grid-cols-2 gap-12 w-full relative">
+          <div class="min-w-0 break-words text-left self-center">${left}</div>
+          <div class="absolute left-1/2 top-2 bottom-2 w-[2px] -translate-x-1/2 bg-white/30 rounded-full pointer-events-none"></div>
+          <div class="min-w-0 break-words text-left self-center">${right}</div>
+        </div>`;
+      }
+    }
+
+    // Alkitab: format nomor ayat jika teks diawali angka (contoh: "16 Karena begitu besar..." atau "1 Pada mulanya...")
+    if (itemType === 'bible') {
+      const match = t.match(/^(\d+)\s+([\s\S]+)$/);
+      if (match) {
+        t = `<sup class="inline-block text-amber-300 font-black mr-2.5 text-[0.62em] align-top tracking-wider select-none bg-black/40 px-2 py-0.5 rounded-lg border border-amber-400/40 shadow-sm">${match[1]}</sup>${match[2]}`;
+      }
     }
 
     t = t.replace(/\n/g, '<br/>');
@@ -480,7 +502,7 @@ export default function DisplayWindow() {
     return t;
   };
 
-  const itemBg = liveState.item?.segmentBackgrounds?.[liveState.segmentIndex] 
+  const itemBg = liveState.item?.segmentBackgrounds?.[liveState.segmentIndex]
     || playlistMap[liveState.currentItemId || '']?.segmentBackgrounds?.[liveState.segmentIndex];
 
   useEffect(() => {
@@ -515,19 +537,19 @@ export default function DisplayWindow() {
     if (itemType === 'countdown') {
       const durationSec = parseInt(text || '0');
       const startTimestamp = liveState.updatedAt || Date.now();
-      
+
       const tick = () => {
         const elapsedSec = Math.floor((Date.now() - startTimestamp) / 1000);
         const remaining = Math.max(0, durationSec - elapsedSec);
         setCountdownRemaining(remaining);
       };
-      
+
       tick();
       interval = setInterval(tick, 1000);
     } else {
       setCountdownRemaining(null);
     }
-    
+
     return () => clearInterval(interval);
   }, [itemType, text, liveState.updatedAt]);
 
@@ -543,7 +565,7 @@ export default function DisplayWindow() {
     window.addEventListener('mousemove', handleMouseMove);
     // Initial hide
     cursorTimeoutRef.current = setTimeout(() => setIsCursorVisible(false), 2000);
-    
+
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       if (cursorTimeoutRef.current) clearTimeout(cursorTimeoutRef.current);
@@ -574,7 +596,7 @@ export default function DisplayWindow() {
   const getAspectRatioStyle = () => {
     const ratio = displayTheme.aspectRatio;
     if (!ratio || ratio === 'full') return { width: '100%', height: '100%' };
-    const rNum = ratio === '16:9' ? 16/9 : ratio === '16:10' ? 16/10 : 4/3;
+    const rNum = ratio === '16:9' ? 16 / 9 : ratio === '16:10' ? 16 / 10 : 4 / 3;
     return {
       aspectRatio: `${rNum}`,
       maxWidth: `calc(100vh * ${rNum})`,
@@ -596,16 +618,16 @@ export default function DisplayWindow() {
 
   return (
     <div className={`fixed inset-0 flex items-center justify-center ${actualBgUrl === '#00FF00' ? 'bg-[#00FF00]' : 'bg-black'} overflow-hidden ${isCursorVisible ? 'cursor-default' : 'cursor-none'}`}>
-      
+
       {/* Wrapper untuk Aspect Ratio Letterboxing */}
-      <div 
+      <div
         className="relative overflow-hidden"
         style={getAspectRatioStyle()}
       >
 
         {/* Background that fills the entire viewport (or letterboxed area) */}
         {actualBgUrl !== '#00FF00' && displayTheme.layout !== 'lower-third' && (
-          <div 
+          <div
             key={actualBgUrl || 'none'}
             className="absolute inset-0 z-0 bg-gray-900 animate-fade-slow"
             style={bgType === 'image' ? {
@@ -616,355 +638,351 @@ export default function DisplayWindow() {
             } : undefined}
           >
             {bgType === 'video' && actualBgUrl && (
-              <video 
-                src={actualBgUrl} 
-                autoPlay 
-                loop 
-                muted 
-                playsInline 
+              <video
+                src={actualBgUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                onError={(e) => console.warn("DisplayWindow: Gagal memutar video latar belakang:", e)}
                 className="absolute inset-0 w-full h-full object-cover z-0"
               />
             )}
-            <div className="absolute inset-0 bg-black/40 z-0"></div>
+            <div
+              className="absolute inset-0 z-0 transition-opacity duration-500"
+              style={{ backgroundColor: `rgba(0, 0, 0, ${(displayTheme.backgroundDim !== undefined ? displayTheme.backgroundDim : 40) / 100})` }}
+            ></div>
+            {displayTheme.enableVignette && (
+              <div
+                className="absolute inset-0 pointer-events-none z-0 transition-opacity duration-500"
+                style={{ background: 'radial-gradient(ellipse at center, transparent 35%, rgba(0, 0, 0, 0.75) 100%)' }}
+              ></div>
+            )}
           </div>
         )}
 
         {/* Container utama yang mengisi seluruh area aman (di luar running text) */}
-        <div 
+        <div
           className="absolute left-0 right-0 z-10 flex flex-col items-center justify-center pointer-events-none transition-all duration-500"
-          style={{ 
+          style={{
             containerType: 'inline-size',
             top: rtState.isVisible && rtState.position === 'top' ? `${((rtState.height || 7) / aspectPct) * 100}%` : '0',
             bottom: rtState.isVisible && rtState.position === 'bottom' ? `${((rtState.height || 7) / aspectPct) * 100}%` : '0'
           }}
         >
-      {enabledLogos.length > 0 && (text || itemType === 'video') && (
-        <div 
-          className="absolute inset-0 pointer-events-none z-[60]"
-        >
-          {enabledLogos.map(logo => (
-            <img 
-              key={logo.id}
-              src={logo.url} 
-              style={{ 
-                width: `${8 * logo.scale}%`,
-                ...(logo.x < 50 ? { left: `${logo.x}%` } : { right: `${100 - logo.x}%` }),
-                ...(logo.y < 50 ? { top: `${logo.y}%` } : { bottom: `${100 - logo.y}%` }),
-              }}
-              className="absolute h-auto opacity-70 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]"
-              alt="Logo" 
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Judul (Header) */}
-      <div className={`transition-opacity duration-700 absolute inset-0 w-full h-full flex flex-col items-center justify-center ${liveState.displayMode === 'content' ? 'opacity-100 pointer-events-auto z-[60]' : 'opacity-0 pointer-events-none -z-10'}`}>
-
-          {itemType !== 'video' && title && !liveState.item?.hideHeaderTitle && (itemType === 'song' || itemType === 'bible' || itemType === 'announcement') && displayLabel.toLowerCase() !== 'judul' && (
-            <h2 
-              key={`title-${title}-${liveState.segmentIndex}`}
-              className="absolute left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-20 transition-all duration-500"
-              style={{
-                top: `${6 + (displayTheme.titleOffsetY ?? 0)}%`,
-                fontSize: `${1.5 + (displayTheme.headerTitleFontSizeOffset !== undefined ? displayTheme.headerTitleFontSizeOffset : 0.5) + (liveState.item?.headerTitleFontSizeOffset || 0)}cqw`,
-                textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
-              }}
+          {enabledLogos.length > 0 && (text || itemType === 'video') && (
+            <div
+              className="absolute inset-0 pointer-events-none z-[60]"
             >
-              {title}
-            </h2>
+              {enabledLogos.map(logo => (
+                <img
+                  key={logo.id}
+                  src={logo.url}
+                  style={{
+                    width: `${8 * logo.scale}%`,
+                    ...(logo.x < 50 ? { left: `${logo.x}%` } : { right: `${100 - logo.x}%` }),
+                    ...(logo.y < 50 ? { top: `${logo.y}%` } : { bottom: `${100 - logo.y}%` }),
+                  }}
+                  className="absolute h-auto opacity-70 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]"
+                  alt="Logo"
+                />
+              ))}
+            </div>
           )}
 
-      {/* Konten Lirik/Ayat atau Slideshow atau Video */}
-      {itemType === 'video' ? (
-        <div className="absolute inset-0 z-50 bg-black flex justify-center items-center pointer-events-auto">
-          {(() => {
-            const url = text;
-            let videoId = '';
-            let embedUrl = '';
-            if (url.includes('youtube.com') || url.includes('youtu.be')) {
-              if (url.includes('list=')) {
-                const listId = url.split('list=')[1].split('&')[0];
-                if (url.includes('v=')) {
-                  videoId = url.split('v=')[1].split('&')[0];
-                }
-                embedUrl = videoId 
-                  ? `https://www.youtube-nocookie.com/embed/${videoId}?list=${listId}&autoplay=0`
-                  : `https://www.youtube-nocookie.com/embed/videoseries?list=${listId}&autoplay=0`;
-              } else if (url.includes('youtube.com/watch?v=')) {
-                videoId = url.split('v=')[1].split('&')[0];
-                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0`;
-              } else if (url.includes('youtu.be/')) {
-                videoId = url.split('youtu.be/')[1].split('?')[0];
-                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0`;
-              } else if (url.includes('youtube.com/embed/') || url.includes('youtube-nocookie.com/embed/')) {
-                embedUrl = url.includes('?') ? url.replace('autoplay=1', 'autoplay=0') : `${url}?autoplay=0`;
-                embedUrl = embedUrl.replace('youtube.com', 'youtube-nocookie.com');
-                videoId = embedUrl.split('embed/')[1].split('?')[0];
-              } else {
-                embedUrl = url; // Fallback
-              }
-              
-              if (videoId) {
-                const opts = {
-                  height: '100%',
-                  width: '100%',
-                  playerVars: {
-                    autoplay: 0,
-                    mute: isVideoMuted ? 1 : 0,
-                    controls: 0,
-                    disablekb: 1,
-                    enablejsapi: 1,
-                    loop: isVideoLoop ? 1 : 0,
-                    playlist: isVideoLoop ? videoId : undefined,
-                  }
-                };
-                return (
-                  <YouTube
-                    videoId={videoId}
-                    opts={opts}
-                    className="w-full h-full object-contain animate-fade-in"
-                    onReady={(e: any) => {
-                      ytPlayerRef.current = e.target;
-                    }}
-                    onStateChange={(e: any) => {
-                      const ch = new BroadcastChannel('worship_live_sync');
-                      if (e.data === 2) {
-                        ch.postMessage({ type: 'VIDEO_STATE', payload: 'pause' });
-                      } else if (e.data === 1) {
-                        ch.postMessage({ type: 'VIDEO_STATE', payload: 'play' });
-                      }
-                      ch.close();
-                    }}
-                  />
-                );
-              }
-              
-              return (
-                <iframe 
-                  key={embedUrl}
-                  className="w-full h-full object-contain animate-fade-in pointer-events-auto" 
-                  src={embedUrl}
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                  allowFullScreen
-                ></iframe>
-              );
-            }
-            const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
-              const vid = e.currentTarget;
-              const channel = new BroadcastChannel('worship_live_sync');
-              channel.postMessage({
-                type: 'VIDEO_PROGRESS',
-                payload: {
-                  currentTime: vid.currentTime,
-                  duration: vid.duration
-                }
-              });
-              channel.close();
-            };
+          {/* Judul (Header) */}
+          <div className={`transition-opacity duration-700 absolute inset-0 w-full h-full flex flex-col items-center justify-center ${liveState.displayMode === 'content' ? 'opacity-100 pointer-events-auto z-[60]' : 'opacity-0 pointer-events-none -z-10'}`}>
 
-            const handlePlay = () => {
-              const ch = new BroadcastChannel('worship_live_sync');
-              ch.postMessage({ type: 'VIDEO_STATE', payload: 'play' });
-              ch.close();
-            };
-            const handlePause = () => {
-              const ch = new BroadcastChannel('worship_live_sync');
-              ch.postMessage({ type: 'VIDEO_STATE', payload: 'pause' });
-              ch.close();
-            };
-
-            if (url.startsWith('local_vid_') || url.startsWith('file://')) {
-              return <div className="w-full h-full pointer-events-auto">
-                <LocalVideoPlayer 
-                  ref={videoRef} 
-                  key={url} 
-                  id={url} 
-                  loop={isVideoLoop} 
-                  autoPlay={false} 
-                  muted={isVideoMuted} 
-                  onTimeUpdate={handleTimeUpdate} 
-                  onPlay={handlePlay} 
-                  onPause={handlePause} 
-                  onLoadedData={() => {
-                    if (pendingVideoAction.current === 'play' && videoRef.current) {
-                      videoRef.current.play().catch(e => console.error("Play error after load:", e));
-                    } else if (pendingVideoAction.current === 'pause' && videoRef.current) {
-                      videoRef.current.pause();
-                    }
-                    pendingVideoAction.current = null;
-                  }}
-                />
-              </div>;
-            }
-            return (
-              <video 
-                ref={videoRef}
-                key={url}
-                className="w-full h-full object-contain animate-fade-in pointer-events-auto" 
-                src={url} 
-                autoPlay={false}
-                loop={isVideoLoop}
-                muted={isVideoMuted}
-                onTimeUpdate={handleTimeUpdate}
-                onPlay={handlePlay}
-                onPause={handlePause}
-              />
-            );
-          })()}
-        </div>
-      ) : itemType === 'image' ? (
-        <div className="absolute inset-0 z-50 bg-black flex justify-center items-center pointer-events-auto">
-          {(() => {
-            try {
-              const urls = JSON.parse(text);
-              if (Array.isArray(urls)) {
-                return (
-                  <div className="flex w-full h-full gap-4 p-4 items-center justify-center">
-                    {urls.map((url: string, i: number) => (
-                      <div key={i} className="flex-1 h-full relative">
-                        <LocalImageLoader id={url} className="w-full h-full object-contain animate-fade-in" />
-                      </div>
-                    ))}
-                  </div>
-                );
-              }
-            } catch (e) {
-              // If it fails to parse, it's just a single URL string
-            }
-            return <LocalImageLoader id={text} className="w-full h-full object-contain animate-fade-in" />;
-          })()}
-        </div>
-      ) : (
-        <div className={`absolute left-0 right-0 z-[70] flex flex-col items-center w-full min-h-0 transition-all duration-700 ${
-          displayTheme.layout === 'lower-third' 
-          ? 'bottom-[5%] justify-end'
-          : (displayTheme.position || 'center') === 'top' ? 'top-[8%] bottom-[12%] justify-start' 
-          : (displayTheme.position || 'center') === 'bottom' ? 'top-[18%] bottom-[8%] justify-end' 
-          : 'top-[18%] bottom-[12%] justify-center'
-        }`}
-        style={{ paddingLeft: `${displayTheme.paddingHorizontal ?? 8}%`, paddingRight: `${displayTheme.paddingHorizontal ?? 8}%`, marginTop: `${displayTheme.contentOffsetY ?? 0}%` }}>
-          {itemType === 'countdown' && countdownRemaining !== null ? (
-            <div className="text-white text-center font-bold tracking-widest leading-none drop-shadow-xl w-full font-mono animate-fade-in" 
-                 style={{ textShadow: '0 10px 30px rgba(0,0,0,0.8), 0 0 40px rgba(255,255,255,0.2)', fontSize: '18cqw' }}>
-              {String(Math.floor(countdownRemaining / 60)).padStart(2, '0')}:{String(countdownRemaining % 60).padStart(2, '0')}
-            </div>
-          ) : text ? (
-            <div className={`${displayTheme.layout === 'lower-third' ? 'bg-black/60 backdrop-blur-sm px-10 py-4 rounded-3xl w-full border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)] h-[20cqw] flex flex-col justify-center items-center overflow-hidden relative' : 'w-full flex flex-col items-center relative'}`}>
-              <CrossfadeText 
-                text={text} 
-                processText={processText} 
-                displayTheme={displayTheme} 
-                calculatedFontSize={(() => {
-                  const t = text || '';
-                  const is2Column = t.includes('\n[kuning]') || t.includes('\n[kolom2]');
-                  const charCount = is2Column ? t.length * 1.5 : t.length;
-                  const charsPerLine = is2Column ? 14 : 28;
-                  
-                  const strippedT = t.replace(/\[\/?(merah|kuning|hijau|biru|ungu|oranye|kolom2)\]/gi, '');
-                  const lines = strippedT.split('\n');
-                  const visualLines = lines.reduce((acc: number, line: string) => acc + Math.ceil((line.length || 1) / charsPerLine), 0);
-                  
-                  let baseSize = 8.5;
-                  if (visualLines >= 12 || charCount > 400) baseSize = 3;
-                  else if (visualLines >= 9 || charCount > 300) baseSize = 3.5;
-                  else if (visualLines >= 7 || charCount > 200) baseSize = 4;
-                  else if (visualLines >= 5 || charCount > 150) baseSize = 4.75;
-                  else if (visualLines >= 4 || charCount > 100) baseSize = 5.5;
-                  else if (visualLines >= 3 || charCount > 60) baseSize = 6.5;
-                  else if (charCount > 35) baseSize = 7.5;
-                  
-                  // Prevent wrapping if user didn't press enter (shrink-to-fit line)
-                  const maxLineLength = Math.max(...lines.map((line: string) => line.length), 1);
-                  const availableWidth = is2Column ? 42 : 84; 
-                  let requiredSize = availableWidth / (maxLineLength * 0.55);
-                  
-                  if (requiredSize < baseSize) {
-                      baseSize = Math.max(requiredSize, 2); // don't go below 2cqw to stay readable
-                  }
-                  
-                  if (displayTheme.layout === 'lower-third') {
-                      // Container height is fixed at h-[20cqw].
-                      // Since the bait label is absolute, it doesn't take up document flow.
-                      // padding y is py-4 (approx 1.5cqw). So available height is ~17cqw.
-                      const maxAvailableHeight = 17.5; 
-                      const lineHeightMultiplier = Number(displayTheme.lineHeight) || 1.15;
-                      const maxVerticalSize = maxAvailableHeight / (Math.max(visualLines, 1) * lineHeightMultiplier);
-                      
-                      // Use the smallest size: normal width constraint, max vertical constraint, or absolute max (5.5cqw)
-                      // We don't artificially shrink width constraint (baseSize) anymore, so it can stretch fully.
-                      baseSize = Math.min(baseSize, maxVerticalSize, 5.5); 
-                  }
-                  
-                  return `${baseSize + (displayTheme.fontSizeOffset || 0)}cqw`;
-                })()} 
-              />
-              {/* Bait Label */}
-              {displayLabel.toLowerCase() !== 'judul' && (
-                <div 
-                  className={`text-yellow-300 font-bold tracking-widest uppercase animate-fade-in opacity-90 ${
-                    displayTheme.layout === 'lower-third' 
-                      ? 'absolute top-[1.5cqw] left-[2.5cqw] mt-0' 
-                      : 'mt-[1.5cqw] opacity-80'
+            {itemType !== 'video' && title && !liveState.item?.hideHeaderTitle && (itemType === 'song' || itemType === 'bible' || itemType === 'announcement') && displayLabel.toLowerCase() !== 'judul' && (
+              <h2
+                key={`title-${title}-${liveState.segmentIndex}`}
+                className={`absolute left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider transition-all duration-500 ${displayTheme.layout === 'lower-third' ? 'bottom-[25.5cqw] z-[80]' : 'z-20'
                   }`}
-                  style={{
-                    fontSize: displayTheme.layout === 'lower-third' ? '1.4cqw' : '1.5cqw',
-                    textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)',
-                    minHeight: displayTheme.layout === 'lower-third' ? '0' : '2cqw'
-                  }}
-                >
-                  {displayLabel || (itemType === 'song' ? '•' : '')}
-                </div>
-              )}
-            </div>
-          ) : enabledLogos.length > 0 ? (
-            <img 
-              src={enabledLogos[0].url} 
-              style={{ width: `${33 * enabledLogos[0].scale}%`, maxWidth: `${400 * enabledLogos[0].scale}px` }}
-              className="object-contain animate-fade-in drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]" 
-              alt="Logo" 
-            />
-          ) : null}
+                style={{
+                  top: displayTheme.layout === 'lower-third' ? 'auto' : `${6 + (displayTheme.titleOffsetY ?? 0)}%`,
+                  fontSize: `${1.5 + (displayTheme.headerTitleFontSizeOffset !== undefined ? displayTheme.headerTitleFontSizeOffset : 0.5) + (liveState.item?.headerTitleFontSizeOffset || 0)}cqw`,
+                  textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
+                }}
+              >
+                {title}
+              </h2>
+            )}
+
+            {/* Konten Lirik/Ayat atau Slideshow atau Video */}
+            {itemType === 'video' ? (
+              <div className="absolute inset-0 z-50 bg-black flex justify-center items-center pointer-events-auto">
+                {(() => {
+                  const url = text;
+                  let videoId = '';
+                  let embedUrl = '';
+                  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                    if (url.includes('list=')) {
+                      const listId = url.split('list=')[1].split('&')[0];
+                      if (url.includes('v=')) {
+                        videoId = url.split('v=')[1].split('&')[0];
+                      }
+                      embedUrl = videoId
+                        ? `https://www.youtube-nocookie.com/embed/${videoId}?list=${listId}&autoplay=0`
+                        : `https://www.youtube-nocookie.com/embed/videoseries?list=${listId}&autoplay=0`;
+                    } else if (url.includes('youtube.com/watch?v=')) {
+                      videoId = url.split('v=')[1].split('&')[0];
+                      embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0`;
+                    } else if (url.includes('youtu.be/')) {
+                      videoId = url.split('youtu.be/')[1].split('?')[0];
+                      embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0`;
+                    } else if (url.includes('youtube.com/embed/') || url.includes('youtube-nocookie.com/embed/')) {
+                      embedUrl = url.includes('?') ? url.replace('autoplay=1', 'autoplay=0') : `${url}?autoplay=0`;
+                      embedUrl = embedUrl.replace('youtube.com', 'youtube-nocookie.com');
+                      videoId = embedUrl.split('embed/')[1].split('?')[0];
+                    } else {
+                      embedUrl = url; // Fallback
+                    }
+
+                    if (videoId) {
+                      const opts = {
+                        height: '100%',
+                        width: '100%',
+                        playerVars: {
+                          autoplay: 0,
+                          mute: isVideoMuted ? 1 : 0,
+                          controls: 0,
+                          disablekb: 1,
+                          enablejsapi: 1,
+                          loop: isVideoLoop ? 1 : 0,
+                          playlist: isVideoLoop ? videoId : undefined,
+                        }
+                      };
+                      return (
+                        <YouTube
+                          videoId={videoId}
+                          opts={opts}
+                          className="w-full h-full object-contain animate-fade-in"
+                          onReady={(e: any) => {
+                            ytPlayerRef.current = e.target;
+                          }}
+                          onStateChange={(e: any) => {
+                            const ch = new BroadcastChannel('worship_live_sync');
+                            if (e.data === 2) {
+                              ch.postMessage({ type: 'VIDEO_STATE', payload: 'pause' });
+                            } else if (e.data === 1) {
+                              ch.postMessage({ type: 'VIDEO_STATE', payload: 'play' });
+                            }
+                            ch.close();
+                          }}
+                        />
+                      );
+                    }
+
+                    return (
+                      <iframe
+                        key={embedUrl}
+                        className="w-full h-full object-contain animate-fade-in pointer-events-auto"
+                        src={embedUrl}
+                        referrerPolicy="strict-origin-when-cross-origin"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      ></iframe>
+                    );
+                  }
+                  const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+                    const vid = e.currentTarget;
+                    const channel = new BroadcastChannel('worship_live_sync');
+                    channel.postMessage({
+                      type: 'VIDEO_PROGRESS',
+                      payload: {
+                        currentTime: vid.currentTime,
+                        duration: vid.duration
+                      }
+                    });
+                    channel.close();
+                  };
+
+                  const handlePlay = () => {
+                    const ch = new BroadcastChannel('worship_live_sync');
+                    ch.postMessage({ type: 'VIDEO_STATE', payload: 'play' });
+                    ch.close();
+                  };
+                  const handlePause = () => {
+                    const ch = new BroadcastChannel('worship_live_sync');
+                    ch.postMessage({ type: 'VIDEO_STATE', payload: 'pause' });
+                    ch.close();
+                  };
+
+                  if (url.startsWith('local_vid_') || url.startsWith('file://')) {
+                    return <div className="w-full h-full pointer-events-auto">
+                      <LocalVideoPlayer
+                        ref={videoRef}
+                        key={url}
+                        id={url}
+                        loop={isVideoLoop}
+                        autoPlay={false}
+                        muted={isVideoMuted}
+                        onTimeUpdate={handleTimeUpdate}
+                        onPlay={handlePlay}
+                        onPause={handlePause}
+                        onLoadedData={() => {
+                          if (pendingVideoAction.current === 'play' && videoRef.current) {
+                            videoRef.current.play().catch(e => console.error("Play error after load:", e));
+                          } else if (pendingVideoAction.current === 'pause' && videoRef.current) {
+                            videoRef.current.pause();
+                          }
+                          pendingVideoAction.current = null;
+                        }}
+                      />
+                    </div>;
+                  }
+                  return (
+                    <video
+                      ref={videoRef}
+                      key={url}
+                      className="w-full h-full object-contain animate-fade-in pointer-events-auto"
+                      src={url}
+                      autoPlay={false}
+                      loop={isVideoLoop}
+                      muted={isVideoMuted}
+                      onTimeUpdate={handleTimeUpdate}
+                      onPlay={handlePlay}
+                      onPause={handlePause}
+                      onError={(e) => console.warn("DisplayWindow: Gagal memutar video konten:", e)}
+                    />
+                  );
+                })()}
+              </div>
+            ) : itemType === 'image' ? (
+              <div className="absolute inset-0 z-50 bg-black flex justify-center items-center pointer-events-auto">
+                {(() => {
+                  try {
+                    const urls = JSON.parse(text);
+                    if (Array.isArray(urls)) {
+                      return (
+                        <div className="flex w-full h-full gap-4 p-4 items-center justify-center">
+                          {urls.map((url: string, i: number) => (
+                            <div key={i} className="flex-1 h-full relative">
+                              <LocalImageLoader id={url} className="w-full h-full object-contain animate-fade-in" />
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+                  } catch (e) {
+                    // If it fails to parse, it's just a single URL string
+                  }
+                  return <LocalImageLoader id={text} className="w-full h-full object-contain animate-fade-in" />;
+                })()}
+              </div>
+            ) : (
+              <div className={`absolute left-0 right-0 z-[70] flex flex-col items-center w-full min-h-0 transition-all duration-700 ${displayTheme.layout === 'lower-third'
+                ? 'bottom-[5%] justify-end'
+                : (displayTheme.position || 'center') === 'top' ? 'top-[8%] bottom-[12%] justify-start'
+                  : (displayTheme.position || 'center') === 'bottom' ? 'top-[18%] bottom-[8%] justify-end'
+                    : 'top-[18%] bottom-[12%] justify-center'
+                }`}
+                style={{ paddingLeft: `${displayTheme.paddingHorizontal ?? 8}%`, paddingRight: `${displayTheme.paddingHorizontal ?? 8}%`, marginTop: `${displayTheme.contentOffsetY ?? 0}%` }}>
+                {itemType === 'countdown' && countdownRemaining !== null ? (
+                  <div className="text-white text-center font-bold tracking-widest leading-none drop-shadow-xl w-full font-mono animate-fade-in"
+                    style={{ textShadow: '0 10px 30px rgba(0,0,0,0.8), 0 0 40px rgba(255,255,255,0.2)', fontSize: '18cqw' }}>
+                    {String(Math.floor(countdownRemaining / 60)).padStart(2, '0')}:{String(countdownRemaining % 60).padStart(2, '0')}
+                  </div>
+                ) : text ? (
+                  <div className={`${displayTheme.layout === 'lower-third'
+                    ? (displayTheme.lowerThirdStyle === 'gradient'
+                      ? 'bg-gradient-to-r from-black/90 via-slate-900/80 to-black/90 backdrop-blur-md px-10 py-4 rounded-3xl w-full border-y border-amber-500/30 shadow-[0_10px_40px_rgba(0,0,0,0.7)] h-[20cqw] flex flex-col justify-center items-center overflow-hidden relative'
+                      : displayTheme.lowerThirdStyle === 'minimal'
+                        ? 'bg-black/40 backdrop-blur-sm px-10 py-4 rounded-2xl w-full border-l-4 border-amber-400 shadow-[0_8px_30px_rgba(0,0,0,0.4)] h-[20cqw] flex flex-col justify-center items-center overflow-hidden relative'
+                        : displayTheme.lowerThirdStyle === 'solid'
+                          ? 'bg-black/95 px-10 py-4 rounded-2xl w-full border border-white/20 shadow-[0_12px_45px_rgba(0,0,0,0.8)] h-[20cqw] flex flex-col justify-center items-center overflow-hidden relative'
+                          : 'bg-black/60 backdrop-blur-md px-10 py-4 rounded-3xl w-full border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)] h-[20cqw] flex flex-col justify-center items-center overflow-hidden relative'
+                    )
+                    : 'w-full flex flex-col items-center relative'
+                    }`}>
+                    <CrossfadeText
+                      text={text}
+                      processText={processText}
+                      displayTheme={displayTheme}
+                      calculatedFontSize={`${calculateOptimalFontSize(text || '', {
+                        is2Column: (text || '').includes('\n[kuning]') || (text || '').includes('\n[kolom2]'),
+                        isLowerThird: displayTheme.layout === 'lower-third',
+                        lineHeight: Number(displayTheme.lineHeight) || 1.16,
+                        fontSizeOffset: displayTheme.fontSizeOffset || 0
+                      })}cqw`}
+                    />
+                    {/* Bait Label */}
+                    {displayLabel.toLowerCase() !== 'judul' && (
+                      <div
+                        className={`text-yellow-300 font-bold tracking-widest uppercase animate-fade-in opacity-90 ${displayTheme.layout === 'lower-third'
+                          ? 'absolute top-[1.5cqw] left-[2.5cqw] mt-0'
+                          : 'mt-[1.5cqw] opacity-80'
+                          }`}
+                        style={{
+                          fontSize: displayTheme.layout === 'lower-third' ? '1.4cqw' : '1.5cqw',
+                          textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)',
+                          minHeight: displayTheme.layout === 'lower-third' ? '0' : '2cqw'
+                        }}
+                      >
+                        {displayLabel || (itemType === 'song' ? '•' : '')}
+                      </div>
+                    )}
+
+
+                  </div>
+                ) : null}
+              </div>
+            )}
+
+          </div>
+
         </div>
-      )}
 
-      </div>
-
-      </div>
-
-      {/* Running Text */}
-      {rtState.isVisible && rtState.text && (
-        <div 
-          className={`absolute left-0 right-0 z-50 bg-black/60 backdrop-blur-md border-y border-white/10 overflow-hidden flex items-center ${
-            rtState.position === 'top' ? 'top-0' : 'bottom-0'
-          }`}
-          style={{ height: `${((rtState.height || 7) / aspectPct) * 100}%` }}
-        >
-          <div 
-            className="animate-marquee-seamless shrink-0"
-            style={{ animationDuration: `${calculatedDuration}s` }}
+        {/* Running Text */}
+        {rtState.isVisible && rtState.text && (
+          <div
+            className={`absolute left-0 right-0 z-50 bg-black/60 backdrop-blur-md border-y border-white/10 overflow-hidden flex items-center ${rtState.position === 'top' ? 'top-0' : 'bottom-0'
+              }`}
+            style={{ height: `${((rtState.height || 7) / aspectPct) * 100}%` }}
           >
-            <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtState.height || 7) / aspectPct * 100) * 0.35}cqw` }}>
-              {rtBlockText}
-            </div>
-            <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtState.height || 7) / aspectPct * 100) * 0.35}cqw` }}>
-              {rtBlockText}
+            <div
+              className="animate-marquee-seamless shrink-0"
+              style={{ animationDuration: `${calculatedDuration}s` }}
+            >
+              <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtState.height || 7) / aspectPct * 100) * 0.35}cqw` }}>
+                {rtBlockText}
+              </div>
+              <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtState.height || 7) / aspectPct * 100) * 0.35}cqw` }}>
+                {rtBlockText}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       </div> {/* Penutup Wrapper Aspect Ratio */}
 
       {/* Blank Mode Overlay - menutupi semua konten tanpa unmount komponen */}
       {isBlank && (
         <div className="absolute inset-0 bg-black z-[999] cursor-none flex items-center justify-center overflow-hidden">
-          <img 
-            src={displayTheme.blankImageUrl || import.meta.env.BASE_URL + "blank_logo.png"} 
-            alt="Blank Logo" 
-            className="w-full h-full object-cover"
-          />
+          {displayTheme.blankImageUrl !== 'none' && (
+            <img
+              src={displayTheme.blankImageUrl || import.meta.env.BASE_URL + "blank_logo.png"}
+              alt="Blank Logo"
+              className={displayTheme.blankImageFit === 'cover'
+                ? "w-full h-full object-cover animate-fade-in"
+                : "max-h-[50%] max-w-[50%] object-contain drop-shadow-[0_0_25px_rgba(255,255,255,0.7)] drop-shadow-[0_0_50px_rgba(197,160,89,0.45)] animate-fade-in"
+              }
+            />
+          )}
+        </div>
+      )}
+
+      {/* Layar Logo Mode Overlay (Hotkey L) */}
+      {!isBlank && liveState.displayMode === 'logo' && (
+        <div className="absolute inset-0 z-[998] cursor-none flex items-center justify-center overflow-hidden animate-fade-in bg-black/40">
+          {displayTheme.logoScreenUrl !== 'none' && (
+            <img
+              src={displayTheme.logoScreenUrl || import.meta.env.BASE_URL + "logo.png"}
+              alt="Layar Logo"
+              style={{ width: '35%', maxWidth: '450px' }}
+              className="object-contain drop-shadow-[0_0_25px_rgba(255,255,255,0.7)] drop-shadow-[0_0_50px_rgba(197,160,89,0.45)]"
+            />
+          )}
         </div>
       )}
     </div>

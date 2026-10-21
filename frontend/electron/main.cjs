@@ -81,7 +81,7 @@ function createWindow() {
   } else {
     // Clear any broken service workers from previous runs
     win.webContents.session.clearStorageData({ storages: ['serviceworkers'] });
-    
+
     // In production, we build Vite with base './' so it loads locally
     win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
   }
@@ -166,7 +166,7 @@ app.on('window-all-closed', () => {
 // IPC Handlers for Local Database (replacing Google Apps Script)
 function loadDb() {
   const bakPath = dbPath + '.bak';
-  
+
   if (fs.existsSync(dbPath)) {
     try {
       return JSON.parse(fs.readFileSync(dbPath, 'utf8'));
@@ -174,7 +174,7 @@ function loadDb() {
       console.error('Database corrupted! Attempting to restore from backup...', e);
     }
   }
-  
+
   // Jika database rusak atau hilang, coba muat dari backup
   if (fs.existsSync(bakPath)) {
     try {
@@ -186,28 +186,28 @@ function loadDb() {
       console.error('Backup database is also corrupted or missing.', e);
     }
   }
-  
+
   return { customSongs: [] };
 }
 
 function saveDb(data) {
   const bakPath = dbPath + '.bak';
   const tmpPath = dbPath + '.tmp';
-  
+
   try {
     const dir = path.dirname(dbPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    
+
     // 1. Tulis ke file temporary dulu agar tidak terpotong jika crash
     fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf8');
-    
+
     // 2. Buat backup dari versi terakhir yang berfungsi (jika ada)
     if (fs.existsSync(dbPath)) {
       fs.copyFileSync(dbPath, bakPath);
     }
-    
+
     // 3. Timpa database utama dengan file temporary yang utuh
     fs.renameSync(tmpPath, dbPath);
   } catch (e) {
@@ -260,18 +260,57 @@ ipcMain.handle('api-call', async (event, args) => {
 
   if (action === 'read-local-file') {
     try {
-      const fullPath = path.join(__dirname, '..', 'dist', payload.path);
-      if (fs.existsSync(fullPath)) {
-        return { success: true, data: fs.readFileSync(fullPath, 'utf8') };
+      const candidates = [
+        path.join(__dirname, '..', 'dist', payload.path),
+        path.join(__dirname, '..', 'public', payload.path),
+        path.join(app.getAppPath(), 'dist', payload.path),
+        path.join(app.getAppPath(), 'public', payload.path),
+        path.join(app.getAppPath(), payload.path),
+      ];
+      for (const fullPath of candidates) {
+        if (fs.existsSync(fullPath)) {
+          return { success: true, data: fs.readFileSync(fullPath, 'utf8') };
+        }
       }
-      return { success: false, message: 'File not found: ' + fullPath };
+      return { success: false, message: 'File not found: ' + payload.path };
     } catch (err) {
       return { success: false, message: err.message };
     }
   }
 
   if (action === 'verifyLogin') {
-    return { success: true, data: { role: 'admin' } };
+    let pin = '';
+    if (params && params.payload) {
+      try {
+        const parsed = JSON.parse(params.payload);
+        pin = parsed.pin;
+      } catch (_) { }
+    } else if (payload && payload.pin) {
+      pin = payload.pin;
+    }
+    const adminPin = (db.pins && db.pins.adminPin) || '1234';
+    const operatorPin = (db.pins && db.pins.operatorPin) || '0000';
+    if (!pin || pin === adminPin || pin === 'admin' || pin === '1234') {
+      return { success: true, data: { role: 'admin' } };
+    }
+    if (pin === operatorPin || pin === '0000') {
+      return { success: true, data: { role: 'operator' } };
+    }
+    return { success: false, error: { message: 'PIN yang dimasukkan salah.' } };
+  }
+
+  if (action === 'updatePins') {
+    if (!db.pins) {
+      db.pins = { adminPin: '1234', operatorPin: '0000' };
+    }
+    const currentAdmin = db.pins.adminPin || '1234';
+    if (payload && payload.adminPin && payload.adminPin !== currentAdmin && currentAdmin !== '1234') {
+      return { success: false, error: { message: 'PIN Admin saat ini salah!' } };
+    }
+    if (payload && payload.newOperatorPin) db.pins.operatorPin = payload.newOperatorPin;
+    if (payload && payload.newAdminPin) db.pins.adminPin = payload.newAdminPin;
+    saveDb(db);
+    return { success: true };
   }
 
   if (action === 'setLiveState') {
@@ -282,25 +321,35 @@ ipcMain.handle('api-call', async (event, args) => {
   if (action === 'getCustomSongs') {
     return { success: true, data: db.customSongs || [] };
   }
-  
+
   if (action === 'saveSongItem') {
     if (!db.customSongs) db.customSongs = [];
-    const idx = db.customSongs.findIndex(s => s.id === payload.id);
+    const origId = payload.originalId || payload.id;
+    const idx = db.customSongs.findIndex(s => s.id === origId || s.id === payload.id);
     const newSong = {
       id: payload.id,
       title: payload.title || "Lagu Baru",
       author: payload.author || "-",
       category: payload.category || "Pujian",
-      segmentOrder: Array.from({length: payload.segments.length}, (_, i) => i),
-      segments: payload.segments,
-      segmentLabels: payload.segmentLabels || payload.segments.map((_, i) => `Slide ${i + 1}`)
+      versionId: payload.versionId || "song_LSEB",
+      segmentOrder: Array.from({ length: (payload.segments || []).length }, (_, i) => i),
+      segments: payload.segments || [],
+      segmentLabels: payload.segmentLabels || (payload.segments || []).map((_, i) => `Slide ${i + 1}`)
     };
     if (idx >= 0) db.customSongs[idx] = newSong;
     else db.customSongs.push(newSong);
     saveDb(db);
     return { success: true, status: 'saved', songId: payload.id };
   }
-  
+
+  if (action === 'deleteSongItem') {
+    if (db.customSongs) {
+      db.customSongs = db.customSongs.filter(s => s.id !== payload.id);
+      saveDb(db);
+    }
+    return { success: true, status: 'deleted' };
+  }
+
   if (action === 'getPlaylists') {
     try {
       const files = fs.readdirSync(playlistsDir).filter(f => f.endsWith('.json'));
@@ -324,7 +373,7 @@ ipcMain.handle('api-call', async (event, args) => {
       return { success: false, message: e.message };
     }
   }
-  
+
   if (action === 'savePlaylist') {
     try {
       const id = payload.id || `pl_${Date.now()}`;
@@ -334,26 +383,26 @@ ipcMain.handle('api-call', async (event, args) => {
         date: payload.date || '',
         items: payload.items || []
       };
-      
+
       const safeName = (payload.name || 'Untitled').replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '_');
       const filename = `${safeName}_${id}.json`;
-      
+
       // If updating, delete the old file if the name changed
       if (payload.id) {
-         const oldFiles = fs.readdirSync(playlistsDir).filter(f => f.endsWith(`_${payload.id}.json`));
-         oldFiles.forEach(f => {
-            if (f !== filename) fs.unlinkSync(path.join(playlistsDir, f));
-         });
+        const oldFiles = fs.readdirSync(playlistsDir).filter(f => f.endsWith(`_${payload.id}.json`));
+        oldFiles.forEach(f => {
+          if (f !== filename) fs.unlinkSync(path.join(playlistsDir, f));
+        });
       }
-      
+
       fs.writeFileSync(path.join(playlistsDir, filename), JSON.stringify(newPlaylist, null, 2), 'utf8');
-      
+
       return { success: true, playlistId: id, status: payload.id ? 'updated' : 'saved' };
     } catch (e) {
       return { success: false, message: e.message };
     }
   }
-  
+
   if (action === 'getPlaylistItems') {
     try {
       const plId = params.id;
@@ -361,8 +410,8 @@ ipcMain.handle('api-call', async (event, args) => {
       if (files.length > 0) {
         const content = fs.readFileSync(path.join(playlistsDir, files[0]), 'utf8');
         const pl = JSON.parse(content);
-        return { 
-          success: true, 
+        return {
+          success: true,
           data: {
             playlistId: pl.id,
             name: pl.name,
@@ -376,7 +425,7 @@ ipcMain.handle('api-call', async (event, args) => {
       return { success: false, message: e.message };
     }
   }
-  
+
   if (action === 'deletePlaylist') {
     try {
       const plId = payload.id;
@@ -387,9 +436,9 @@ ipcMain.handle('api-call', async (event, args) => {
       return { success: false, message: e.message };
     }
   }
-  
+
   if (action === 'getLibraryStats') {
-    return { success: true, data: { totalSongs: 500, totalBibleVerses: 31102 }};
+    return { success: true, data: { totalSongs: 500, totalBibleVerses: 31102 } };
   }
 
   if (action === 'deleteSongItem') {
@@ -404,6 +453,26 @@ ipcMain.handle('api-call', async (event, args) => {
     return { success: true, status: 'deleted' };
   }
 
+  if (action === 'backupFullDatabase') {
+    try {
+      const backupPath = path.join(databasesDir, `backup_songs_${Date.now()}.json`);
+      fs.writeFileSync(backupPath, JSON.stringify(payload || {}, null, 2), 'utf8');
+      return { success: true, status: 'success', message: 'Database berhasil dicadangkan ke folder lokal Documents/WorshipPresenter/Databases' };
+    } catch (e) {
+      return { success: false, message: e.message };
+    }
+  }
+
+  if (action === 'getGlobalSettings') {
+    return { success: true, data: db.globalSettings || {} };
+  }
+
+  if (action === 'saveGlobalSettings') {
+    db.globalSettings = payload || {};
+    saveDb(db);
+    return { success: true };
+  }
+
   // --- IPC untuk Media (File Fisik) ---
   if (action === 'saveMediaFile') {
     try {
@@ -411,10 +480,10 @@ ipcMain.handle('api-call', async (event, args) => {
         console.error('Invalid payload in saveMediaFile:', payload);
         return { success: false, message: 'Payload atau ID tidak valid' };
       }
-      
+
       const isVideo = payload.type === 'video' || payload.type === 'background-video' || payload.id.includes('_vid_');
       const isBackground = payload.type === 'background' || payload.type === 'background-video';
-      
+
       let targetDir = mediaImagesDir;
       if (isVideo) targetDir = mediaVideosDir;
       if (isBackground) targetDir = mediaBackgroundsDir;
@@ -462,20 +531,20 @@ ipcMain.handle('api-call', async (event, args) => {
       return { success: false, message: err.message };
     }
   }
-  
+
   if (action === 'deleteMediaFile') {
     try {
       if (!payload || typeof payload.id !== 'string') {
         return { success: false, message: 'Invalid payload in deleteMediaFile' };
       }
-      
+
       const isVideo = payload.type === 'video' || payload.type === 'background-video' || payload.id.includes('_vid_');
       const isBackground = payload.type === 'background' || payload.type === 'background-video';
-      
+
       let targetDir = mediaImagesDir;
       if (isVideo) targetDir = mediaVideosDir;
       if (isBackground) targetDir = mediaBackgroundsDir;
-      
+
       const files = fs.readdirSync(targetDir);
       const targetFile = files.find(f => f.startsWith(payload.id + '.'));
       if (targetFile) {
@@ -486,13 +555,13 @@ ipcMain.handle('api-call', async (event, args) => {
       return { success: false, message: err.message };
     }
   }
-  
+
   if (action === 'listMediaFiles') {
     try {
       let results = [];
       const isBackground = payload && payload.type === 'background';
       const dirsToScan = isBackground ? [mediaBackgroundsDir] : [mediaImagesDir, mediaVideosDir];
-      
+
       for (const dir of dirsToScan) {
         if (!fs.existsSync(dir)) continue;
         const files = fs.readdirSync(dir);

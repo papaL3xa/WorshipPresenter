@@ -1,9 +1,9 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ControlPanel from './pages/ControlPanel';
 import DisplayWindow from './pages/DisplayWindow';
 import StageDisplay from './pages/StageDisplay';
+import LowerThird from './pages/LowerThird';
 import Library from './pages/Library';
 import Settings from './pages/Settings';
 
@@ -31,7 +31,7 @@ function App() {
     const handleResize = () => {
       const baseWidth = 1536; // Gunakan 1536 untuk menampung seluruh tombol header tanpa terpotong
       const currentWidth = window.innerWidth;
-      
+
       if (currentWidth < baseWidth) {
         const scale = currentWidth / baseWidth;
         (document.body as any).style.zoom = scale;
@@ -44,7 +44,7 @@ function App() {
     // Observe zoom changes
     const observer = new ResizeObserver(handleResize);
     observer.observe(document.documentElement);
-    
+
     handleResize();
 
     return () => {
@@ -59,7 +59,8 @@ function App() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/display" element={<DisplayWindow />} />
         <Route path="/stage" element={<StageDisplay />} />
-        
+        <Route path="/lower-third" element={<LowerThird />} />
+
         {/* Rute Terlindungi (Protected) */}
         <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
         <Route path="/control" element={<RequireAuth><ControlPanel /></RequireAuth>} />

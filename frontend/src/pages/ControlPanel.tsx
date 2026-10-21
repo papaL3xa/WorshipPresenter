@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Monitor, Square, Play, Pause, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, Video, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock, Layout, Power, FileText, Repeat, Volume2, VolumeX, List, GripVertical, Palette, AlignCenter, AlignLeft, AlignRight, Bold, Keyboard } from 'lucide-react';
+import { Monitor, Square, Play, Pause, ArrowRight, ArrowLeft, Loader2, Image as ImageIcon, Video, CheckCircle, Type, Plus, Trash2, Edit, Save, Search, Music, BookOpen, Settings, CheckSquare, X, RefreshCw, Clock, Layout, Power, FileText, Repeat, Volume2, VolumeX, List, GripVertical, Palette, AlignCenter, AlignLeft, AlignRight, Bold, Keyboard, ChevronLeft, ChevronRight } from 'lucide-react';
 import { callApi } from '../api';
 import { CONFIG } from '../config';
 import { SyncButton } from '../components/SyncButton';
@@ -13,30 +13,41 @@ import { RichEditor, RichEditorRef } from '../components/RichEditor';
 import { LocalVideoPlayer } from '../components/LocalVideoPlayer';
 import { LocalImageLoader } from '../components/LocalImageLoader';
 import { initDefaultDatabases, searchLocalSongs, searchLocalBible, syncCustomSongs, getDatabaseList, DatabaseVersion, getAllLocalSongTitles, getBibleBooksList, getCrossLanguageVerses } from '../utils/dbStorage';
+import { calculateOptimalFontSize } from '../utils/fontCalculator';
+import { QuickSearchPanel } from '../components/control-panel/panels/QuickSearchPanel';
+import { ThemeSettingsPanel } from '../components/control-panel/panels/ThemeSettingsPanel';
+import { LogoManagerPanel } from '../components/control-panel/panels/LogoManagerPanel';
+import { RunningTextPanel } from '../components/control-panel/panels/RunningTextPanel';
+import { expandSongWithChorus, hasChorus, isChorusAlreadyEmbedded } from '../utils/songHelper';
+import { EditItemModal } from '../components/control-panel/modals/EditItemModal';
+import { SegmentModal } from '../components/control-panel/modals/SegmentModal';
+import { CountdownModal } from '../components/control-panel/modals/CountdownModal';
+import { VideoModal } from '../components/control-panel/modals/VideoModal';
+import { HotkeyHelpModal } from '../components/control-panel/modals/HotkeyHelpModal';
 
 const processText = (raw: string) => {
   if (!raw) return '';
   let t = raw;
   t = t.replace(/\[([A-G][#b]?[a-zA-Z0-9/]{0,6})\]([^\[\n]*)/g, ''); // ControlPanel strips chords
-  
-      // Bilingual side-by-side layout
+
+  // Bilingual side-by-side layout
   if (t.includes('\n[kuning]')) {
-     const parts = t.split('\n[kuning]');
-     if (parts.length === 2 && parts[1].endsWith('[/kuning]')) {
-         const left = parts[0].replace(/\n/g, '<br/>');
-         const right = parts[1].replace('[/kuning]', '').replace(/\n/g, '<br/>');
-         return `<div class="grid grid-cols-2 gap-12 w-full relative"><div class="min-w-0 break-words text-left self-center">${left}</div><div class="absolute left-1/2 top-0 bottom-0 w-[2px] -translate-x-1/2 bg-white/30 rounded-full my-2 pointer-events-none"></div><div class="min-w-0 break-words text-right text-yellow-300 self-center">${right}</div></div>`;
-      }
+    const parts = t.split('\n[kuning]');
+    if (parts.length === 2 && parts[1].endsWith('[/kuning]')) {
+      const left = parts[0].replace(/\n/g, '<br/>');
+      const right = parts[1].replace('[/kuning]', '').replace(/\n/g, '<br/>');
+      return `<div class="grid grid-cols-2 gap-12 w-full relative"><div class="min-w-0 break-words text-left self-center">${left}</div><div class="absolute left-1/2 top-0 bottom-0 w-[2px] -translate-x-1/2 bg-white/30 rounded-full my-2 pointer-events-none"></div><div class="min-w-0 break-words text-right text-yellow-300 self-center">${right}</div></div>`;
+    }
   }
 
   // 2-Kolom Bebas (Pengumuman)
   if (t.includes('\n[kolom2]')) {
-     const parts = t.split('\n[kolom2]');
-     if (parts.length === 2 && parts[1].endsWith('[/kolom2]')) {
-         const left = parts[0].replace(/\n/g, '<br/>');
-         const right = parts[1].replace('[/kolom2]', '').replace(/\n/g, '<br/>');
-         return `<div class="grid grid-cols-2 gap-12 w-full relative"><div class="min-w-0 break-words text-left self-center">${left}</div><div class="absolute left-1/2 top-0 bottom-0 w-[2px] -translate-x-1/2 bg-white/30 rounded-full my-2 pointer-events-none"></div><div class="min-w-0 break-words text-left self-center">${right}</div></div>`;
-     }
+    const parts = t.split('\n[kolom2]');
+    if (parts.length === 2 && parts[1].endsWith('[/kolom2]')) {
+      const left = parts[0].replace(/\n/g, '<br/>');
+      const right = parts[1].replace('[/kolom2]', '').replace(/\n/g, '<br/>');
+      return `<div class="grid grid-cols-2 gap-12 w-full relative"><div class="min-w-0 break-words text-left self-center">${left}</div><div class="absolute left-1/2 top-0 bottom-0 w-[2px] -translate-x-1/2 bg-white/30 rounded-full my-2 pointer-events-none"></div><div class="min-w-0 break-words text-left self-center">${right}</div></div>`;
+    }
   }
 
   t = t.replace(/\n/g, '<br/>');
@@ -60,44 +71,53 @@ const renderSnippet = (text: string) => {
   return t;
 };
 
+const getVisibleSegments = (item: any): number[] => {
+  if (!item) return [];
+  if (Array.isArray(item.visibleSegments)) return item.visibleSegments;
+  const count = item.segments?.length || 1;
+  return Array.from({ length: count }, (_, i) => i);
+};
 
-const AutoResizeTextarea = ({ value, onChange, className, rows }: any) => {
+
+const AutoResizeTextarea = ({ value, onChange, className, rows = 2, style }: any) => {
   const ref = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     if (ref.current) {
       ref.current.style.height = 'auto';
       ref.current.style.height = ref.current.scrollHeight + 'px';
     }
-  }, [value]);
-  return <textarea ref={ref} value={value} onChange={onChange} className={className} rows={rows} />;
+  }, [value, style]);
+  return <textarea ref={ref} value={value} onChange={onChange} className={className} rows={rows} style={style} />;
 };
 
-const SegmentEditor = ({ value, onChange, className }: any) => {
+const SegmentEditor = ({ value, onChange, className, style }: any) => {
   const isBilingual = value && typeof value === 'string' && value.includes('\n[kuning]') && value.endsWith('[/kuning]');
   const is2Kolom = value && typeof value === 'string' && value.includes('\n[kolom2]') && value.endsWith('[/kolom2]');
   const [force2Kolom, setForce2Kolom] = useState(false);
-  
+
   if (isBilingual) {
     const parts = value.split('\n[kuning]');
     const left = parts[0];
     const right = parts[1].replace('[/kuning]', '');
     return (
       <div className="flex flex-col gap-2 w-full">
-        <AutoResizeTextarea 
+        <AutoResizeTextarea
           value={left}
           onChange={(e: any) => onChange(e.target.value + '\n[kuning]' + right + '[/kuning]')}
           className={className}
+          style={style}
           rows={2}
         />
         <div className="flex items-center gap-2">
-            <div className="h-px bg-indigo-100 dark:bg-slate-700/50 flex-1"></div>
-            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Terjemahan</span>
-            <div className="h-px bg-indigo-100 dark:bg-slate-700/50 flex-1"></div>
+          <div className="h-px bg-indigo-100 dark:bg-slate-700/50 flex-1"></div>
+          <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Terjemahan</span>
+          <div className="h-px bg-indigo-100 dark:bg-slate-700/50 flex-1"></div>
         </div>
-        <AutoResizeTextarea 
+        <AutoResizeTextarea
           value={right}
           onChange={(e: any) => onChange(left + '\n[kuning]' + e.target.value + '[/kuning]')}
-          className={className.replace('text-slate-800', 'text-yellow-700').replace('dark:text-slate-200', 'dark:text-yellow-300').replace('text-slate-700', 'text-yellow-700').replace('dark:text-slate-300', 'dark:text-yellow-300')}
+          className={className.replace('text-slate-900', 'text-yellow-700').replace('dark:text-slate-100', 'dark:text-yellow-300').replace('text-slate-800', 'text-yellow-700').replace('dark:text-slate-200', 'dark:text-yellow-300')}
+          style={style}
           rows={2}
         />
       </div>
@@ -108,39 +128,41 @@ const SegmentEditor = ({ value, onChange, className }: any) => {
     const parts = is2Kolom ? value.split('\n[kolom2]') : [value, ''];
     const left = parts[0] || '';
     const right = parts[1] ? parts[1].replace('[/kolom2]', '') : '';
-    
+
     return (
       <div className="flex gap-2 w-full">
         <div className="flex-1 flex flex-col gap-1">
-            <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Kolom Kiri</div>
-            <AutoResizeTextarea 
-              value={left}
-              onChange={(e: any) => {
-                 const newLeft = e.target.value;
-                 if (!newLeft && !right) { setForce2Kolom(false); onChange(''); }
-                 else if (!right) onChange(newLeft);
-                 else onChange(newLeft + '\n[kolom2]' + right + '[/kolom2]');
-              }}
-              className={className}
-              rows={2}
-            />
+          <div className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Kolom Kiri</div>
+          <AutoResizeTextarea
+            value={left}
+            onChange={(e: any) => {
+              const newLeft = e.target.value;
+              if (!newLeft && !right) { setForce2Kolom(false); onChange(''); }
+              else if (!right) onChange(newLeft);
+              else onChange(newLeft + '\n[kolom2]' + right + '[/kolom2]');
+            }}
+            className={className}
+            style={style}
+            rows={2}
+          />
         </div>
         <div className="flex-1 flex flex-col gap-1">
-            <div className="flex justify-between items-center">
-                <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Kolom Kanan</div>
-                <button onClick={() => { setForce2Kolom(false); onChange(left); }} className="text-[8px] text-red-400 hover:text-red-500 font-bold px-1 rounded hover:bg-red-500/10" title="Hapus Kolom Kanan">✕ Tutup</button>
-            </div>
-            <AutoResizeTextarea 
-              value={right}
-              onChange={(e: any) => {
-                 const newRight = e.target.value;
-                 if (!newRight && !left) { setForce2Kolom(false); onChange(''); }
-                 else if (!newRight) onChange(left);
-                 else onChange(left + '\n[kolom2]' + newRight + '[/kolom2]');
-              }}
-              className={className}
-              rows={2}
-            />
+          <div className="flex justify-between items-center">
+            <div className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Kolom Kanan</div>
+            <button onClick={() => { setForce2Kolom(false); onChange(left); }} className="text-[9px] text-red-500 hover:text-red-600 font-bold px-1.5 py-0.5 rounded hover:bg-red-500/10" title="Hapus Kolom Kanan">✕ Tutup</button>
+          </div>
+          <AutoResizeTextarea
+            value={right}
+            onChange={(e: any) => {
+              const newRight = e.target.value;
+              if (!newRight && !left) { setForce2Kolom(false); onChange(''); }
+              else if (!newRight) onChange(left);
+              else onChange(left + '\n[kolom2]' + newRight + '[/kolom2]');
+            }}
+            className={className}
+            style={style}
+            rows={2}
+          />
         </div>
       </div>
     );
@@ -148,21 +170,38 @@ const SegmentEditor = ({ value, onChange, className }: any) => {
 
   return (
     <div className="flex flex-col w-full relative group">
-      <AutoResizeTextarea 
+      <AutoResizeTextarea
         value={value}
         onChange={(e: any) => onChange(e.target.value)}
         className={className}
+        style={style}
         rows={2}
       />
-      <button 
-        onClick={() => { setForce2Kolom(true); onChange(value + '\n[kolom2][/kolom2]'); }} 
-        className="absolute bottom-2 right-2 text-[9px] bg-white/80 dark:bg-slate-800/80 hover:bg-indigo-500 hover:text-white dark:hover:bg-indigo-600 text-slate-500 font-bold px-2 py-1 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm border border-indigo-100 dark:border-slate-700"
+      <button
+        onClick={() => { setForce2Kolom(true); onChange(value + '\n[kolom2][/kolom2]'); }}
+        className="absolute bottom-2 right-2 text-[10px] bg-white/90 dark:bg-slate-800/90 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 text-slate-600 font-bold px-2 py-1 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm border border-indigo-200 dark:border-slate-700"
       >
         + Kolom Kanan
       </button>
     </div>
   );
 };
+
+function parseVersion(versionStr: string): number[] {
+  const match = versionStr.match(/(\d+\.\d+\.\d+)/);
+  if (!match) return [0, 0, 0];
+  return match[1].split('.').map(Number);
+}
+
+function isNewerVersion(remote: string, current: string): boolean {
+  const r = parseVersion(remote);
+  const c = parseVersion(current);
+  for (let i = 0; i < 3; i++) {
+    if (r[i] > c[i]) return true;
+    if (r[i] < c[i]) return false;
+  }
+  return false;
+}
 
 import { useLocation, useNavigate } from 'react-router-dom';
 import { globalDisplayWindow, globalIsDisplayOpen, setGlobalDisplayWindow, setGlobalIsDisplayOpen } from '../utils/displayState';
@@ -172,24 +211,33 @@ export default function ControlPanel() {
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const urlId = searchParams.get('id');
-  
+
   const [newId] = useState('pl_' + Date.now());
   const playlistId = urlId === 'new' ? newId : urlId;
   const [playlistDate, setPlaylistDate] = useState(new Date().toISOString().split('T')[0]);
   const [localVidLoaded, setLocalVidLoaded] = useState(false);
-  const [updateInfo, setUpdateInfo] = useState<{available: boolean, version: string, url: string} | null>(null);
+  const [updateInfo, setUpdateInfo] = useState<{ available: boolean, version: string, url: string } | null>(null);
+  const [quickEditFontSize, setQuickEditFontSize] = useState<number>(() => {
+    const saved = localStorage.getItem('quick_edit_font_size');
+    return saved ? parseInt(saved) : 15;
+  });
 
   useEffect(() => {
-    fetch('https://api.github.com/repos/papaL3xa/WorshipPresenter/releases/latest')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.tag_name) {
-          const latestVersion = data.tag_name.replace('v', '');
-          if (latestVersion !== CONFIG.APP_VERSION) {
+    fetch('https://api.github.com/repos/pisgahbisdac/pisgahbisdac/releases')
+      .then(res => {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then(releases => {
+        if (Array.isArray(releases) && releases.length > 0) {
+          const latest = releases.find((r: any) => !r.draft && !r.prerelease);
+          if (!latest) return;
+          const latestVersion = (latest.name || latest.tag_name || '').replace(/^v/, '');
+          if (isNewerVersion(latestVersion, CONFIG.APP_VERSION)) {
             setUpdateInfo({
               available: true,
               version: latestVersion,
-              url: data.html_url
+              url: latest.html_url || 'https://github.com/pisgahbisdac/pisgahbisdac/releases'
             });
           }
         }
@@ -203,7 +251,7 @@ export default function ControlPanel() {
   useEffect(() => {
     const channel = new BroadcastChannel('worship_live_sync');
     channel.postMessage({ type: 'PLAYLIST_UPDATE', payload: playlist });
-    
+
     const handleMsg = (msg: MessageEvent) => {
       if (msg.data.type === 'REQUEST_PLAYLIST') {
         const ch = new BroadcastChannel('worship_live_sync');
@@ -218,7 +266,7 @@ export default function ControlPanel() {
     };
   }, [playlist]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const [activeItem, setActiveItem] = useState(0);
   const [activeSegment, setActiveSegment] = useState(0);
   const [liveItem, setLiveItem] = useState(0);
@@ -255,26 +303,27 @@ export default function ControlPanel() {
   const [dragItem, setDragItem] = useState<number | null>(null);
   const [hasSelection, setHasSelection] = useState(false);
   const editorRef = useRef<RichEditorRef>(null);
-  
+
   const [activeDragLogo, setActiveDragLogo] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [allSongTitles, setAllSongTitles] = useState<{id: string, title: string}[] | null>(null);
+  const segScrollRef = useRef<HTMLDivElement>(null);
+  const [allSongTitles, setAllSongTitles] = useState<{ id: string, title: string }[] | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  
-  const [liveCountdown, setLiveCountdown] = useState<{id: string, start: number, duration: number} | null>(null);
+
+  const [liveCountdown, setLiveCountdown] = useState<{ id: string, start: number, duration: number } | null>(null);
   const [previewCountdown, setPreviewCountdown] = useState<number | null>(null);
   const [tempLiveItem, setTempLiveItem] = useState<any>(null);
-  
+
   const [dbList, setDbList] = useState<DatabaseVersion[]>([]);
   const [selectedSongVersion, setSelectedSongVersion] = useState('song_LSEB');
   const [selectedBibleVersion, setSelectedBibleVersion] = useState('bible_TB');
   const [selectedBibleVersion2, setSelectedBibleVersion2] = useState('none');
-  
+
   const [currentBg, setCurrentBg] = useState(localStorage.getItem('custom_bg') || '');
   const { getBgUrl, refreshBackgrounds } = useBackgrounds();
 
   const [dragOverItem, setDragOverItem] = useState<number | null>(null);
-  
+
   const [dragSegItem, setDragSegItem] = useState<number | null>(null);
   const [dragOverSegItem, setDragOverSegItem] = useState<number | null>(null);
 
@@ -298,7 +347,12 @@ export default function ControlPanel() {
     transitionStyle?: 'crossfade' | 'slideUp' | 'slideDown' | 'zoom';
     aspectRatio?: 'full' | '16:9' | '16:10' | '4:3';
     layout?: 'full' | 'lower-third';
+    lowerThirdStyle?: 'dark-glass' | 'gradient' | 'minimal' | 'solid';
     blankImageUrl?: string;
+    blankImageFit?: 'contain' | 'cover';
+    logoScreenUrl?: string;
+    backgroundDim?: number;
+    enableVignette?: boolean;
   }>(loadTheme);
 
   const broadcastTheme = (newTheme: typeof displayTheme) => {
@@ -329,18 +383,18 @@ export default function ControlPanel() {
   const [segmentEditIndex, setSegmentEditIndex] = useState<number | null>(null);
   const [tempVisibleSegments, setTempVisibleSegments] = useState<number[]>([]);
 
-  
+
   // Running Text States
   const [runningText, setRunningText] = useState(localStorage.getItem(`worship_rt_text_${playlistId}`) || localStorage.getItem('worship_rt_text') || '');
   const [rtPos, setRtPos] = useState(localStorage.getItem('worship_rt_pos') || 'bottom');
   const [rtSpeed, setRtSpeed] = useState(Number(localStorage.getItem('worship_rt_speed') || 15));
   const [rtHeight, setRtHeight] = useState(Number(localStorage.getItem('worship_rt_height') || 7));
   const [isRtVisible, setIsRtVisible] = useState(false);
-  
+
   // Add Item States
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchType, setSearchType] = useState<'song'|'bible'|'announcement'|'playlist'>('song');
+  const [searchType, setSearchType] = useState<'song' | 'bible' | 'announcement' | 'playlist'>('song');
   const [dashboardPlaylists, setDashboardPlaylists] = useState<any[]>([]);
   const [isLoadingDashboardPlaylists, setIsLoadingDashboardPlaylists] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -364,9 +418,9 @@ export default function ControlPanel() {
   // Broadcast running text whenever its state changes
   useEffect(() => {
     const channel = new BroadcastChannel('worship_live_sync');
-    channel.postMessage({ 
-      type: 'RUNNING_TEXT_UPDATE', 
-      payload: { text: runningText, position: rtPos, speed: rtSpeed, isVisible: isRtVisible, height: rtHeight } 
+    channel.postMessage({
+      type: 'RUNNING_TEXT_UPDATE',
+      payload: { text: runningText, position: rtPos, speed: rtSpeed, isVisible: isRtVisible, height: rtHeight }
     });
     channel.close();
   }, [playlistId, runningText, rtPos, rtSpeed, isRtVisible, rtHeight]);
@@ -401,10 +455,9 @@ export default function ControlPanel() {
     }
   }, [isRunningTextModalOpen, displayPanelTab, searchType, selectedSongVersion, selectedBibleVersion]);
 
-  
+
   // Debounce ref to prevent spamming the API
   const syncTimeout = useRef<NodeJS.Timeout | null>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
 
   // Ambil playlist dari server
   useEffect(() => {
@@ -422,22 +475,25 @@ export default function ControlPanel() {
           setPlaylistName(res.data.name);
           let rawItems = res.data.items;
           if (typeof rawItems === 'string') {
-            try { rawItems = JSON.parse(rawItems); } catch(e) {}
+            try { rawItems = JSON.parse(rawItems); } catch (e) { }
           }
           if (rawItems && typeof rawItems === 'object' && !Array.isArray(rawItems)) {
             rawItems = Array.isArray(rawItems.items) ? rawItems.items : Object.values(rawItems).filter(v => typeof v === 'object' && v !== null);
           }
           if (!Array.isArray(rawItems)) rawItems = [];
-          
+
           const itemsWithVisibleSegments = await Promise.all(rawItems.map(async (item: any) => {
             if ((item.type === 'song' || item.type === 'bible') && item.customText) {
               try {
-                item.visibleSegments = JSON.parse(item.customText);
+                const parsed = JSON.parse(item.customText);
+                item.visibleSegments = Array.isArray(parsed) ? parsed : null;
               } catch (e) {
-                // ignore
+                item.visibleSegments = null;
               }
+            } else if (!Array.isArray(item.visibleSegments)) {
+              item.visibleSegments = null;
             }
-            
+
             // Re-hydrate missing segments (in case backend stripped them to save space)
             if ((item.type === 'song' || item.type === 'bible') && (!item.segments || item.segments.length === 0)) {
               try {
@@ -448,8 +504,8 @@ export default function ControlPanel() {
                     let segs = bItem.isRange ? bItem.segments : [bItem.text];
                     let labs = bItem.isRange ? bItem.segmentLabels : [`Ayat ${bItem.verse}`];
                     if (segs.length > 0 && segs[0] !== item.title) {
-                        segs = [item.title, ...segs];
-                        labs = ['Judul', ...labs];
+                      segs = [item.title, ...segs];
+                      labs = ['Judul', ...labs];
                     }
                     item.segments = segs;
                     item.segmentLabels = labs;
@@ -462,8 +518,8 @@ export default function ControlPanel() {
                     let segs = res[0].segments || [];
                     let labs = res[0].segmentLabels || [];
                     if (segs.length > 0 && segs[0] !== res[0].title) {
-                        segs = [res[0].title, ...segs];
-                        labs = ['Judul', ...labs];
+                      segs = [res[0].title, ...segs];
+                      labs = ['Judul', ...labs];
                     }
                     item.segments = segs;
                     item.segmentLabels = labs;
@@ -475,19 +531,19 @@ export default function ControlPanel() {
                 console.error("Gagal merehidrasi item", e);
               }
             }
-            
+
             // Ensure title is prepended even if segments were loaded from backend (not rehydrated)
             if (item.type === 'song' || item.type === 'bible') {
-               const bTitle = item.type === 'bible' ? (item.isRange ? item.title : (item.book ? `${item.book} ${item.chapter}:${item.verse}` : item.title)) : item.title;
-               if (item.segments && item.segments.length > 0 && item.segments[0] !== bTitle && item.segments[0] !== item.title) {
-                   item.segments = [bTitle || item.title, ...item.segments];
-                   item.segmentLabels = ['Judul', ...(item.segmentLabels || item.segments.slice(1).map((_:any, i:number) => `Slide ${i+1}`))];
-                   if (item.visibleSegments && item.visibleSegments.length > 0) {
-                       item.visibleSegments = [0, ...item.visibleSegments.map((v: number) => v + 1)];
-                   }
-               }
+              const bTitle = item.type === 'bible' ? (item.isRange ? item.title : (item.book ? `${item.book} ${item.chapter}:${item.verse}` : item.title)) : item.title;
+              if (item.segments && item.segments.length > 0 && item.segments[0] !== bTitle && item.segments[0] !== item.title) {
+                item.segments = [bTitle || item.title, ...item.segments];
+                item.segmentLabels = ['Judul', ...(item.segmentLabels || item.segments.slice(1).map((_: any, i: number) => `Slide ${i + 1}`))];
+                if (Array.isArray(item.visibleSegments) && item.visibleSegments.length > 0) {
+                  item.visibleSegments = [0, ...item.visibleSegments.map((v: number) => v + 1)];
+                }
+              }
             }
-            
+
             return item;
           }));
           setPlaylist(itemsWithVisibleSegments);
@@ -540,8 +596,8 @@ export default function ControlPanel() {
     return () => clearInterval(interval);
   }, [liveCountdown, playlist, activeItem, isEditingRundown]);
 
-  const [videoProgress, setVideoProgress] = useState<{currentTime: number, duration: number} | null>(null);
-  const [videoState, setVideoState] = useState<'play'|'pause'>('pause');
+  const [videoProgress, setVideoProgress] = useState<{ currentTime: number, duration: number } | null>(null);
+  const [videoState, setVideoState] = useState<'play' | 'pause'>('pause');
 
   useEffect(() => {
     const channel = new BroadcastChannel('worship_live_sync');
@@ -568,7 +624,7 @@ export default function ControlPanel() {
         targetVid.pause();
       }
     }
-    
+
     // Sync preview YouTube iframe state
     if (ytPlayerRef.current) {
       if (mode === 'content' && videoState === 'play') {
@@ -590,7 +646,7 @@ export default function ControlPanel() {
         targetVid.currentTime = videoProgress.currentTime;
       }
     }
-    
+
     // Sync YouTube iframe
     if (ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === 'function' && Math.abs(ytPlayerRef.current.getCurrentTime() - videoProgress.currentTime) > 1.5) {
       ytPlayerRef.current.seekTo?.(videoProgress.currentTime, true);
@@ -603,7 +659,7 @@ export default function ControlPanel() {
     channel.postMessage({ type: 'VIDEO_SEEK', payload: { time } });
     channel.close();
     setVideoProgress(prev => prev ? { ...prev, currentTime: time } : null);
-    
+
     const vid = document.getElementById('preview-video') as HTMLVideoElement;
     const localVidContainer = document.getElementById('preview-video-container');
     const localVid = localVidContainer?.querySelector('video') as HTMLVideoElement;
@@ -611,7 +667,7 @@ export default function ControlPanel() {
     if (targetVid) {
       targetVid.currentTime = time;
     }
-    
+
     if (ytPlayerRef.current) {
       ytPlayerRef.current.seekTo?.(time, true);
     }
@@ -635,14 +691,14 @@ export default function ControlPanel() {
     if (activeItem < 0 || activeItem >= playlist.length) return;
     const item = playlist[activeItem];
     if (item.type !== 'video') return;
-    
+
     const newVal = !(item.loop);
     const updatedItem = { ...item, loop: newVal };
-    
+
     const newPlaylist = [...playlist];
     newPlaylist[activeItem] = updatedItem;
     setPlaylist(newPlaylist);
-    
+
     if (activeItem === liveItem) {
       const stateObj = {
         playlistId,
@@ -655,10 +711,10 @@ export default function ControlPanel() {
       const channel = new BroadcastChannel('worship_live_sync');
       channel.postMessage({ type: 'STATE_UPDATE', state: stateObj });
       channel.close();
-      
+
       if (syncTimeout.current) clearTimeout(syncTimeout.current);
       syncTimeout.current = setTimeout(async () => {
-        try { await callApi('setLiveState', {}, { method: 'POST', payload: stateObj }); } catch (err) {}
+        try { await callApi('setLiveState', {}, { method: 'POST', payload: stateObj }); } catch (err) { }
       }, 200);
     }
   };
@@ -668,14 +724,14 @@ export default function ControlPanel() {
     if (activeItem < 0 || activeItem >= playlist.length) return;
     const item = playlist[activeItem];
     if (item.type !== 'video') return;
-    
+
     const newVal = !(item.muted);
     const updatedItem = { ...item, muted: newVal };
-    
+
     const newPlaylist = [...playlist];
     newPlaylist[activeItem] = updatedItem;
     setPlaylist(newPlaylist);
-    
+
     if (activeItem === liveItem) {
       const stateObj = {
         playlistId,
@@ -688,10 +744,10 @@ export default function ControlPanel() {
       const channel = new BroadcastChannel('worship_live_sync');
       channel.postMessage({ type: 'STATE_UPDATE', state: stateObj });
       channel.close();
-      
+
       if (syncTimeout.current) clearTimeout(syncTimeout.current);
       syncTimeout.current = setTimeout(async () => {
-        try { await callApi('setLiveState', {}, { method: 'POST', payload: stateObj }); } catch (err) {}
+        try { await callApi('setLiveState', {}, { method: 'POST', payload: stateObj }); } catch (err) { }
       }, 200);
     }
   };
@@ -706,12 +762,12 @@ export default function ControlPanel() {
   const pushTempToLive = (item: any, segIdx: number = 0) => {
     if (!item.type) item.type = item.book ? 'bible' : 'song';
     const processedItem = item;
-    
+
     setTempLiveItem(processedItem);
     setLiveSegment(segIdx);
     const dispMode = processedItem.type === 'video' ? 'logo' : 'content';
     setMode(dispMode);
-    
+
     const stateObj = {
       playlistId: playlistId,
       currentItemId: processedItem.id || ('temp-' + Date.now()),
@@ -720,7 +776,7 @@ export default function ControlPanel() {
       item: processedItem,
       updatedAt: Date.now()
     };
-    
+
     const channel = new BroadcastChannel('worship_live_sync');
     channel.postMessage({ type: 'STATE_UPDATE', state: stateObj });
     channel.close();
@@ -802,11 +858,11 @@ export default function ControlPanel() {
     e.preventDefault();
     const fromIdx = Number(e.dataTransfer.getData('text/plain'));
     if (fromIdx === toIdx || isNaN(fromIdx)) return;
-    
+
     const newPlaylist = [...playlist];
     const item = newPlaylist.splice(fromIdx, 1)[0];
     newPlaylist.splice(toIdx, 0, item);
-    
+
     if (activeItem === fromIdx) {
       setActiveItem(toIdx);
     } else if (activeItem > fromIdx && activeItem <= toIdx) {
@@ -814,7 +870,7 @@ export default function ControlPanel() {
     } else if (activeItem < fromIdx && activeItem >= toIdx) {
       setActiveItem(activeItem + 1);
     }
-    
+
     setPlaylist(newPlaylist);
     setDragItem(null);
     setDragOverItem(null);
@@ -823,20 +879,20 @@ export default function ControlPanel() {
   const handleSegDrop = (e: React.DragEvent, dropVisualIdx: number, itemIdx: number) => {
     e.preventDefault();
     if (dragSegItem === null || dragSegItem === dropVisualIdx) return;
-    
+
     const item = playlist[itemIdx];
     if (!item || !item.segments) return;
 
-    const newVisibleSegments = item.visibleSegments ? [...item.visibleSegments] : [...Array(item.segments.length).keys()];
-    
+    const newVisibleSegments = [...getVisibleSegments(item)];
+
     const [draggedIdx] = newVisibleSegments.splice(dragSegItem, 1);
     newVisibleSegments.splice(dropVisualIdx, 0, draggedIdx);
-    
+
     const newPlaylist = [...playlist];
     newPlaylist[itemIdx] = { ...item, visibleSegments: newVisibleSegments };
     setPlaylist(newPlaylist);
     saveRundown(newPlaylist);
-    
+
     setDragSegItem(null);
     setDragOverSegItem(null);
   };
@@ -877,7 +933,7 @@ export default function ControlPanel() {
       loop: isVideoLoop,
       muted: isVideoMuted
     } as any;
-    
+
     let finalPlaylist = [];
     let targetIdx = 0;
     if (replaceIndex !== null) {
@@ -893,7 +949,7 @@ export default function ControlPanel() {
       setPlaylist(finalPlaylist);
       setActiveItem(targetIdx);
     }
-    
+
     setIsVideoModalOpen(false);
     setIsAddItemModalOpen(false);
     setIsEditingRundown(false);
@@ -908,14 +964,14 @@ export default function ControlPanel() {
   const handleRundownImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    
+
     // Allow unlimited files, sort alphabetically to ensure correct slide order (Slide1.jpg, Slide2.jpg, etc)
     const selectedFiles = Array.from(files).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const isElectron = !!(window as any).electronAPI;
-    
+
     const imageInfos = await Promise.all(selectedFiles.map(file => {
-      return new Promise<{url: string, width: number, height: number, file: File}>((resolve) => {
+      return new Promise<{ url: string, width: number, height: number, file: File }>((resolve) => {
         const url = URL.createObjectURL(file);
         const img = new Image();
         img.onload = () => {
@@ -952,7 +1008,7 @@ export default function ControlPanel() {
       title: imageInfos.length > 2 ? 'Slideshow / Gambar' : 'Gambar',
       segments: segments
     } as any;
-    
+
     let finalPlaylist = [];
     let targetIdx = 0;
     if (replaceIndex !== null) {
@@ -984,14 +1040,14 @@ export default function ControlPanel() {
       item: newItem,
       updatedAt: Date.now()
     };
-    
+
     const channel = new BroadcastChannel('worship_live_sync');
     channel.postMessage({ type: 'STATE_UPDATE', state: stateObj });
     channel.close();
-    
+
     if (syncTimeout.current) clearTimeout(syncTimeout.current);
     syncTimeout.current = setTimeout(async () => {
-      try { await callApi('setLiveState', {}, { method: 'POST', payload: stateObj }); } catch (err) {}
+      try { await callApi('setLiveState', {}, { method: 'POST', payload: stateObj }); } catch (err) { }
     }, 200);
 
     e.target.value = '';
@@ -1021,7 +1077,7 @@ export default function ControlPanel() {
       title: 'Pengumuman / Teks Bebas',
       segments: [''],
     };
-    
+
     let finalPlaylist = [];
     if (replaceIndex !== null) {
       finalPlaylist = [...playlist];
@@ -1034,7 +1090,7 @@ export default function ControlPanel() {
       setPlaylist(finalPlaylist);
       setActiveItem(finalPlaylist.length - 1);
     }
-    
+
     setActiveSegment(0);
     setIsEditingRundown(true);
   };
@@ -1047,10 +1103,10 @@ export default function ControlPanel() {
   const handleCountdownSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const timeInput = countdownInputValue;
-    
+
     let totalSeconds = 0;
     const cleanInput = timeInput.toLowerCase().trim();
-    
+
     if (cleanInput.includes('m') || cleanInput.includes('s')) {
       const minMatch = cleanInput.match(/(\d+(?:\.\d+)?)\s*m/);
       const secMatch = cleanInput.match(/(\d+(?:\.\d+)?)\s*s/);
@@ -1072,7 +1128,7 @@ export default function ControlPanel() {
       title: 'Ibadah Dimulai Dalam',
       segments: [String(Math.floor(totalSeconds))],
     };
-    
+
     let finalPlaylist = [];
     if (replaceIndex !== null) {
       finalPlaylist = [...playlist];
@@ -1085,7 +1141,7 @@ export default function ControlPanel() {
       setPlaylist(finalPlaylist);
       setActiveItem(finalPlaylist.length - 1);
     }
-    
+
     setActiveSegment(0);
     setIsVideoModalOpen(false);
     setIsAddItemModalOpen(false);
@@ -1103,51 +1159,51 @@ export default function ControlPanel() {
       if (type === 'song') {
         const results = await searchLocalSongs(query, selectedSongVersion);
         const formattedResults = results.slice(0, 50).map(item => {
-           let segs = item.segments || [];
-           let labs = item.segmentLabels || segs.map((_:any, i:number) => `Slide ${i+1}`);
-           if (segs.length > 0 && segs[0] !== item.title) {
-               segs = [item.title, ...segs];
-               labs = ['Judul', ...labs];
-           }
-           return { ...item, segments: segs, segmentLabels: labs };
+          let segs = item.segments || [];
+          let labs = item.segmentLabels || segs.map((_: any, i: number) => `Slide ${i + 1}`);
+          if (segs.length > 0 && segs[0] !== item.title) {
+            segs = [item.title, ...segs];
+            labs = ['Judul', ...labs];
+          }
+          return { ...item, segments: segs, segmentLabels: labs };
         });
         setSearchResults(formattedResults);
       } else {
         const results = await searchLocalBible(query, selectedBibleVersion);
         let results2: any[] = [];
         if (selectedBibleVersion2 !== 'none' && results.length > 0) {
-           results2 = await getCrossLanguageVerses(results, selectedBibleVersion, selectedBibleVersion2);
+          results2 = await getCrossLanguageVerses(results, selectedBibleVersion, selectedBibleVersion2);
         }
-        
+
         const formattedResults = results.map((item: any, idx: number) => {
-           const bTitle = item.isRange ? item.title : `${item.book} ${item.chapter}:${item.verse}`;
-           let combinedSegments = item.isRange ? item.segments : [item.text];
-           let labs = item.isRange ? item.segmentLabels : [`Ayat ${item.verse}`];
-           
-           if (results2.length > 0 && results2[idx]) {
-             const item2 = results2[idx];
-             const segs2 = item2.isRange ? item2.segments : [item2.text];
-             combinedSegments = combinedSegments.map((seg: string, i: number) => {
-                if (segs2[i]) return `${seg}\n[kuning]${segs2[i]}[/kuning]`;
-                return seg;
-             });
-           }
-           
-           if (combinedSegments.length > 0 && combinedSegments[0] !== bTitle) {
-               combinedSegments = [bTitle, ...combinedSegments];
-               labs = ['Judul', ...labs];
-           }
-           
-           return {
-             id: item.isRange ? item.id : `b_${idx}`,
-             type: 'bible',
-             title: bTitle,
-             author: 'Alkitab',
-             category: 'Alkitab',
-             segments: combinedSegments,
-             segmentOrder: combinedSegments.map((_:any, i:number) => i),
-             segmentLabels: labs
-           };
+          const bTitle = item.isRange ? item.title : `${item.book} ${item.chapter}:${item.verse}`;
+          let combinedSegments = item.isRange ? item.segments : [item.text];
+          let labs = item.isRange ? item.segmentLabels : [`Ayat ${item.verse}`];
+
+          if (results2.length > 0 && results2[idx]) {
+            const item2 = results2[idx];
+            const segs2 = item2.isRange ? item2.segments : [item2.text];
+            combinedSegments = combinedSegments.map((seg: string, i: number) => {
+              if (segs2[i]) return `${seg}\n[kuning]${segs2[i]}[/kuning]`;
+              return seg;
+            });
+          }
+
+          if (combinedSegments.length > 0 && combinedSegments[0] !== bTitle) {
+            combinedSegments = [bTitle, ...combinedSegments];
+            labs = ['Judul', ...labs];
+          }
+
+          return {
+            id: item.isRange ? item.id : `b_${idx}`,
+            type: 'bible',
+            title: bTitle,
+            author: 'Alkitab',
+            category: 'Alkitab',
+            segments: combinedSegments,
+            segmentOrder: combinedSegments.map((_: any, i: number) => i),
+            segmentLabels: labs
+          };
         });
         setSearchResults(formattedResults);
       }
@@ -1180,10 +1236,10 @@ export default function ControlPanel() {
     if (!item.type) {
       item.type = item.book ? 'bible' : 'song';
     }
-    
+
     // Process segments for long texts
     const processedItem = item;
-    
+
     const newItem = { ...processedItem, localId: Math.random().toString(36).substr(2, 9) };
     let targetIndex = 0;
     if (replaceIndex !== null) {
@@ -1204,12 +1260,12 @@ export default function ControlPanel() {
       targetIndex = newIndex;
       setPlaylist(finalPlaylist);
     }
-    
+
     setActiveItem(targetIndex);
     setActiveSegment(0);
     setIsAddItemModalOpen(false);
     setIsEditingRundown(true);
-    
+
     if (playLive) {
       const newMode = item.type === 'video' ? 'logo' : 'content';
       setMode(newMode);
@@ -1219,7 +1275,7 @@ export default function ControlPanel() {
     }
   };
 
-  const handleQuickAddSong = async (id: string, playLive: boolean = false) => {
+  const handleQuickAddSong = async (id: string, playLive: boolean = false, withChorus: boolean = false) => {
     try {
       setIsSearching(true);
       const res = await searchLocalSongs(id, selectedSongVersion);
@@ -1227,14 +1283,14 @@ export default function ControlPanel() {
         // Find exact match just in case
         const exact = res.find((s: any) => s.id == id) || res[0];
         exact.type = 'song'; // Ensure type is explicitly set
-        const processed = exact;
-        
+        const processed = withChorus ? expandSongWithChorus(exact) : exact;
+
         if (playLive) {
           pushTempToLive(processed);
         } else {
           addToRundown(processed);
         }
-        
+
         setSearchQuery('');
         setSearchResults([]);
       }
@@ -1258,16 +1314,16 @@ export default function ControlPanel() {
       items: targetPlaylist.map((item) => {
         // Prepare local copy of the item so we don't lose titles/segments on save
         let localItem = { ...item };
-        
+
         // Convert visible segments for backwards compatibility if needed, though we can just keep it directly on the object.
         let customText = '';
         if (item.type === 'announcement') customText = item.segments.join('\n\n---\n\n');
         if (item.type === 'video') customText = item.segments[0];
         if (item.type === 'song' || item.type === 'bible') customText = item.visibleSegments ? JSON.stringify(item.visibleSegments) : '';
-        
+
         localItem.customText = customText;
         localItem.refId = (item.type === 'announcement' || item.type === 'video') ? item.title : (item.refId || item.id);
-        
+
         return localItem;
       })
     };
@@ -1284,12 +1340,12 @@ export default function ControlPanel() {
   const openSegmentModal = (idx: number, e: React.MouseEvent) => {
     e.stopPropagation();
     setSegmentEditIndex(idx);
-    setTempVisibleSegments(playlist[idx].visibleSegments || [...Array(playlist[idx].segments.length).keys()]);
+    setTempVisibleSegments(getVisibleSegments(playlist[idx]));
     setIsSegmentModalOpen(true);
   };
 
   const toggleSegment = (segIdx: number) => {
-    setTempVisibleSegments(prev => 
+    setTempVisibleSegments(prev =>
       prev.includes(segIdx) ? prev.filter(i => i !== segIdx) : [...prev, segIdx].sort((a, b) => a - b)
     );
   };
@@ -1315,7 +1371,7 @@ export default function ControlPanel() {
         setMode('content');
         prevActiveItemRef.current = activeItem;
       }
-      
+
       if (isInitialMount.current) {
         isInitialMount.current = false;
         return;
@@ -1350,11 +1406,11 @@ export default function ControlPanel() {
       setIsDisplayOpen(true);
       setGlobalDisplayWindow(displayWindowRef.current);
       setGlobalIsDisplayOpen(true);
-      
+
       // Sinkronisasi data ke display yang baru dibuka setelah delay singkat
       setTimeout(() => {
         const channel = new BroadcastChannel('worship_live_sync');
-        
+
         // 1. Sync State
         const activeItemData = tempLiveItem ? tempLiveItem : playlist[liveItem];
         if (activeItemData) {
@@ -1370,9 +1426,9 @@ export default function ControlPanel() {
         }
 
         // 2. Sync Running Text
-        channel.postMessage({ 
-          type: 'RUNNING_TEXT_UPDATE', 
-          payload: { text: runningText, position: rtPos, speed: rtSpeed, isVisible: isRtVisible, height: rtHeight } 
+        channel.postMessage({
+          type: 'RUNNING_TEXT_UPDATE',
+          payload: { text: runningText, position: rtPos, speed: rtSpeed, isVisible: isRtVisible, height: rtHeight }
         });
 
         // 3. Sync Background
@@ -1383,7 +1439,7 @@ export default function ControlPanel() {
         if (savedLogos) {
           try {
             channel.postMessage({ type: 'LOGOS_UPDATE', payload: JSON.parse(savedLogos) });
-          } catch(e) {}
+          } catch (e) { }
         }
 
         channel.close();
@@ -1413,7 +1469,7 @@ export default function ControlPanel() {
         setCurrentBg(bgUrl);
         refreshBackgrounds();
       }
-      
+
       // Broadcast custom background
       const channel = new BroadcastChannel('worship_live_sync');
       channel.postMessage({ type: 'BG_UPDATE', bg: bgUrl || '' });
@@ -1451,7 +1507,6 @@ export default function ControlPanel() {
     }
   };
 
-  const blankInputRef = useRef<HTMLInputElement>(null);
   const handleBlankUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -1466,7 +1521,14 @@ export default function ControlPanel() {
     }
   };
 
-  const logoLInputRef = useRef<HTMLInputElement>(null);
+  const handleRemoveBlankImage = () => {
+    updateTheme({ blankImageUrl: 'none' });
+  };
+
+  const handleResetBlankImage = () => {
+    updateTheme({ blankImageUrl: undefined });
+  };
+
   const handleLogoLUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -1476,17 +1538,18 @@ export default function ControlPanel() {
       const reader = new FileReader();
       reader.onload = (event) => {
         const base64 = event.target?.result as string;
-        if (logos.length > 0) {
-           updateLogo(logos[0].id, { url: base64 });
-        } else {
-           const newLogo = { id: 'logo-' + Date.now(), url: base64, x: 50, y: 50, scale: 1, enabled: true };
-           const newLogos = [newLogo];
-           setLogos(newLogos);
-           broadcastLogos(newLogos);
-        }
+        updateTheme({ logoScreenUrl: base64 });
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleRemoveLogoL = () => {
+    updateTheme({ logoScreenUrl: 'none' });
+  };
+
+  const handleResetLogoL = () => {
+    updateTheme({ logoScreenUrl: undefined });
   };
 
   const updateLogo = (id: string, updates: any) => {
@@ -1527,7 +1590,7 @@ export default function ControlPanel() {
     if (playlist.length === 0) return { item: -1, segment: -1 };
     const item = playlist[activeItem];
     if (!item) return { item: -1, segment: -1 };
-    const visible = item.visibleSegments || [...Array(item.segments?.length || 1).keys()];
+    const visible = getVisibleSegments(item);
     const currentIdx = visible.indexOf(activeSegment);
 
     if (currentIdx !== -1 && currentIdx < visible.length - 1) {
@@ -1535,7 +1598,7 @@ export default function ControlPanel() {
     } else if (activeItem < playlist.length - 1) {
       const nextItemIdx = activeItem + 1;
       const nextItem = playlist[nextItemIdx];
-      const nextVisible = nextItem.visibleSegments || [...Array(nextItem.segments?.length || 1).keys()];
+      const nextVisible = getVisibleSegments(nextItem);
       const nextSeg = nextVisible.length > 0 ? nextVisible[0] : 0;
       return { item: nextItemIdx, segment: nextSeg };
     }
@@ -1552,7 +1615,7 @@ export default function ControlPanel() {
     }
     if (playlist.length === 0) return;
     const item = playlist[activeItem];
-    const visible = item?.visibleSegments || [...Array(item?.segments?.length || 1).keys()];
+    const visible = getVisibleSegments(item);
     const currentIdx = visible.indexOf(activeSegment);
 
     if (currentIdx !== -1 && currentIdx < visible.length - 1) {
@@ -1563,7 +1626,7 @@ export default function ControlPanel() {
       const nextItemIdx = activeItem + 1;
       setActiveItem(nextItemIdx);
       const nextItem = playlist[nextItemIdx];
-      const nextVisible = nextItem?.visibleSegments || [...Array(nextItem?.segments?.length || 1).keys()];
+      const nextVisible = getVisibleSegments(nextItem);
       const nextSeg = nextVisible.length > 0 ? nextVisible[0] : 0;
       setActiveSegment(nextSeg);
       pushStateToLive(nextItemIdx, nextSeg, 'content');
@@ -1579,7 +1642,7 @@ export default function ControlPanel() {
     }
     if (playlist.length === 0) return;
     const item = playlist[activeItem];
-    const visible = item?.visibleSegments || [...Array(item?.segments?.length || 1).keys()];
+    const visible = getVisibleSegments(item);
     const currentIdx = visible.indexOf(activeSegment);
 
     if (currentIdx > 0) {
@@ -1590,7 +1653,7 @@ export default function ControlPanel() {
       const prevItemIdx = activeItem - 1;
       setActiveItem(prevItemIdx);
       const prevItem = playlist[prevItemIdx];
-      const prevVisible = prevItem?.visibleSegments || [...Array(prevItem?.segments?.length || 1).keys()];
+      const prevVisible = getVisibleSegments(prevItem);
       const prevSeg = prevVisible.length > 0 ? prevVisible[prevVisible.length - 1] : 0;
       setActiveSegment(prevSeg);
       pushStateToLive(prevItemIdx, prevSeg, 'content');
@@ -1602,7 +1665,7 @@ export default function ControlPanel() {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore if user is typing in an input, textarea, or contentEditable div
       if (
-        e.target instanceof HTMLInputElement || 
+        e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
         (e.target as HTMLElement).isContentEditable
       ) {
@@ -1646,7 +1709,7 @@ export default function ControlPanel() {
     const channel = new BroadcastChannel('worship_live_sync');
     const handleRemoteKey = (e: MessageEvent) => {
       if (e.data && e.data.type === 'REMOTE_KEYDOWN') {
-        const fakeEvent = { key: e.data.key, preventDefault: () => {} } as KeyboardEvent;
+        const fakeEvent = { key: e.data.key, preventDefault: () => { } } as KeyboardEvent;
         handleKeyDown(fakeEvent);
       }
     };
@@ -1676,7 +1739,7 @@ export default function ControlPanel() {
     if (!itemData) return <div className="w-full h-full bg-black rounded-xl overflow-hidden relative flex flex-col items-center justify-center pointer-events-none"></div>;
     return (
       <div className={`w-full h-full rounded-xl overflow-hidden relative flex flex-col items-center justify-center pointer-events-none ${getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.url === '#00FF00' ? 'bg-[#00FF00]' : 'bg-black'}`}
-        style={getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.type === 'image' ? { 
+        style={getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.type === 'image' ? {
           containerType: 'inline-size',
           backgroundImage: (getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.url && getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.url !== '#00FF00') ? `url('${getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.url}')` : 'none',
           backgroundSize: 'cover',
@@ -1684,12 +1747,12 @@ export default function ControlPanel() {
         } : { containerType: 'inline-size' }}
       >
         {getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.type === 'video' && (
-          <video 
-            src={getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.url} 
-            autoPlay 
-            loop 
-            muted 
-            playsInline 
+          <video
+            src={getBgUrl(itemData?.segmentBackgrounds?.[segIdx] || currentBg)?.url}
+            autoPlay
+            loop
+            muted
+            playsInline
             className="absolute inset-0 w-full h-full object-cover z-0"
           />
         )}
@@ -1730,14 +1793,14 @@ export default function ControlPanel() {
               const isPlay = mode === 'content';
               let videoId = '';
               if (url.includes('youtube.com') || url.includes('youtu.be')) {
-                  if (url.includes('v=')) {
-                    videoId = url.split('v=')[1].split('&')[0];
-                  } else if (url.includes('youtu.be/')) {
-                    videoId = url.split('youtu.be/')[1].split('?')[0];
-                  } else if (url.includes('youtube.com/embed/') || url.includes('youtube-nocookie.com/embed/')) {
-                    videoId = url.split('embed/')[1].split('?')[0];
-                  }
-                
+                if (url.includes('v=')) {
+                  videoId = url.split('v=')[1].split('&')[0];
+                } else if (url.includes('youtu.be/')) {
+                  videoId = url.split('youtu.be/')[1].split('?')[0];
+                } else if (url.includes('youtube.com/embed/') || url.includes('youtube-nocookie.com/embed/')) {
+                  videoId = url.split('embed/')[1].split('?')[0];
+                }
+
                 if (videoId) {
                   return (
                     <YouTube
@@ -1765,196 +1828,192 @@ export default function ControlPanel() {
             })()}
           </div>
         )}
-        
+
         {/* Safe Area Container untuk Logo, Judul, dan Teks agar tidak tertimpa Running Text */}
-        <div 
+        <div
           className="absolute left-0 right-0 z-20 flex flex-col items-center justify-center pointer-events-none transition-all duration-500"
           style={{
             top: isRtVisible && rtPos === 'top' ? `${((rtHeight || 7) / 56.25 * 100)}%` : '0',
             bottom: isRtVisible && rtPos === 'bottom' ? `${((rtHeight || 7) / 56.25 * 100)}%` : '0'
           }}
         >
-        
-        {/* Multi-Logos */}
-        {logos.length > 0 && itemData?.type !== 'countdown' && (
-          <div className="absolute inset-0 pointer-events-none z-[60]">
-            {logos.filter(l => l.enabled !== false).map(logo => (
-              <img 
-                key={logo.id}
-                src={logo.url} 
-                style={{ 
-                  width: `${8 * logo.scale}%`,
-                  ...(logo.x < 50 ? { left: `${logo.x}%` } : { right: `${100 - logo.x}%` }),
-                  ...(logo.y < 50 ? { top: `${logo.y}%` } : { bottom: `${100 - logo.y}%` }),
-                }}
-                className="absolute h-auto opacity-70 z-10"
-                alt="Logo" 
-              />
-            ))}
-          </div>
-        )}
 
-      {/* Control Panel Preview: Header Title */}
-      {mode === 'content' && itemData?.type !== 'video' && itemData?.title && !itemData?.hideHeaderTitle && (itemData?.type === 'song' || itemData?.type === 'bible' || itemData?.type === 'announcement') && itemData?.segmentLabels?.[segIdx]?.toLowerCase() !== 'judul' && (
-        <h2 
-          className="absolute left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-20 transition-all duration-500"
-          style={{
-            top: `${6 + (displayTheme.titleOffsetY ?? 0)}%`,
-            fontSize: `${1.5 + (displayTheme.headerTitleFontSizeOffset !== undefined ? displayTheme.headerTitleFontSizeOffset : 0.5) + (itemData?.headerTitleFontSizeOffset || 0)}cqw`,
-            textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
-          }}
-        >
-            {itemData?.title}
-          </h2>
-        )}
+          {/* Multi-Logos */}
+          {mode === 'content' && logos.length > 0 && itemData?.type !== 'countdown' && (
+            <div className="absolute inset-0 pointer-events-none z-[60]">
+              {logos.filter(l => l.enabled !== false).map(logo => (
+                <img
+                  key={logo.id}
+                  src={logo.url}
+                  style={{
+                    width: `${8 * logo.scale}%`,
+                    ...(logo.x < 50 ? { left: `${logo.x}%` } : { right: `${100 - logo.x}%` }),
+                    ...(logo.y < 50 ? { top: `${logo.y}%` } : { bottom: `${100 - logo.y}%` }),
+                  }}
+                  className="absolute h-auto opacity-70 z-10"
+                  alt="Logo"
+                />
+              ))}
+            </div>
+          )}
 
-        {/* Content Container */}
-        {itemData?.type !== 'video' && itemData?.type !== 'image' && (
-          <div className={`absolute left-0 right-0 z-[70] flex flex-col items-center w-full min-h-0 transition-all duration-700 ${
-            (displayTheme.position || 'center') === 'top' ? 'top-[8%] bottom-[12%] justify-start' :
-            (displayTheme.position || 'center') === 'bottom' ? 'top-[18%] bottom-[8%] justify-end' :
-            'top-[18%] bottom-[12%] justify-center'
-          }`}
-          style={{ 
-            paddingLeft: `${displayTheme.paddingHorizontal ?? 8}%`, 
-            paddingRight: `${displayTheme.paddingHorizontal ?? 8}%`,
-            marginTop: `${displayTheme.contentOffsetY ?? 0}%`
-          }}>
-            {itemData?.type === 'countdown' ? (
-               <div className="text-white text-center font-bold tracking-widest leading-none drop-shadow-xl w-full font-mono" 
-                    style={{ textShadow: '0 10px 30px rgba(0,0,0,0.8), 0 0 40px rgba(255,255,255,0.2)', fontSize: '18cqw' }}>
-                 {(() => {
-                   const displaySecs = previewCountdown !== null ? previewCountdown : parseInt(itemData?.segments[0] || '0');
-                   return `${Math.floor(displaySecs / 60).toString().padStart(2, '0')}:${(displaySecs % 60).toString().padStart(2, '0')}`;
-                 })()}
-               </div>
-            ) : mode === 'content' ? (
-               <>
-                 <div 
+          {/* Control Panel Preview: Header Title */}
+          {mode === 'content' && itemData?.type !== 'video' && itemData?.title && !itemData?.hideHeaderTitle && (itemData?.type === 'song' || itemData?.type === 'bible' || itemData?.type === 'announcement') && itemData?.segmentLabels?.[segIdx]?.toLowerCase() !== 'judul' && (
+            <h2
+              className="absolute left-0 right-0 w-full px-4 text-center font-heading font-bold text-yellow-300 opacity-90 tracking-wider z-20 transition-all duration-500"
+              style={{
+                top: `${6 + (displayTheme.titleOffsetY ?? 0)}%`,
+                fontSize: `${1.5 + (displayTheme.headerTitleFontSizeOffset !== undefined ? displayTheme.headerTitleFontSizeOffset : 0.5) + (itemData?.headerTitleFontSizeOffset || 0)}cqw`,
+                textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 20px rgba(0,0,0,0.9)'
+              }}
+            >
+              {itemData?.title}
+            </h2>
+          )}
+
+          {/* Content Container */}
+          {itemData?.type !== 'video' && itemData?.type !== 'image' && (
+            <div className={`absolute left-0 right-0 z-[70] flex flex-col items-center w-full min-h-0 transition-all duration-700 ${(displayTheme.position || 'center') === 'top' ? 'top-[8%] bottom-[12%] justify-start' :
+              (displayTheme.position || 'center') === 'bottom' ? 'top-[18%] bottom-[8%] justify-end' :
+                'top-[18%] bottom-[12%] justify-center'
+              }`}
+              style={{
+                paddingLeft: `${displayTheme.paddingHorizontal ?? 8}%`,
+                paddingRight: `${displayTheme.paddingHorizontal ?? 8}%`,
+                marginTop: `${displayTheme.contentOffsetY ?? 0}%`
+              }}>
+              {itemData?.type === 'countdown' ? (
+                <div className="text-white text-center font-bold tracking-widest leading-none drop-shadow-xl w-full font-mono"
+                  style={{ textShadow: '0 10px 30px rgba(0,0,0,0.8), 0 0 40px rgba(255,255,255,0.2)', fontSize: '18cqw' }}>
+                  {(() => {
+                    const displaySecs = previewCountdown !== null ? previewCountdown : parseInt(itemData?.segments[0] || '0');
+                    return `${Math.floor(displaySecs / 60).toString().padStart(2, '0')}:${(displaySecs % 60).toString().padStart(2, '0')}`;
+                  })()}
+                </div>
+              ) : mode === 'content' ? (
+                <>
+                  <div
                     key={`preview-${itemData?.title}-${segIdx}-${displayTheme.transitionStyle}`} // Force re-render on style change
-                    className={`text-center whitespace-pre-wrap drop-shadow-xl w-full ${
-                      displayTheme.bold !== false ? 'font-bold' : 'font-medium'
-                    }`} 
-                    style={{ 
-                      lineHeight: displayTheme.lineHeight ?? 1.15,
+                    className={`text-center whitespace-pre-wrap drop-shadow-xl w-full ${displayTheme.bold !== false ? 'font-bold' : 'font-medium'
+                      }`}
+                    style={{
+                      lineHeight: displayTheme.lineHeight ? Math.min(1.25, Math.max(1.12, Number(displayTheme.lineHeight))) : 1.16,
                       color: displayTheme.color || 'white',
-                      textShadow: (displayTheme.shadow || 'dark') === 'dark' 
+                      textShadow: (displayTheme.shadow || 'dark') === 'dark'
                         ? '1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 4px 10px rgba(0,0,0,0.8)'
-                        : (displayTheme.shadow === 'light') 
-                        ? '1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff, 0 4px 10px rgba(255,255,255,0.8)'
-                        : 'none',
+                        : (displayTheme.shadow === 'light')
+                          ? '1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff, 0 4px 10px rgba(255,255,255,0.8)'
+                          : 'none',
                       animation: (() => {
-                         if (displayTheme.transitionStyle === 'slideUp') return 'slideUpIn 0.5s ease-out forwards';
-                         if (displayTheme.transitionStyle === 'slideDown') return 'slideDownIn 0.5s ease-out forwards';
-                         if (displayTheme.transitionStyle === 'zoom') return 'zoomInIn 0.5s ease-out forwards';
-                         return 'fadeIn 0.5s ease-out forwards';
+                        if (displayTheme.transitionStyle === 'slideUp') return 'slideUpIn 0.5s ease-out forwards';
+                        if (displayTheme.transitionStyle === 'slideDown') return 'slideDownIn 0.5s ease-out forwards';
+                        if (displayTheme.transitionStyle === 'zoom') return 'zoomInIn 0.5s ease-out forwards';
+                        return 'fadeIn 0.5s ease-out forwards';
                       })(),
-                      fontSize: (() => {
-                        const t = itemData?.segments[segIdx] || '';
-                        const is2Column = t.includes('\n[kuning]') || t.includes('\n[kolom2]');
-                        const charCount = is2Column ? t.length * 1.5 : t.length;
-                        const charsPerLine = is2Column ? 14 : 28;
-                        
-                        const strippedT = t.replace(/\[\/?(merah|kuning|hijau|biru|ungu|oranye|kolom2)\]/gi, '');
-                        const lines = strippedT.split('\n');
-                        const visualLines = lines.reduce((acc: number, line: string) => acc + Math.ceil((line.length || 1) / charsPerLine), 0);
-                        
-                        let baseSize = 8.5;
-                        if (visualLines >= 12 || charCount > 400) baseSize = 3;
-                        else if (visualLines >= 9 || charCount > 300) baseSize = 3.5;
-                        else if (visualLines >= 7 || charCount > 200) baseSize = 4;
-                        else if (visualLines >= 5 || charCount > 150) baseSize = 4.75;
-                        else if (visualLines >= 4 || charCount > 100) baseSize = 5.5;
-                        else if (visualLines >= 3 || charCount > 60) baseSize = 6.5;
-                        else if (charCount > 35) baseSize = 7.5;
-                        
-                        // Prevent wrapping if user didn't press enter (shrink-to-fit line)
-                        const maxLineLength = Math.max(...lines.map((line: string) => line.length), 1);
-                        const availableWidth = is2Column ? 42 : 84; 
-                        let requiredSize = availableWidth / (maxLineLength * 0.55);
-                        
-                        if (requiredSize < baseSize) {
-                            baseSize = Math.max(requiredSize, 2); // don't go below 2cqw to stay readable
-                        }
-                        
-                        return `${baseSize + (displayTheme.fontSizeOffset || 0)}cqw`;
-                      })()
-                   }}
-                   dangerouslySetInnerHTML={{ __html: processText(itemData?.segments[segIdx] || '') }}
-                 />
-                 
-                 {/* Subtitle (Bait) di bawah isi */}
-                 {(() => {
-                   let label = itemData?.segmentLabels?.[segIdx] || '';
-                   if (itemData?.type === 'bible' && !label) {
-                     const match = itemData?.title?.match(/(.+?)\s*:\s*(\d+)/);
-                     if (match) {
-                       const startVerse = parseInt(match[2], 10);
-                       label = `Ayat ${startVerse + segIdx}`;
-                     } else {
-                       label = `Ayat ${segIdx + 1}`;
-                     }
-                   }
-                   if (itemData?.type === 'song' && label.startsWith('Slide ')) {
-                     label = label.replace('Slide ', 'Bait ');
-                   }
-                   
-                   if (label.toLowerCase() === 'judul') return null;
-                   
-                   return (
-                     <div 
-                       className="text-yellow-300 font-bold mt-[1.5cqw] tracking-widest uppercase opacity-80 animate-fade-in"
-                       style={{
-                         fontSize: '1.5cqw',
-                         textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)',
-                         minHeight: '2cqw'
-                       }}
-                     >
-                       {label || (itemData?.type === 'song' ? '•' : '')}
-                     </div>
-                   );
-                 })()}
-               </>
-            ) : logos.filter(l => l.enabled !== false).length > 0 ? (
-               <img 
-                 src={logos.filter(l => l.enabled !== false)[0].url} 
-                 style={{ width: `${33 * logos.filter(l => l.enabled !== false)[0].scale}%`, maxWidth: `${400 * logos.filter(l => l.enabled !== false)[0].scale}px` }}
-                 className="object-contain animate-fade-in drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]" 
-                 alt="Logo" 
-               />
-            ) : null}
-          </div>
-        )}
+                      fontSize: `${calculateOptimalFontSize(itemData?.segments[segIdx] || '', {
+                        is2Column: (itemData?.segments[segIdx] || '').includes('\n[kuning]') || (itemData?.segments[segIdx] || '').includes('\n[kolom2]'),
+                        isLowerThird: displayTheme.layout === 'lower-third',
+                        lineHeight: Number(displayTheme.lineHeight) || 1.16,
+                        fontSizeOffset: displayTheme.fontSizeOffset || 0
+                      })}cqw`
+                    }}
+                    dangerouslySetInnerHTML={{ __html: processText(itemData?.segments[segIdx] || '') }}
+                  />
 
-        {/* End of Safe Area */}
+                  {/* Subtitle (Bait) di bawah isi */}
+                  {(() => {
+                    let label = itemData?.segmentLabels?.[segIdx] || '';
+                    if (itemData?.type === 'bible' && !label) {
+                      const match = itemData?.title?.match(/(.+?)\s*:\s*(\d+)/);
+                      if (match) {
+                        const startVerse = parseInt(match[2], 10);
+                        label = `Ayat ${startVerse + segIdx}`;
+                      } else {
+                        label = `Ayat ${segIdx + 1}`;
+                      }
+                    }
+                    if (itemData?.type === 'song' && label.startsWith('Slide ')) {
+                      label = label.replace('Slide ', 'Bait ');
+                    }
+
+                    if (label.toLowerCase() === 'judul') return null;
+
+                    return (
+                      <div
+                        className="text-yellow-300 font-bold mt-[1.5cqw] tracking-widest uppercase opacity-80 animate-fade-in"
+                        style={{
+                          fontSize: '1.5cqw',
+                          textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 10px rgba(0,0,0,0.9)',
+                          minHeight: '2cqw'
+                        }}
+                      >
+                        {label || (itemData?.type === 'song' ? '•' : '')}
+                      </div>
+                    );
+                  })()}
+                </>
+              ) : null}
+            </div>
+          )}
+
+          {/* End of Safe Area */}
         </div>
 
         {/* Running Text Bar in Preview */}
         {isRtVisible && runningText && (
-          <div 
-            className={`absolute left-0 right-0 z-30 bg-black/60 backdrop-blur-sm border-y border-white/10 overflow-hidden flex items-center ${
-              rtPos === 'top' ? 'top-0' : 'bottom-0'
-            }`}
+          <div
+            className={`absolute left-0 right-0 z-30 bg-black/60 backdrop-blur-sm border-y border-white/10 overflow-hidden flex items-center ${rtPos === 'top' ? 'top-0' : 'bottom-0'
+              }`}
             style={{ height: `${((rtHeight || 7) / 56.25) * 100}%` }}
           >
-              {(() => {
-                const rtSeparator = '\u00A0\u00A0\u00A0\u00A0|\u00A0\u00A0\u00A0\u00A0\u00A0';
-                const formattedRtText = runningText ? runningText.split('\n').filter((t: string) => t.trim() !== '').join(rtSeparator) : '';
-                const rtBlockText = formattedRtText ? Array(15).fill(formattedRtText).join(rtSeparator) + rtSeparator : '';
-                const rtCharCount = rtBlockText.length;
-                const speedMultiplier = Math.max(5, (rtSpeed || 15));
-                const calculatedDuration = Math.max(5, (rtCharCount / 100) * speedMultiplier);
-                return (
-                  <div className="animate-marquee-seamless shrink-0" style={{ animationDuration: `${calculatedDuration}s` }}>
-                    <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtHeight || 7) / 56.25 * 100) * 0.35}cqw` }}>
-                      {rtBlockText}
-                    </div>
-                    <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtHeight || 7) / 56.25 * 100) * 0.35}cqw` }}>
-                      {rtBlockText}
-                    </div>
+            {(() => {
+              const rtSeparator = '\u00A0\u00A0\u00A0\u00A0|\u00A0\u00A0\u00A0\u00A0\u00A0';
+              const formattedRtText = runningText ? runningText.split('\n').filter((t: string) => t.trim() !== '').join(rtSeparator) : '';
+              const rtBlockText = formattedRtText ? Array(15).fill(formattedRtText).join(rtSeparator) + rtSeparator : '';
+              const rtCharCount = rtBlockText.length;
+              const speedMultiplier = Math.max(5, (rtSpeed || 15));
+              const calculatedDuration = Math.max(5, (rtCharCount / 100) * speedMultiplier);
+              return (
+                <div className="animate-marquee-seamless shrink-0" style={{ animationDuration: `${calculatedDuration}s` }}>
+                  <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtHeight || 7) / 56.25 * 100) * 0.35}cqw` }}>
+                    {rtBlockText}
                   </div>
-                );
-              })()}
+                  <div className="text-white font-bold whitespace-nowrap" style={{ fontSize: `${((rtHeight || 7) / 56.25 * 100) * 0.35}cqw` }}>
+                    {rtBlockText}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* Layar Logo Mode Overlay (Hotkey L) */}
+        {mode === 'logo' && (
+          <div className="absolute inset-0 z-[998] flex items-center justify-center overflow-hidden animate-fade-in bg-black/40">
+            {displayTheme.logoScreenUrl !== 'none' && (
+              <img
+                src={displayTheme.logoScreenUrl || import.meta.env.BASE_URL + "logo.png"}
+                alt="Layar Logo"
+                style={{ width: '35%', maxWidth: '450px' }}
+                className="object-contain drop-shadow-[0_0_25px_rgba(255,255,255,0.7)] drop-shadow-[0_0_50px_rgba(197,160,89,0.45)]"
+              />
+            )}
+          </div>
+        )}
+
+        {/* Blank Mode Overlay (Hotkey B) */}
+        {mode === 'blank' && (
+          <div className="absolute inset-0 bg-black z-[999] flex items-center justify-center overflow-hidden">
+            {displayTheme.blankImageUrl !== 'none' && (
+              <img
+                src={displayTheme.blankImageUrl || import.meta.env.BASE_URL + "blank_logo.png"}
+                alt="Blank Logo"
+                className={displayTheme.blankImageFit === 'cover'
+                  ? "w-full h-full object-cover animate-fade-in"
+                  : "max-h-[50%] max-w-[50%] object-contain drop-shadow-[0_0_25px_rgba(255,255,255,0.7)] drop-shadow-[0_0_50px_rgba(197,160,89,0.45)] animate-fade-in"
+                }
+              />
+            )}
           </div>
         )}
       </div>
@@ -1963,7 +2022,7 @@ export default function ControlPanel() {
 
   return (
     <div className="h-full flex flex-col pb-4 px-4 gap-4 overflow-hidden relative bg-[#f1f5f9] dark:bg-slate-800">
-      
+
       <header className="glass-panel p-3 flex justify-between items-center shrink-0 shadow-sm border-white/50 z-10 mx-4 mt-4 rounded-xl">
         <div className="flex items-center gap-3 px-2">
           <div className="bg-white/10 dark:bg-white/90 p-1 rounded-lg shadow-md border border-white/20 w-8 h-8 flex items-center justify-center overflow-hidden">
@@ -1980,9 +2039,9 @@ export default function ControlPanel() {
         </div>
         <div className="flex items-center gap-4">
           {updateInfo && updateInfo.available && (
-            <a 
-              href={updateInfo.url} 
-              target="_blank" 
+            <a
+              href={updateInfo.url}
+              target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white transition-colors text-xs font-bold shadow-md animate-pulse"
               title="Unduh versi terbaru di GitHub"
@@ -1990,7 +2049,7 @@ export default function ControlPanel() {
               🚀 Update v{updateInfo.version} Tersedia!
             </a>
           )}
-          <button 
+          <button
             onClick={() => setShowHotkeyHelp(true)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 transition-colors text-xs font-bold"
             title="Bantuan Pintasan Keyboard"
@@ -2005,16 +2064,16 @@ export default function ControlPanel() {
           </div>
         </div>
       </header>
-      
+
       <main className="flex-1 flex gap-4 min-h-0 overflow-hidden">
         {/* Left Sidebar */}
         <aside className="w-[20%] glass-panel flex flex-col gap-3 p-3 shadow-lg border-white/50 overflow-y-auto">
           <button onClick={() => navigate('/dashboard')} className="glass-button w-full text-indigo-900 flex items-center justify-center font-bold px-2 py-4 text-[11px] uppercase tracking-wider transition-all hover:bg-white/70">
             DASHBOARD
           </button>
-          
+
           <div className="w-full h-px bg-indigo-900/10 my-1"></div>
-          
+
           <button onClick={() => { setIsRunningTextModalOpen(true); setDisplayPanelTab('add'); if (searchType === 'playlist') setSearchType('song'); }} className={`glass-button w-full text-indigo-900 flex items-center justify-center font-bold px-2 py-4 text-[11px] uppercase tracking-wider transition-all ${displayPanelTab === 'add' && searchType !== 'playlist' ? 'bg-white/80 shadow-md' : 'hover:bg-white/70'}`}>
             LAGU / ALKITAB
           </button>
@@ -2058,7 +2117,7 @@ export default function ControlPanel() {
                     setTempLiveItem(updated);
                     // Push state secara instan jika kita di mode live/content
                     if (mode === 'content') {
-                       pushTempToLive(updated, liveSegment);
+                      pushTempToLive(updated, liveSegment);
                     }
                   } else {
                     const newPlaylist = [...playlist];
@@ -2067,59 +2126,101 @@ export default function ControlPanel() {
                     newPlaylist[targetItemIdx].segments[targetSegIdx] = newText;
                     setPlaylist(newPlaylist);
                     if (targetItemIdx === liveItem && mode === 'content') {
-                       const stateObj = {
-                         playlistId: playlistId,
-                         currentItemId: newPlaylist[targetItemIdx].id,
-                         segmentIndex: liveSegment, // selalu kirim segment yang sedang aktif ditayangkan
-                         displayMode: 'content',
-                         item: newPlaylist[targetItemIdx],
-                         updatedAt: Date.now()
-                       };
-                       const channel = new BroadcastChannel('worship_live_sync');
-                       channel.postMessage({ type: 'STATE_UPDATE', state: stateObj });
-                       channel.close();
-                       
-                       if (syncTimeout.current) clearTimeout(syncTimeout.current);
-                       syncTimeout.current = setTimeout(async () => {
-                         try {
-                           await callApi('setLiveState', {}, { method: 'POST', payload: stateObj });
-                           setIsSyncing(false);
-                         } catch(e) {}
-                       }, 1000);
+                      const stateObj = {
+                        playlistId: playlistId,
+                        currentItemId: newPlaylist[targetItemIdx].id,
+                        segmentIndex: liveSegment, // selalu kirim segment yang sedang aktif ditayangkan
+                        displayMode: 'content',
+                        item: newPlaylist[targetItemIdx],
+                        updatedAt: Date.now()
+                      };
+                      const channel = new BroadcastChannel('worship_live_sync');
+                      channel.postMessage({ type: 'STATE_UPDATE', state: stateObj });
+                      channel.close();
+
+                      if (syncTimeout.current) clearTimeout(syncTimeout.current);
+                      syncTimeout.current = setTimeout(async () => {
+                        try {
+                          await callApi('setLiveState', {}, { method: 'POST', payload: stateObj });
+                          setIsSyncing(false);
+                        } catch (e) { }
+                      }, 1000);
                     }
                   }
                 };
 
                 return (
-                  <div className="flex flex-col gap-1.5 bg-white/50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-indigo-200 dark:border-slate-700/50 shadow-inner mb-2 w-full">
-                    <span className="text-[11px] font-extrabold text-slate-500 uppercase shrink-0">Quick Edit</span>
+                  <div className="flex flex-col gap-2 bg-white/70 dark:bg-slate-900/60 p-3 rounded-2xl border border-indigo-200 dark:border-slate-700/60 shadow-sm mb-2 w-full">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <Edit size={13} className="text-indigo-600 dark:text-[#C5A059]" /> Quick Edit
+                      </span>
+                      <div className="flex items-center gap-1 bg-white dark:bg-slate-800 rounded-lg p-0.5 border border-indigo-100 dark:border-slate-700 shadow-xs">
+                        <button
+                          type="button"
+                          onClick={() => setQuickEditFontSize(prev => {
+                            const next = Math.max(12, prev - 1);
+                            localStorage.setItem('quick_edit_font_size', String(next));
+                            return next;
+                          })}
+                          className="px-1.5 py-0.5 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition"
+                          title="Perkecil Ukuran Font"
+                        >
+                          A-
+                        </button>
+                        <span className="text-[10px] font-bold font-mono text-indigo-600 dark:text-[#C5A059] px-1 min-w-[26px] text-center">
+                          {quickEditFontSize}px
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setQuickEditFontSize(prev => {
+                            const next = Math.min(24, prev + 1);
+                            localStorage.setItem('quick_edit_font_size', String(next));
+                            return next;
+                          })}
+                          className="px-1.5 py-0.5 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition"
+                          title="Perbesar Ukuran Font"
+                        >
+                          A+
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="flex flex-col gap-3 w-full">
                       {/* Current Slide */}
                       <div className="flex flex-col gap-1 w-full">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">Saat Ini (Slide {segIdx + 1})</span>
-                        <SegmentEditor 
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-indigo-700 dark:text-[#D4B872] uppercase tracking-wide flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-[#C5A059]"></span>
+                            Saat Ini (Slide {segIdx + 1})
+                          </span>
+                        </div>
+                        <SegmentEditor
                           value={item.segments[segIdx]}
                           onChange={(val: string) => updateSegmentText(segIdx, val, tempLiveItem ? -2 : activeItem)}
-                          className="w-full bg-white dark:bg-slate-800 border border-indigo-100 dark:border-white/10 rounded-lg p-2 text-[12px] leading-relaxed font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:focus:ring-[#C5A059] resize-none overflow-hidden custom-scrollbar transition-all"
+                          style={{ fontSize: `${quickEditFontSize}px` }}
+                          className="w-full bg-white dark:bg-slate-800 border-2 border-indigo-200/80 dark:border-white/10 rounded-xl p-2.5 leading-relaxed font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 dark:focus:ring-[#C5A059]/40 resize-none overflow-hidden custom-scrollbar transition-all shadow-xs"
                         />
                       </div>
-                      
+
                       {/* Next Slide */}
                       {nextItemData && (
-                        <div className="flex flex-col gap-1 w-full mt-1 border-t border-indigo-100/50 dark:border-slate-700/50 pt-2">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase">
+                        <div className="flex flex-col gap-1 w-full mt-1 border-t border-indigo-100 dark:border-slate-700/60 pt-2">
+                          <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                             {nextItemIdx === (tempLiveItem ? -2 : activeItem) ? `Selanjutnya (Slide ${nextSegIdx + 1})` : `Rundown Berikutnya`}
                           </span>
                           {isNextEditable ? (
-                            <SegmentEditor 
+                            <SegmentEditor
                               value={nextItemData.segments[nextSegIdx]}
                               onChange={(val: string) => updateSegmentText(nextSegIdx, val, nextItemIdx)}
-                              className="w-full bg-white/60 dark:bg-slate-800/60 border border-indigo-100/50 dark:border-white/5 rounded-lg p-2 text-[12px] leading-relaxed font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:focus:ring-[#C5A059] resize-none overflow-hidden custom-scrollbar transition-all"
+                              style={{ fontSize: `${quickEditFontSize}px` }}
+                              className="w-full bg-white/80 dark:bg-slate-800/70 border border-indigo-100 dark:border-white/10 rounded-xl p-2.5 leading-relaxed font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 dark:focus:ring-[#C5A059]/40 resize-none overflow-hidden custom-scrollbar transition-all shadow-xs"
                             />
                           ) : (
-                            <div className="w-full bg-slate-100/80 dark:bg-slate-800/40 border border-slate-200 dark:border-white/5 rounded-lg p-2 text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2 shadow-sm">
-                               <span className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded text-[8px] uppercase font-bold tracking-wider">{nextItemData.type === 'video' ? 'Video' : nextItemData.type === 'image' ? 'Gambar' : nextItemData.type === 'countdown' ? 'Timer' : nextItemData.type || 'Media'}</span>
-                               <span className="truncate">{nextItemData.title || 'Item Media'}</span>
+                            <div className="w-full bg-slate-100/80 dark:bg-slate-800/50 border border-slate-200 dark:border-white/5 rounded-xl p-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-2 shadow-xs">
+                              <span className="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider">{nextItemData.type === 'video' ? 'Video' : nextItemData.type === 'image' ? 'Gambar' : nextItemData.type === 'countdown' ? 'Timer' : nextItemData.type || 'Media'}</span>
+                              <span className="truncate">{nextItemData.title || 'Item Media'}</span>
                             </div>
                           )}
                         </div>
@@ -2131,18 +2232,17 @@ export default function ControlPanel() {
               return null;
             })()}
 
-            <button 
-              onClick={() => { 
+            <button
+              onClick={() => {
                 if (displayPanelTab === 'add' || !isRunningTextModalOpen) {
-                  setIsRunningTextModalOpen(true); 
-                  setDisplayPanelTab('rt'); 
+                  setIsRunningTextModalOpen(true);
+                  setDisplayPanelTab('rt');
                 } else {
                   setIsRunningTextModalOpen(false);
                 }
-              }} 
-              className={`glass-button w-full flex items-center justify-center font-bold px-2 py-4 text-[11px] uppercase tracking-wider transition-all ${
-                (isRunningTextModalOpen && displayPanelTab !== 'add') ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md border-indigo-500' : isRtVisible ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 shadow-md border-indigo-300' : 'bg-white/50 text-indigo-900 hover:bg-white/70 border-white/40'
-              }`}
+              }}
+              className={`glass-button w-full flex items-center justify-center font-bold px-2 py-4 text-[11px] uppercase tracking-wider transition-all ${(isRunningTextModalOpen && displayPanelTab !== 'add') ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md border-indigo-500' : isRtVisible ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 shadow-md border-indigo-300' : 'bg-white/50 text-indigo-900 hover:bg-white/70 border-white/40'
+                }`}
             >
               LAYOUT
             </button>
@@ -2152,7 +2252,7 @@ export default function ControlPanel() {
 
         {/* Center Workspace (Dual Display + Controls) */}
         <section className="flex-1 flex flex-col gap-4 min-w-0 overflow-hidden">
-          
+
           {/* Dual Display Area */}
           <div className="flex gap-4 shrink-0 max-h-[55%]">
             <div className="flex-1 flex flex-col group min-h-0 bg-slate-900/40 rounded-2xl p-3 border border-white/5 shadow-inner">
@@ -2187,64 +2287,106 @@ export default function ControlPanel() {
             <div className="flex items-center justify-between gap-4">
               {/* Left: Prev/Next */}
               <div className="flex items-center gap-2 shrink-0">
-                <button onClick={handlePrev} className="flex bg-[#D4B872]/10 border border-[#C5A059] text-[#C5A059] justify-center items-center gap-1.5 px-4 py-2 font-bold uppercase text-[11px] hover:bg-[#C5A059]/20 rounded-lg transition-all"><ArrowLeft size={14}/> PREV</button>
-                <button onClick={handleNext} className="flex bg-[#D4B872]/10 border border-[#C5A059] text-[#C5A059] justify-center items-center gap-1.5 px-4 py-2 font-bold uppercase text-[11px] hover:bg-[#C5A059]/20 rounded-lg transition-all">NEXT <ArrowRight size={14}/></button>
+                <button onClick={handlePrev} className="flex bg-[#D4B872]/10 border border-[#C5A059] text-[#C5A059] justify-center items-center gap-1.5 px-4 py-2 font-bold uppercase text-[11px] hover:bg-[#C5A059]/20 rounded-lg transition-all"><ArrowLeft size={14} /> PREV</button>
+                <button onClick={handleNext} className="flex bg-[#D4B872]/10 border border-[#C5A059] text-[#C5A059] justify-center items-center gap-1.5 px-4 py-2 font-bold uppercase text-[11px] hover:bg-[#C5A059]/20 rounded-lg transition-all">NEXT <ArrowRight size={14} /></button>
               </div>
 
               {/* Middle: Bait Buttons (Kotak Khusus) */}
               {(() => {
                 const item = tempLiveItem ? tempLiveItem : playlist[activeItem];
                 const seg = tempLiveItem ? liveSegment : activeSegment;
-                
+
                 return item?.segments && item.segments.length > 1 ? (
-                  <div className="flex-1 bg-transparent border border-indigo-500/30 dark:border-white/20 rounded-xl p-1.5 flex items-center gap-1.5 overflow-x-auto min-w-0 custom-scrollbar">
-                    {(item.visibleSegments || [...Array(item.segments.length).keys()]).map((idx: number, visualIdx: number) => (
-                      <button 
-                        key={`${idx}-${visualIdx}`}
-                        draggable={true}
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData('text/plain', visualIdx.toString());
-                          setDragSegItem(visualIdx);
-                        }}
-                        onDragOver={(e) => { e.preventDefault(); setDragOverSegItem(visualIdx); }}
-                        onDrop={(e) => handleSegDrop(e, visualIdx, tempLiveItem ? liveItem : activeItem)}
-                        onDragEnd={() => { setDragSegItem(null); setDragOverSegItem(null); }}
-                        onDragLeave={() => setDragOverSegItem(null)}
-                        onClick={() => { 
-                          if (tempLiveItem) {
-                            pushTempToLive(tempLiveItem, idx);
-                          } else {
-                            setActiveSegment(idx); 
-                            setMode('content'); 
-                            if (activeItem === liveItem) {
-                              pushStateToLive(activeItem, idx, 'content');
-                            }
-                          }
-                        }}
-                        className={`px-3 py-1.5 font-bold text-[11px] rounded-lg transition-all duration-200 border shrink-0 whitespace-nowrap ${
-                          dragOverSegItem === visualIdx && dragSegItem !== visualIdx
-                            ? 'bg-blue-100 dark:bg-blue-900/50 border-blue-400 text-blue-800 dark:text-blue-200 shadow-[0_0_10px_rgba(96,165,250,0.4)]'
-                            : seg === idx && mode === 'content' 
-                            ? 'bg-[#C5A059] text-black border-transparent shadow-[0_0_10px_rgba(197,160,89,0.3)]' 
-                            : 'bg-transparent text-slate-500 dark:text-[#C5A059]/60 border-slate-300 dark:border-[#C5A059]/30 hover:bg-slate-200 dark:hover:bg-[#C5A059]/10 hover:text-slate-800 dark:hover:text-[#C5A059]'
-                        } ${dragSegItem === visualIdx ? 'opacity-30' : ''}`}
-                      >
-                        {item?.segmentLabels ? item.segmentLabels[idx] : `Slide ${idx + 1}`}
-                      </button>
-                    ))}
+                  <div className="flex-1 bg-transparent border border-indigo-500/30 dark:border-white/20 rounded-xl p-1 flex items-center min-w-0 relative">
+                    {/* Left Scroll Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        segScrollRef.current?.scrollBy({ left: -200, behavior: 'smooth' });
+                      }}
+                      className="shrink-0 p-1 text-slate-400 hover:text-[#C5A059] hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg transition"
+                      title="Geser ke Kiri (atau gunakan Scroll Roda Mouse)"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+
+                    <div
+                      ref={segScrollRef}
+                      onWheel={(e) => {
+                        const delta = e.deltaY !== 0 ? e.deltaY : e.deltaX;
+                        if (delta !== 0) {
+                          e.currentTarget.scrollLeft += delta * 1.3;
+                        }
+                      }}
+                      className="flex-1 flex items-center gap-1.5 overflow-x-auto min-w-0 custom-scrollbar py-1 px-1 scroll-smooth"
+                    >
+                      {getVisibleSegments(item).map((idx: number, visualIdx: number) => {
+                        const isSelected = seg === idx && mode === 'content';
+                        return (
+                          <button
+                            key={`${idx}-${visualIdx}`}
+                            ref={(el) => {
+                              if (el && isSelected) {
+                                el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+                              }
+                            }}
+                            draggable={true}
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData('text/plain', visualIdx.toString());
+                              setDragSegItem(visualIdx);
+                            }}
+                            onDragOver={(e) => { e.preventDefault(); setDragOverSegItem(visualIdx); }}
+                            onDrop={(e) => handleSegDrop(e, visualIdx, tempLiveItem ? liveItem : activeItem)}
+                            onDragEnd={() => { setDragSegItem(null); setDragOverSegItem(null); }}
+                            onDragLeave={() => setDragOverSegItem(null)}
+                            onClick={() => {
+                              if (tempLiveItem) {
+                                pushTempToLive(tempLiveItem, idx);
+                              } else {
+                                setActiveSegment(idx);
+                                setMode('content');
+                                if (activeItem === liveItem) {
+                                  pushStateToLive(activeItem, idx, 'content');
+                                }
+                              }
+                            }}
+                            className={`px-3 py-1.5 font-bold text-[11px] rounded-lg transition-all duration-200 border shrink-0 whitespace-nowrap ${dragOverSegItem === visualIdx && dragSegItem !== visualIdx
+                              ? 'bg-blue-100 dark:bg-blue-900/50 border-blue-400 text-blue-800 dark:text-blue-200 shadow-[0_0_10px_rgba(96,165,250,0.4)]'
+                              : isSelected
+                                ? 'bg-[#C5A059] text-black border-transparent shadow-[0_0_10px_rgba(197,160,89,0.3)]'
+                                : 'bg-transparent text-slate-500 dark:text-[#C5A059]/60 border-slate-300 dark:border-[#C5A059]/30 hover:bg-slate-200 dark:hover:bg-[#C5A059]/10 hover:text-slate-800 dark:hover:text-[#C5A059]'
+                              } ${dragSegItem === visualIdx ? 'opacity-30' : ''}`}
+                          >
+                            {item?.segmentLabels ? item.segmentLabels[idx] : `Slide ${idx + 1}`}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Right Scroll Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        segScrollRef.current?.scrollBy({ left: 200, behavior: 'smooth' });
+                      }}
+                      className="shrink-0 p-1 text-slate-400 hover:text-[#C5A059] hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg transition"
+                      title="Geser ke Kanan (atau gunakan Scroll Roda Mouse)"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
                   </div>
                 ) : item?.type === 'video' ? (
                   <div className="flex-1 flex flex-col justify-center items-center px-4 w-full h-full min-w-0">
                     <div className="flex justify-center items-center gap-3 w-full max-w-lg">
                       <button onClick={toggleVideoPlay} className="flex bg-[#C5A059] text-black justify-center items-center gap-2 px-4 py-2 font-extrabold uppercase text-[11px] hover:bg-[#D4B872] rounded-lg transition-all shadow-[0_0_15px_rgba(197,160,89,0.3)] shrink-0">
-                        {videoState === 'play' ? <><Pause size={14} className="fill-black"/> PAUSE</> : <><Play size={14} className="fill-black"/> PLAY</>}
+                        {videoState === 'play' ? <><Pause size={14} className="fill-black" /> PAUSE</> : <><Play size={14} className="fill-black" /> PLAY</>}
                       </button>
                       <div className="flex-1 flex items-center gap-2 text-slate-800 dark:text-white/80 text-xs font-mono font-bold min-w-0">
                         <span className="shrink-0 w-[40px] text-right">{videoProgress ? formatVideoTime(videoProgress.currentTime) : '0:00'}</span>
-                        <input 
-                          type="range" 
-                          min="0" 
-                          max={videoProgress?.duration || 100} 
+                        <input
+                          type="range"
+                          min="0"
+                          max={videoProgress?.duration || 100}
                           step="0.1"
                           value={videoProgress?.currentTime || 0}
                           onChange={handleVideoSeek}
@@ -2252,18 +2394,18 @@ export default function ControlPanel() {
                         />
                         <span className="shrink-0 w-[40px]">{videoProgress ? formatVideoTime(videoProgress.duration) : '0:00'}</span>
                       </div>
-                      
+
                       <div className="flex items-center gap-1.5 shrink-0 bg-slate-200 dark:bg-white/10 rounded-lg p-1 border border-slate-300 dark:border-white/5 shadow-inner">
-                        <button 
-                          onClick={toggleVideoMute} 
+                        <button
+                          onClick={toggleVideoMute}
                           className={`p-1.5 rounded-md transition-all ${item?.muted ? 'bg-red-500/20 text-red-600 dark:text-red-300 hover:bg-red-500/30' : 'text-slate-600 dark:text-white/80 hover:bg-slate-300 dark:hover:bg-white/20 hover:text-slate-900 dark:hover:text-white'}`}
                           title={item?.muted ? 'Unmute Suara' : 'Mute Suara'}
                         >
                           {item?.muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
                         </button>
                         <div className="w-px h-4 bg-slate-400 dark:bg-white/20 mx-0.5"></div>
-                        <button 
-                          onClick={toggleVideoLoop} 
+                        <button
+                          onClick={toggleVideoLoop}
                           className={`p-1.5 rounded-md transition-all ${item?.loop ? 'bg-[#C5A059]/20 text-[#b38a42] dark:text-[#C5A059] hover:bg-[#C5A059]/30' : 'text-slate-600 dark:text-white/80 hover:bg-slate-300 dark:hover:bg-white/20 hover:text-slate-900 dark:hover:text-white'}`}
                           title={item?.loop ? 'Matikan Loop' : 'Nyalakan Loop'}
                         >
@@ -2280,34 +2422,33 @@ export default function ControlPanel() {
               {/* Right: Screen & Live Actions */}
               <div className="flex items-center gap-2 shrink-0">
                 <button onClick={openStageDisplay} className="flex bg-transparent border border-slate-600 text-slate-300 justify-center items-center gap-2 px-3 py-2 font-bold text-[11px] hover:bg-slate-800 rounded-lg transition-all" title="Buka Tampilan Panggung Pemimpin">
-                  <Monitor size={14}/> Pemimpin
+                  <Monitor size={14} /> Pemimpin
                 </button>
                 <button onClick={openDisplay} className="flex bg-transparent border border-slate-600 text-slate-300 justify-center items-center gap-2 px-4 py-2 font-bold text-[11px] hover:bg-slate-800 rounded-lg transition-all">
-                  <Monitor size={14}/> {isDisplayOpen ? 'Tutup Layar' : 'Buka Layar'}
+                  <Monitor size={14} /> {isDisplayOpen ? 'Tutup Layar' : 'Buka Layar'}
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     const newMode = mode === 'blank' ? 'content' : 'blank';
                     setMode(newMode);
                     pushStateToLive(activeItem, activeSegment, newMode);
-                  }} 
-                  className={`px-4 py-2 rounded-lg text-[11px] font-bold transition-all uppercase ${
-                    mode === 'blank' 
-                      ? 'bg-red-600 hover:bg-red-700 text-white shadow-[0_0_10px_rgba(220,38,38,0.5)]' 
-                      : 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
-                  }`}
+                  }}
+                  className={`px-4 py-2 rounded-lg text-[11px] font-bold transition-all uppercase ${mode === 'blank'
+                    ? 'bg-red-600 hover:bg-red-700 text-white shadow-[0_0_10px_rgba(220,38,38,0.5)]'
+                    : 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
+                    }`}
                 >
                   {mode === 'blank' ? 'Tampilkan Teks' : 'BLANK DISPLAY'}
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     const targetMode = mode === 'blank' ? 'content' : mode;
                     if (mode === 'blank') setMode('content');
                     pushStateToLive(activeItem, activeSegment, targetMode);
-                  }} 
+                  }}
                   className="bg-[#C5A059] hover:bg-[#D4B872] text-black px-6 py-2 rounded-lg text-[11px] font-extrabold shadow-[0_0_15px_rgba(197,160,89,0.3)] transition-all flex items-center gap-2"
                 >
-                  <Play size={12} className="fill-black"/> TAMPILKAN LIVE
+                  <Play size={12} className="fill-black" /> TAMPILKAN LIVE
                 </button>
               </div>
             </div>
@@ -2321,37 +2462,33 @@ export default function ControlPanel() {
             {/* Tab Headers */}
             {displayPanelTab !== 'add' && (
               <div className="flex gap-2 mb-3">
-                <button 
-                  onClick={() => { setIsRunningTextModalOpen(true); setDisplayPanelTab('rt'); }} 
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                    displayPanelTab === 'rt' 
-                      ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-sm' 
-                      : 'bg-white/50 dark:bg-slate-800/80 text-indigo-900 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700/80 border border-indigo-200 dark:border-slate-700'
-                  }`}
+                <button
+                  onClick={() => { setIsRunningTextModalOpen(true); setDisplayPanelTab('rt'); }}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${displayPanelTab === 'rt'
+                    ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-sm'
+                    : 'bg-white/50 dark:bg-slate-800/80 text-indigo-900 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700/80 border border-indigo-200 dark:border-slate-700'
+                    }`}
                 >Running Text</button>
-                <button 
-                  onClick={() => { setIsRunningTextModalOpen(true); setDisplayPanelTab('bg'); }} 
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                    displayPanelTab === 'bg' 
-                      ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-sm' 
-                      : 'bg-white/50 dark:bg-slate-800/80 text-indigo-900 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700/80 border border-indigo-200 dark:border-slate-700'
-                  }`}
+                <button
+                  onClick={() => { setIsRunningTextModalOpen(true); setDisplayPanelTab('bg'); }}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${displayPanelTab === 'bg'
+                    ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-sm'
+                    : 'bg-white/50 dark:bg-slate-800/80 text-indigo-900 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700/80 border border-indigo-200 dark:border-slate-700'
+                    }`}
                 >Background</button>
-                <button 
-                  onClick={() => { setIsRunningTextModalOpen(true); setDisplayPanelTab('logo'); }} 
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                    displayPanelTab === 'logo' 
-                      ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-sm' 
-                      : 'bg-white/50 dark:bg-slate-800/80 text-indigo-900 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700/80 border border-indigo-200 dark:border-slate-700'
-                  }`}
+                <button
+                  onClick={() => { setIsRunningTextModalOpen(true); setDisplayPanelTab('logo'); }}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${displayPanelTab === 'logo'
+                    ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-sm'
+                    : 'bg-white/50 dark:bg-slate-800/80 text-indigo-900 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700/80 border border-indigo-200 dark:border-slate-700'
+                    }`}
                 >Logo / Watermark</button>
-                <button 
-                  onClick={() => { setIsRunningTextModalOpen(true); setDisplayPanelTab('theme'); }} 
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                    displayPanelTab === 'theme' 
-                      ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-sm' 
-                      : 'bg-white/50 dark:bg-slate-800/80 text-indigo-900 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700/80 border border-indigo-200 dark:border-slate-700'
-                  }`}
+                <button
+                  onClick={() => { setIsRunningTextModalOpen(true); setDisplayPanelTab('theme'); }}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${displayPanelTab === 'theme'
+                    ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-sm'
+                    : 'bg-white/50 dark:bg-slate-800/80 text-indigo-900 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700/80 border border-indigo-200 dark:border-slate-700'
+                    }`}
                 >Tema Display</button>
               </div>
             )}
@@ -2366,507 +2503,76 @@ export default function ControlPanel() {
               ) : (
                 <>
                   {displayPanelTab === 'add' && (
-                    <div className="flex flex-col h-full gap-3">
-                      {searchType !== 'playlist' && (
-                        <div className="flex gap-2 shrink-0">
-                          <div className="flex gap-2 flex-1">
-                            <button onClick={() => { setSearchType('song'); setSearchQuery(''); }} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg transition text-xs font-semibold ${searchType === 'song' ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-md' : 'bg-white dark:bg-slate-800 text-indigo-900 dark:text-slate-300 border border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}><Music size={14}/> Lagu</button>
-                            <button onClick={() => { setSearchType('bible'); setSearchQuery(''); }} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg transition text-xs font-semibold ${searchType === 'bible' ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black shadow-md' : 'bg-white dark:bg-slate-800 text-indigo-900 dark:text-slate-300 border border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}><BookOpen size={14}/> Alkitab</button>
-                          </div>
-                          <div className={`flex-1 ${searchType === 'bible' ? 'flex gap-2' : ''}`}>
-                            <select 
-                              className="w-full bg-white/50 dark:bg-slate-800 border border-indigo-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-indigo-900 dark:text-white font-semibold focus:outline-none focus:border-indigo-500 transition"
-                              value={searchType === 'song' ? selectedSongVersion : selectedBibleVersion}
-                              onChange={(e) => searchType === 'song' ? setSelectedSongVersion(e.target.value) : setSelectedBibleVersion(e.target.value)}
-                            >
-                              {dbList.filter(d => d.type === searchType).map(db => (
-                                <option key={db.id} value={db.id} className="dark:bg-[#0A1128] dark:text-[#C5A059]">{db.name}</option>
-                              ))}
-                            </select>
-                            {searchType === 'bible' && (
-                              <select 
-                                className="w-full bg-white/50 dark:bg-slate-800 border border-indigo-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-indigo-900 dark:text-white font-semibold focus:outline-none focus:border-indigo-500 transition"
-                                value={selectedBibleVersion2}
-                                onChange={(e) => setSelectedBibleVersion2(e.target.value)}
-                              >
-                                <option value="none" className="dark:bg-[#0A1128] dark:text-slate-400">-- Teks Tunggal --</option>
-                                {dbList.filter(d => d.type === 'bible' && d.id !== selectedBibleVersion).map(db => (
-                                  <option key={db.id} value={db.id} className="dark:bg-[#0A1128] dark:text-[#C5A059]">{db.name}</option>
-                                ))}
-                              </select>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex flex-col gap-3 flex-1 overflow-y-auto">
-                        <form onSubmit={handleSearch} className="flex gap-2 shrink-0">
-                          <div className="relative flex-1">
-                              <input 
-                                type="text" 
-                                id="searchInputBox"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder={`Cari ${searchType === 'song' ? 'Lagu' : searchType === 'bible' ? 'Alkitab' : 'Playlist'}...`} 
-                                className="glass-input w-full pr-8 !bg-white dark:!bg-slate-900 dark:text-white dark:border-slate-700"
-                                autoFocus
-                              />
-                              {searchQuery && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSearchQuery('');
-                                    document.getElementById('searchInputBox')?.focus();
-                                  }}
-                                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full text-indigo-900/50 hover:text-indigo-900 hover:bg-indigo-900/10 dark:text-slate-500 dark:hover:text-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
-                                  title="Hapus Pencarian"
-                                >
-                                  <span className="font-extrabold text-sm font-sans">X</span>
-                                </button>
-                              )}
-                            </div>
-                            <button type="submit" disabled={isSearching} className="glass-button bg-indigo-500/20 dark:bg-slate-800 text-indigo-900 dark:text-[#C5A059] border-indigo-500/30 dark:border-slate-700 px-4 py-1.5 rounded-lg transition">
-                              {isSearching ? <Loader2 size={14} className="animate-spin" /> : <Search size={14}/>}
-                            </button>
-                          </form>
-
-                          <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 border border-indigo-100 dark:border-slate-700 rounded-xl p-2 bg-white/50 dark:bg-slate-900/50 scrollbar-thin scrollbar-thumb-indigo-200 dark:scrollbar-thumb-slate-700">
-                            {searchType === 'playlist' ? (
-                              <div className="flex flex-col gap-2 p-1">
-                                {isLoadingDashboardPlaylists ? (
-                                  <div className="flex justify-center p-4"><Loader2 className="animate-spin text-indigo-600 dark:text-[#C5A059]" size={20} /></div>
-                                ) : dashboardPlaylists.length === 0 ? (
-                                  <div className="text-center text-xs text-slate-500 py-4">Tidak ada playlist tersimpan.</div>
-                                ) : dashboardPlaylists.filter(pl => pl.name.toLowerCase().includes(searchQuery.toLowerCase())).map(pl => (
-                                  <button 
-                                    key={pl.id} 
-                                    onClick={() => navigate('/control?id=' + pl.id)}
-                                    className="text-left p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-[#C5A059] shadow-sm transition-all flex justify-between items-center group"
-                                  >
-                                    <div>
-                                      <div className="font-bold text-slate-800 dark:text-white text-[11px] truncate">{pl.name}</div>
-                                      <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{pl.date}</div>
-                                    </div>
-                                    <Play size={14} className="text-indigo-600 dark:text-[#C5A059] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2" />
-                                  </button>
-                                ))}
-                                {dashboardPlaylists.length > 0 && dashboardPlaylists.filter(pl => pl.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
-                                  <div className="text-center text-[10px] text-indigo-900/60 dark:text-slate-500 p-4">Playlist tidak ditemukan.</div>
-                                )}
-                              </div>
-                            ) : (
-                              <>
-                                {searchResults.map((res) => (
-                              <div key={res.id} className="p-2 mb-2 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-lg transition flex justify-between gap-2 items-center">
-                                <div className="flex-1 overflow-hidden">
-                                  <div className="font-semibold text-indigo-900 dark:text-[#C5A059] text-[11px] truncate">{res.title}</div>
-                                  {(res.author || res.key || res.beat || res.category) && (
-                                    <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5 text-[9px] text-indigo-600/80 dark:text-slate-400">
-                                      {res.author && <span className="truncate max-w-[100px]" title={res.author}>👤 {res.author}</span>}
-                                      {res.key && <span title="Nada Dasar">🎵 {res.key}</span>}
-                                      {res.beat && <span title="Ketukan">⏱ {res.beat}</span>}
-                                      {res.category && <span title="Kategori">🏷️ {res.category}</span>}
-                                    </div>
-                                  )}
-                                  <div className="text-[10px] text-indigo-800/60 dark:text-slate-500 line-clamp-2 mt-1" dangerouslySetInnerHTML={{ __html: renderSnippet(res.segments && res.segments.length > 1 ? res.segments[1] : res.segments?.[0]) }}></div>
-                                </div>
-                                <div className="flex flex-col gap-1.5 shrink-0 w-[85px]">
-                                  <button 
-                                    onClick={() => addToRundown(res)}
-                                    className="bg-green-500/10 hover:bg-green-500/20 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-500/30 dark:border-green-700 px-2 py-1.5 rounded transition font-bold uppercase tracking-wider text-[9px] flex justify-center items-center gap-1 w-full"
-                                  >
-                                    <Plus size={10}/> Rundown
-                                  </button>
-                                  <button 
-                                    onClick={() => pushTempToLive(res)}
-                                    className="bg-red-500/10 hover:bg-red-500/20 text-red-700 dark:bg-red-900/40 dark:text-red-400 border border-red-500/30 dark:border-red-700 px-2 py-1.5 rounded transition font-bold uppercase tracking-wider text-[9px] flex justify-center items-center gap-1 w-full"
-                                  >
-                                    <Play size={10} className="fill-current"/> Live
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                            {searchResults.length === 0 && !isSearching && searchQuery !== '' && (
-                              <div className="text-center text-[10px] text-indigo-900/60 dark:text-slate-500 p-4">Tidak ada hasil ditemukan.</div>
-                            )}
-                            {searchResults.length === 0 && !isSearching && searchQuery === '' && (
-                              <div className="p-1">
-                                {searchType === 'song' ? (
-                                  <>
-                                      <div className="flex flex-col gap-1">
-                                        {allSongTitles ? allSongTitles.map((song: any) => (
-                                          <div key={song.id} className="p-2 mb-1 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-lg transition flex justify-between gap-2 items-center">
-                                            <div className="flex-1 overflow-hidden flex items-start gap-2">
-                                              <span className="bg-indigo-100 dark:bg-black/30 text-indigo-800 dark:text-[#C5A059] px-2 py-0.5 rounded text-[10px] min-w-[32px] text-center shrink-0 border border-white/20 dark:border-slate-700 mt-0.5">{song.id}</span>
-                                              <div className="flex-1 min-w-0 flex flex-col">
-                                                <div className="font-semibold text-indigo-900 dark:text-[#C5A059] text-[11px] truncate">{song.title}</div>
-                                                {(song.author || song.key || song.beat || song.category) && (
-                                                  <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[9px] text-indigo-600/80 dark:text-slate-400 mt-0.5">
-                                                    {song.author && <span className="truncate max-w-[100px]" title={song.author}>👤 {song.author}</span>}
-                                                    {song.key && <span title="Nada Dasar">🎵 {song.key}</span>}
-                                                    {song.beat && <span title="Ketukan">⏱ {song.beat}</span>}
-                                                    {song.category && <span title="Kategori">🏷️ {song.category}</span>}
-                                                  </div>
-                                                )}
-                                              </div>
-                                            </div>
-                                            <div className="flex flex-col gap-1.5 shrink-0 w-[85px]">
-                                              <button 
-                                                onClick={() => handleQuickAddSong(song.id.toString(), false)}
-                                                className="bg-green-500/10 hover:bg-green-500/20 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-500/30 dark:border-green-700 px-2 py-1.5 rounded transition font-bold uppercase tracking-wider text-[9px] flex justify-center items-center gap-1 w-full"
-                                              >
-                                                <Plus size={10}/> Rundown
-                                              </button>
-                                              <button 
-                                                onClick={() => handleQuickAddSong(song.id.toString(), true)}
-                                                className="bg-red-500/10 hover:bg-red-500/20 text-red-700 dark:bg-red-900/40 dark:text-red-400 border border-red-500/30 dark:border-red-700 px-2 py-1.5 rounded transition font-bold uppercase tracking-wider text-[9px] flex justify-center items-center gap-1 w-full"
-                                              >
-                                                <Play size={10} className="fill-current"/> Live
-                                              </button>
-                                            </div>
-                                          </div>
-                                        )) : (
-                                          <div className="text-center p-4"><Loader2 size={16} className="animate-spin text-indigo-500 mx-auto"/></div>
-                                        )}
-                                      </div>
-                                  </>
-                                ) : (
-                                  <div className="grid grid-cols-3 gap-1">
-                                    {currentBibleBooks.length > 0 ? currentBibleBooks.map(book => (
-                                      <button 
-                                        key={book}
-                                        onClick={() => {
-                                          setSearchQuery(book + ' ');
-                                          document.getElementById('searchInputBox')?.focus();
-                                        }}
-                                        className="p-1.5 text-center text-[10px] font-semibold text-indigo-900 dark:text-slate-300 bg-white/40 dark:bg-slate-800 border border-white/20 dark:border-slate-700 rounded hover:bg-indigo-600 dark:hover:bg-[#C5A059] hover:text-white dark:hover:text-black transition line-clamp-1 shadow-sm"
-                                      >
-                                        {book}
-                                      </button>
-                                    )) : (
-                                      <div className="col-span-3 text-center p-4"><Loader2 size={16} className="animate-spin text-indigo-500 mx-auto"/></div>
-                                    )}
-                                  </div>
-                                )}
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                    <QuickSearchPanel
+                      searchType={searchType === 'playlist' ? 'playlist' : searchType === 'bible' ? 'bible' : 'song'}
+                      setSearchType={(t) => { setSearchType(t); setSearchQuery(''); }}
+                      selectedSongVersion={selectedSongVersion}
+                      setSelectedSongVersion={setSelectedSongVersion}
+                      selectedBibleVersion={selectedBibleVersion}
+                      setSelectedBibleVersion={setSelectedBibleVersion}
+                      selectedBibleVersion2={selectedBibleVersion2}
+                      setSelectedBibleVersion2={setSelectedBibleVersion2}
+                      dbList={dbList}
+                      searchQuery={searchQuery}
+                      setSearchQuery={setSearchQuery}
+                      onSearch={handleSearch}
+                      isSearching={isSearching}
+                      dashboardPlaylists={dashboardPlaylists}
+                      isLoadingDashboardPlaylists={isLoadingDashboardPlaylists}
+                      searchResults={searchResults}
+                      allSongTitles={allSongTitles}
+                      currentBibleBooks={currentBibleBooks}
+                      onNavigateToPlaylist={(id) => navigate('/control?id=' + id)}
+                      onAddToRundown={addToRundown}
+                      onPushTempToLive={pushTempToLive}
+                      onQuickAddSong={handleQuickAddSong}
+                      onDirectSearch={(query, type) => performSearch(query, type)}
+                    />
                   )}
                   {displayPanelTab === 'rt' && (
-                    <div className="flex flex-col gap-4 h-full">
-                      <div className="flex items-center gap-3 shrink-0">
-                        <button 
-                          onClick={() => setIsRtVisible(!isRtVisible)}
-                          className={`flex-1 py-3 rounded-lg font-bold text-xs shadow-sm flex items-center justify-center gap-2 transition-all ${
-                            isRtVisible ? 'bg-red-500 text-white shadow-red-500/20' : 'bg-indigo-600 text-white shadow-indigo-600/20'
-                          }`}
-                        >
-                          <Power size={14} /> 
-                          {isRtVisible ? 'MATIKAN' : 'HIDUPKAN'}
-                        </button>
-                      </div>
-
-                      <div className="flex flex-col gap-2 flex-1 min-h-0">
-                        <textarea 
-                          value={runningText}
-                          onChange={e => setRunningText(e.target.value)}
-                          placeholder="Ketik teks yang ingin ditampilkan berjalan dari kanan ke kiri..."
-                          className="glass-input flex-1 min-h-0 resize-none font-semibold text-sm !p-3 dark:!bg-slate-900"
-                        ></textarea>
-                      </div>
-
-                      <div className="flex items-center gap-4 shrink-0 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-lg p-2">
-                        <div className="flex-1 flex gap-3 items-center">
-                          <span className="text-[10px] font-bold text-indigo-900/50 dark:text-slate-400 uppercase w-12">Ukuran</span>
-                          <span className="text-[9px] font-bold text-indigo-900/70 dark:text-slate-500">Kecil</span>
-                          <input type="range" min="3" max="25" value={rtHeight} onChange={e => setRtHeight(Number(e.target.value))} className="flex-1 accent-indigo-600 dark:accent-[#C5A059]" />
-                          <span className="text-[9px] font-bold text-indigo-900/70 dark:text-slate-500">Besar</span>
-                        </div>
-                        <div className="w-px h-6 bg-indigo-100 dark:bg-slate-700"></div>
-                        <div className="flex-1 flex gap-3 items-center">
-                          <span className="text-[10px] font-bold text-indigo-900/50 dark:text-slate-400 uppercase w-12">Speed</span>
-                          <span className="text-[9px] font-bold text-indigo-900/70 dark:text-slate-500">Cepat</span>
-                          <input type="range" min="5" max="40" value={rtSpeed} onChange={e => setRtSpeed(Number(e.target.value))} className="flex-1 accent-indigo-600 dark:accent-[#C5A059]" />
-                          <span className="text-[9px] font-bold text-indigo-900/70 dark:text-slate-500">Lambat</span>
-                        </div>
-                      </div>
-                    </div>
+                    <RunningTextPanel
+                      isRtVisible={isRtVisible}
+                      setIsRtVisible={setIsRtVisible}
+                      runningText={runningText}
+                      setRunningText={setRunningText}
+                      rtHeight={rtHeight}
+                      setRtHeight={setRtHeight}
+                      rtSpeed={rtSpeed}
+                      setRtSpeed={setRtSpeed}
+                      rtPos={rtPos}
+                      setRtPos={setRtPos}
+                    />
                   )}
 
                   {displayPanelTab === 'logo' && (
-                    <div className="flex flex-col gap-3 h-full overflow-hidden">
-                      <div className="flex flex-col gap-2 overflow-y-auto flex-1 min-h-0 pr-1">
-                        {logos.map((logo, index) => (
-                          <div key={logo.id} className="flex gap-3 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-lg p-3 shadow-sm items-center">
-                            <div className="w-14 h-14 rounded-md overflow-hidden bg-slate-900/50 dark:bg-black/50 shrink-0 flex items-center justify-center border border-slate-700/50 p-1 shadow-inner backdrop-blur-sm">
-                              <img src={logo.url} alt="Logo" className="max-w-full max-h-full object-contain drop-shadow-sm" />
-                            </div>
-                            <div className="flex-1 flex flex-col gap-3 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-bold text-indigo-900/60 dark:text-slate-400 shrink-0 w-12">Logo {index + 1}</span>
-                                <span className="text-[9px] font-bold text-indigo-900/50 dark:text-slate-500">Kecil</span>
-                                <input type="range" min="0.1" max="5" step="0.1" value={logo.scale} onChange={(e) => updateLogo(logo.id, { scale: parseFloat(e.target.value) })} className="flex-1 accent-indigo-600 dark:accent-[#C5A059]" />
-                                <span className="text-[9px] font-bold text-indigo-900/50 dark:text-slate-500">Besar</span>
-                                <span className="text-[9px] font-bold text-indigo-600 dark:text-[#C5A059] w-8 text-right mr-1">{Math.round(logo.scale * 100)}%</span>
-                                <button 
-                                  onClick={() => updateLogo(logo.id, { enabled: logo.enabled === false ? true : false })} 
-                                  className={`p-1 px-2 text-[9px] font-bold rounded transition shrink-0 mr-1 ${logo.enabled !== false ? 'bg-green-500/20 text-green-700 dark:text-green-400 hover:bg-green-500/40' : 'bg-slate-500/20 text-slate-700 dark:text-slate-400 hover:bg-slate-500/40'}`}
-                                >
-                                  {logo.enabled !== false ? 'ON' : 'OFF'}
-                                </button>
-                                <button onClick={() => removeLogo(logo.id)} className="text-red-400 hover:text-white hover:bg-red-500 p-1 rounded transition shrink-0"><X size={12}/></button>
-                              </div>
-                              <div className="flex gap-2 h-7">
-                                <button onClick={() => updateLogo(logo.id, { x: 2, y: 3 })} className={`flex-1 rounded text-[9px] font-bold border transition shadow-sm ${logo.x < 50 && logo.y < 50 ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black border-transparent' : 'bg-transparent text-indigo-900/70 dark:text-slate-400 border-indigo-200 dark:border-slate-600 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}>Kiri Atas</button>
-                                <button onClick={() => updateLogo(logo.id, { x: 98, y: 3 })} className={`flex-1 rounded text-[9px] font-bold border transition shadow-sm ${logo.x >= 50 && logo.y < 50 ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black border-transparent' : 'bg-transparent text-indigo-900/70 dark:text-slate-400 border-indigo-200 dark:border-slate-600 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}>Kanan Atas</button>
-                                <button onClick={() => updateLogo(logo.id, { x: 2, y: 97 })} className={`flex-1 rounded text-[9px] font-bold border transition shadow-sm ${logo.x < 50 && logo.y >= 50 ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black border-transparent' : 'bg-transparent text-indigo-900/70 dark:text-slate-400 border-indigo-200 dark:border-slate-600 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}>Kiri Bawah</button>
-                                <button onClick={() => updateLogo(logo.id, { x: 98, y: 97 })} className={`flex-1 rounded text-[9px] font-bold border transition shadow-sm ${logo.x >= 50 && logo.y >= 50 ? 'bg-indigo-600 dark:bg-[#C5A059] text-white dark:text-black border-transparent' : 'bg-transparent text-indigo-900/70 dark:text-slate-400 border-indigo-200 dark:border-slate-600 hover:bg-indigo-50 dark:hover:bg-slate-700'}`}>Kanan Bawah</button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                        {logos.length === 0 && <div className="flex-1 flex items-center justify-center text-slate-500 text-xs font-semibold italic min-h-[100px]">Belum ada logo — klik Tambah Logo di bawah</div>}
-                      </div>
-                      <input type="file" accept="image/*" ref={logoInputRef} onChange={handleLogoUpload} className="hidden" />
-                      <button onClick={() => logoInputRef.current?.click()} className="w-full py-3 border-2 border-dashed border-indigo-300 dark:border-slate-600 rounded-xl text-xs text-indigo-900/60 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-[#C5A059] hover:border-indigo-400 dark:hover:border-[#C5A059] hover:bg-indigo-50/50 dark:hover:bg-white/5 font-bold transition flex items-center justify-center gap-2 shrink-0"><Plus size={16}/> Tambah Logo</button>
-                    </div>
+                    <LogoManagerPanel
+                      logos={logos}
+                      updateLogo={updateLogo}
+                      removeLogo={removeLogo}
+                      onLogoUpload={handleLogoUpload}
+                    />
                   )}
 
                   {displayPanelTab === 'bg' && (
                     <div className="h-full">
-                      <BackgroundPickerInline 
-                        onSelect={handleGlobalBackgroundSelect} 
-                        currentBgUrl={localStorage.getItem('custom_bg')} 
+                      <BackgroundPickerInline
+                        onSelect={handleGlobalBackgroundSelect}
+                        currentBgUrl={localStorage.getItem('custom_bg')}
                       />
                     </div>
                   )}
 
                   {displayPanelTab === 'theme' && (
-                    <div className="flex flex-col gap-5 p-1 pb-8">
-                      <div>
-                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">🎨 Warna Teks Lirik</label>
-                        <div className="flex items-center gap-3">
-                          <input 
-                            type="color" 
-                            value={displayTheme.color || '#ffffff'}
-                            onChange={(e) => updateTheme({ color: e.target.value })}
-                            className="w-12 h-10 rounded-lg border-2 border-indigo-200 dark:border-slate-600 cursor-pointer bg-transparent"
-                          />
-                          <div className="flex gap-2 flex-wrap">
-                            {['#ffffff', '#fde68a', '#fca5a5', '#86efac', '#93c5fd', '#f0abfc', '#fdba74'].map(c => (
-                              <button 
-                                key={c} 
-                                onClick={() => updateTheme({ color: c })}
-                                className={`w-7 h-7 rounded-full border-2 transition-all hover:scale-110 ${displayTheme.color === c ? 'border-indigo-500 scale-110 shadow-md' : 'border-white/50'}`}
-                                style={{ backgroundColor: c }}
-                                title={c}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">📏 Ukuran Font (Penyesuaian)</label>
-                        <div className="flex items-center gap-3">
-                          <input 
-                            type="range" 
-                            min={-3} max={3} step={0.5}
-                            value={displayTheme.fontSizeOffset || 0}
-                            onChange={(e) => updateTheme({ fontSizeOffset: parseFloat(e.target.value) })}
-                            className="flex-1 accent-purple-600"
-                          />
-                          <span className="text-sm font-bold text-indigo-900 dark:text-indigo-200 w-10 text-center">
-                            {(displayTheme.fontSizeOffset || 0) > 0 ? '+' : ''}{displayTheme.fontSizeOffset || 0}
-                          </span>
-                          <button 
-                            onClick={() => updateTheme({ fontSizeOffset: 0 })}
-                            className="text-xs text-indigo-500 hover:text-indigo-700 font-bold px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-900/30"
-                          >Reset</button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">📏 Ukuran Font Judul Header (Global)</label>
-                        <div className="flex items-center gap-3">
-                          <input 
-                            type="range" 
-                            min={-1} max={5} step={0.5}
-                            value={displayTheme.headerTitleFontSizeOffset !== undefined ? displayTheme.headerTitleFontSizeOffset : 0.5}
-                            onChange={(e) => updateTheme({ headerTitleFontSizeOffset: parseFloat(e.target.value) })}
-                            className="flex-1 accent-purple-600"
-                          />
-                          <span className="text-sm font-bold text-indigo-900 dark:text-indigo-200 w-10 text-center">
-                            {(displayTheme.headerTitleFontSizeOffset !== undefined ? displayTheme.headerTitleFontSizeOffset : 0.5) > 0 ? '+' : ''}{displayTheme.headerTitleFontSizeOffset !== undefined ? displayTheme.headerTitleFontSizeOffset : 0.5}
-                          </span>
-                          <button 
-                            onClick={() => updateTheme({ headerTitleFontSizeOffset: 0.5 })}
-                            className="text-xs text-indigo-500 hover:text-indigo-700 font-bold px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-900/30"
-                          >Reset</button>
-                        </div>
-                      </div>
-
-
-                      <div>
-                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">📍 Posisi Teks</label>
-                        <div className="flex gap-2">
-                          {([['top', 'Atas'], ['center', 'Tengah'], ['bottom', 'Bawah']] as const).map(([val, label]) => (
-                            <button 
-                              key={val}
-                              onClick={() => updateTheme({ position: val as any })}
-                              className={`flex-1 py-2 rounded-xl font-bold text-xs border-2 transition-all ${(displayTheme.position || 'center') === val ? 'bg-purple-600 text-white border-purple-600 shadow-md' : 'bg-white/50 dark:bg-white/5 text-indigo-900 dark:text-indigo-200 border-white/50 dark:border-white/10 hover:bg-white/70'}`}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">✍️ Gaya Teks</label>
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={() => updateTheme({ bold: !(displayTheme.bold !== false) })}
-                            className={`flex-1 py-2.5 rounded-xl font-bold text-xs border-2 transition-all flex items-center justify-center gap-1.5 ${(displayTheme.bold !== false) ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white/50 dark:bg-white/5 text-indigo-900 dark:text-indigo-200 border-white/50 dark:border-white/10 hover:bg-white/70'}`}
-                          >
-                            <Bold size={13}/> Tebal
-                          </button>
-                          <button 
-                            onClick={() => updateTheme({ bold: false })}
-                            className={`flex-1 py-2.5 rounded-xl text-xs border-2 transition-all ${!(displayTheme.bold !== false) ? 'bg-indigo-600 text-white border-indigo-600 shadow-md font-bold' : 'bg-white/50 dark:bg-white/5 text-indigo-900 dark:text-indigo-200 border-white/50 dark:border-white/10 hover:bg-white/70 font-medium'}`}
-                          >
-                            Normal
-                          </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">🌑 Bayangan Teks</label>
-                        <div className="flex gap-2">
-                          {([['dark', 'Gelap'], ['light', 'Terang'], ['none', 'Tanpa']] as const).map(([val, label]) => (
-                            <button 
-                              key={val}
-                              onClick={() => updateTheme({ shadow: val as any })}
-                              className={`flex-1 py-2 rounded-xl font-bold text-xs border-2 transition-all ${(displayTheme.shadow || 'dark') === val ? 'bg-purple-600 text-white border-purple-600 shadow-md' : 'bg-white/50 dark:bg-white/5 text-indigo-900 dark:text-indigo-200 border-white/50 dark:border-white/10 hover:bg-white/70'}`}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">✨ Gaya Transisi Teks</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {([['crossfade', 'Pudar (Fade)'], ['slideUp', 'Naik (Slide Up)'], ['slideDown', 'Turun (Slide Down)'], ['zoom', 'Memperbesar (Zoom)']] as const).map(([val, label]) => (
-                            <button 
-                              key={val}
-                              onClick={() => updateTheme({ transitionStyle: val as any })}
-                              className={`py-2 rounded-xl font-bold text-xs border-2 transition-all ${(displayTheme.transitionStyle || 'crossfade') === val ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' : 'bg-white/50 dark:bg-white/5 text-indigo-900 dark:text-indigo-200 border-white/50 dark:border-white/10 hover:bg-white/70'}`}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-
-                      <div>
-                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">↕️ Geser Posisi Judul (Naik/Turun)</label>
-                        <div className="flex items-center gap-3 bg-white/40 dark:bg-black/20 p-3 rounded-xl border border-indigo-100 dark:border-white/5">
-                          <span className="text-[10px] font-bold text-indigo-900/70 dark:text-slate-500 uppercase">Naik</span>
-                          <input 
-                            type="range" 
-                            min="-5" max="10" step="1"
-                            value={displayTheme.titleOffsetY ?? 0}
-                            onChange={(e) => updateTheme({ titleOffsetY: parseFloat(e.target.value) })}
-                            className="flex-1 accent-indigo-600 dark:accent-indigo-500"
-                          />
-                          <span className="text-[10px] font-bold text-indigo-900/70 dark:text-slate-500 uppercase">Turun</span>
-                          <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200 w-10 text-right bg-white/50 dark:bg-white/10 py-1 px-2 rounded">{displayTheme.titleOffsetY ?? 0}%</span>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">↕️ Geser Posisi Lirik (Naik/Turun)</label>
-                        <div className="flex items-center gap-3 bg-white/40 dark:bg-black/20 p-3 rounded-xl border border-indigo-100 dark:border-white/5">
-                          <span className="text-[10px] font-bold text-indigo-900/70 dark:text-slate-500 uppercase">Naik</span>
-                          <input 
-                            type="range" 
-                            min="-15" max="15" step="1"
-                            value={displayTheme.contentOffsetY ?? 0}
-                            onChange={(e) => updateTheme({ contentOffsetY: parseFloat(e.target.value) })}
-                            className="flex-1 accent-indigo-600 dark:accent-indigo-500"
-                          />
-                          <span className="text-[10px] font-bold text-indigo-900/70 dark:text-slate-500 uppercase">Turun</span>
-                          <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200 w-10 text-right bg-white/50 dark:bg-white/10 py-1 px-2 rounded">{displayTheme.contentOffsetY ?? 0}%</span>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">🖥️ Rasio Aspek Layar Jemaat</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {([['full', 'Penuh (Default)'], ['16:9', '16:9 (1920x1080)'], ['16:10', '16:10 (1920x1200)'], ['4:3', '4:3 (1024x768)']] as const).map(([val, label]) => (
-                            <button 
-                              key={val}
-                              onClick={() => updateTheme({ aspectRatio: val as any })}
-                              className={`py-2 rounded-xl font-bold text-xs border-2 transition-all ${(displayTheme.aspectRatio || 'full') === val ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white/50 dark:bg-white/5 text-indigo-900 dark:text-indigo-200 border-white/50 dark:border-white/10 hover:bg-white/70'}`}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">🖼️ Gambar Layar Blank & Logo</label>
-                        <div className="flex gap-2">
-                          <input type="file" accept="image/*" ref={blankInputRef} onChange={handleBlankUpload} className="hidden" />
-                          <button 
-                            onClick={() => blankInputRef.current?.click()}
-                            className="flex-1 py-2.5 rounded-xl text-xs font-bold border-2 border-indigo-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800 text-indigo-900 dark:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-all flex flex-col items-center justify-center gap-1"
-                          >
-                            <ImageIcon size={14}/>
-                            Ganti Layar Blank (B)
-                          </button>
-                          
-                          <input type="file" accept="image/*" ref={logoLInputRef} onChange={handleLogoLUpload} className="hidden" />
-                          <button 
-                            onClick={() => logoLInputRef.current?.click()}
-                            className="flex-1 py-2.5 rounded-xl text-xs font-bold border-2 border-indigo-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800 text-indigo-900 dark:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-all flex flex-col items-center justify-center gap-1"
-                          >
-                            <ImageIcon size={14}/>
-                            Ganti Layar Logo (L)
-                          </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-bold uppercase tracking-widest text-indigo-900/60 dark:text-indigo-200/50 mb-2 block">📋 Layout Layar (OBS)</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {([['full', 'Layar Penuh'], ['lower-third', 'Lower Third (Bawah)']] as const).map(([val, label]) => (
-                            <button 
-                              key={val}
-                              onClick={() => updateTheme({ layout: val as 'full' | 'lower-third' })}
-                              className={`py-2 rounded-xl font-bold text-xs border-2 transition-all ${(displayTheme.layout || 'full') === val ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white/50 dark:bg-white/5 text-indigo-900 dark:text-indigo-200 border-white/50 dark:border-white/10 hover:bg-white/70'}`}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => updateTheme({ color: '#ffffff', fontSizeOffset: 0, headerTitleFontSizeOffset: 0.5, position: 'center', bold: true, shadow: 'dark', transitionStyle: 'crossfade', aspectRatio: 'full', layout: 'full', lineHeight: 1.6, titleOffsetY: 0, contentOffsetY: 0 })}
-                        className="w-full py-2.5 rounded-xl border-2 border-dashed border-indigo-300 dark:border-slate-600 text-xs font-bold text-indigo-500 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-white/5 transition-all mt-2"
-                      >
-                        ↺ Reset ke Default
-                      </button>
-                    </div>
+                    <ThemeSettingsPanel
+                      displayTheme={displayTheme}
+                      updateTheme={updateTheme}
+                      onBlankUpload={handleBlankUpload}
+                      onLogoLUpload={handleLogoLUpload}
+                      onRemoveLogoL={handleRemoveLogoL}
+                      onResetLogoL={handleResetLogoL}
+                      onRemoveBlankImage={handleRemoveBlankImage}
+                      onResetBlankImage={handleResetBlankImage}
+                    />
                   )}
                 </>
               )}
@@ -2881,7 +2587,7 @@ export default function ControlPanel() {
               <FooterClock />
             </div>
             <div className="flex gap-2 w-full">
-              <button 
+              <button
                 onClick={() => {
                   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(playlist, null, 2));
                   const downloadAnchorNode = document.createElement('a');
@@ -2896,13 +2602,13 @@ export default function ControlPanel() {
               >
                 Simpan
               </button>
-              
+
               <label className="flex-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-2 px-1 rounded-lg text-[10px] font-bold shadow-sm transition flex justify-center items-center uppercase tracking-wider text-center leading-tight cursor-pointer">
                 Import
-                <input 
-                  type="file" 
-                  accept=".json" 
-                  className="hidden" 
+                <input
+                  type="file"
+                  accept=".json"
+                  className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
@@ -2932,14 +2638,14 @@ export default function ControlPanel() {
             <div className="flex-1">
               {isEditingRundown ? (
                 <div className="flex flex-col gap-2 w-full">
-                  <input 
+                  <input
                     type="text"
                     value={playlistName}
                     onChange={(e) => setPlaylistName(e.target.value)}
                     className="bg-white dark:bg-slate-800 text-indigo-950 dark:text-indigo-100 font-bold px-3 py-2 rounded-lg border-2 border-indigo-200 dark:border-indigo-700 focus:outline-none focus:border-indigo-500 w-full text-sm"
                     placeholder="Nama Playlist"
                   />
-                  <input 
+                  <input
                     type="date"
                     value={playlistDate}
                     onChange={(e) => setPlaylistDate(e.target.value)}
@@ -2953,7 +2659,7 @@ export default function ControlPanel() {
                 </>
               )}
             </div>
-            <button 
+            <button
               onClick={() => {
                 if (isEditingRundown) {
                   saveRundown();
@@ -2961,18 +2667,43 @@ export default function ControlPanel() {
                   setIsEditingRundown(true);
                 }
               }}
-              className={`flex items-center gap-2 text-xs px-3 py-2 rounded-xl transition-all shadow-sm font-bold shrink-0 ${
-                isEditingRundown 
-                  ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-600/30' 
-                  : 'glass-button bg-white text-indigo-900 hover:bg-white/80 border-white'
-              }`}
+              className={`flex items-center gap-2 text-xs px-3 py-2 rounded-xl transition-all shadow-sm font-bold shrink-0 ${isEditingRundown
+                ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-600/30'
+                : 'glass-button bg-white text-indigo-900 hover:bg-white/80 border-white'
+                }`}
             >
               {isSaving ? <Loader2 size={14} className="animate-spin" /> : (isEditingRundown ? <Save size={14} /> : <Edit size={14} />)}
               {isEditingRundown ? 'Simpan' : 'Edit'}
             </button>
           </div>
-          <div className="text-xs font-bold text-indigo-900/50 dark:text-indigo-200/50 mb-2 uppercase tracking-wider">RUNDOWN</div>
-          
+          <div className="text-xs font-bold text-indigo-900/50 dark:text-indigo-200/50 mb-2 uppercase tracking-wider flex items-center justify-between">
+            <span>RUNDOWN</span>
+            {tempLiveItem && (
+              <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/40 px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-700/60 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Live Sementara
+              </span>
+            )}
+          </div>
+
+          {tempLiveItem && (
+            <div className="mb-2 p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-[11px] font-semibold flex items-center justify-between gap-2 shadow-xs shrink-0">
+              <div className="flex items-center gap-1.5 truncate">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping shrink-0"></span>
+                <span className="truncate">Live: <strong>{tempLiveItem.title || 'Item Cepat'}</strong></span>
+              </div>
+              <button
+                onClick={() => {
+                  setTempLiveItem(null);
+                  pushStateToLive(activeItem, activeSegment, playlist[activeItem]?.type === 'video' ? 'logo' : 'content');
+                }}
+                className="text-[9px] font-bold px-2 py-0.5 rounded bg-amber-200 dark:bg-amber-900/60 hover:bg-amber-300 dark:hover:bg-amber-800 text-amber-900 dark:text-amber-100 shrink-0 transition"
+                title="Kembali ke Rundown"
+              >
+                Ke Rundown
+              </button>
+            </div>
+          )}
+
           <div className="space-y-2 overflow-y-auto pr-2 pb-4 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent flex-1">
             {isLoading ? (
               <div className="flex justify-center items-center h-40">
@@ -2980,147 +2711,225 @@ export default function ControlPanel() {
               </div>
             ) : playlist.length === 0 ? (
               <div className="text-center text-sm font-semibold text-indigo-900/40 dark:text-indigo-200/40 mt-10">Rundown kosong.</div>
-            ) : playlist.map((item, idx) => (
-              <div 
-                id={`rundown-item-${idx}`}
-                key={item.id || idx} 
-                className={`flex gap-2 transition-all duration-200 ${
-                  dragItem === idx ? 'opacity-30 scale-95' : 
-                  dragOverItem === idx ? '' : 'hover:-translate-y-0.5'
-                }`}
-                draggable={true}
-                onDragStart={(e) => {
-                  e.dataTransfer.setData('text/plain', idx.toString());
-                  setDragItem(idx);
-                }}
-                onDragOver={(e) => { e.preventDefault(); setDragOverItem(idx); }}
-                onDrop={(e) => handleDrop(e, idx)}
-                onDragEnd={() => { setDragItem(null); setDragOverItem(null); }}
-                onDragLeave={() => setDragOverItem(null)}
-              >
-                <div 
-                  onClick={() => { 
-                    const item = playlist[idx];
-                    const visible = item.visibleSegments || [...Array(item.segments?.length || 1).keys()];
-                    const seg = visible.length > 0 ? visible[0] : 0;
-                    
-                    setActiveItem(idx);
-                    setActiveSegment(seg);
-                    setTempLiveItem(null);
-                    const newMode = item.type === 'video' ? 'logo' : 'content';
-                    setMode(newMode);
+            ) : playlist.map((item, idx) => {
+              const isCurrentLive = liveItem === idx && !tempLiveItem;
+              const isCurrentActive = activeItem === idx;
+
+              return (
+                <div
+                  id={`rundown-item-${idx}`}
+                  key={item.id || idx}
+                  className={`flex gap-2 transition-all duration-200 ${dragItem === idx ? 'opacity-30 scale-95' :
+                    dragOverItem === idx ? '' : 'hover:-translate-y-0.5'
+                    }`}
+                  draggable={true}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('text/plain', idx.toString());
+                    setDragItem(idx);
                   }}
-                  className={`flex-1 text-left p-3 rounded-xl border-2 backdrop-blur-sm transition-all cursor-pointer ${
-                    dragOverItem === idx && dragItem !== idx
-                      ? 'border-blue-400 dark:border-blue-400 shadow-[0_0_12px_rgba(96,165,250,0.5)] bg-blue-50/40 dark:bg-blue-900/20'
-                      : activeItem === idx
-                      ? 'bg-white dark:bg-[#C5A059]/10 border-indigo-400 dark:border-[#C5A059] shadow-md shadow-indigo-500/10 dark:shadow-[0_0_15px_rgba(197,160,89,0.3)] relative z-10' 
-                      : 'bg-white/40 dark:bg-white/5 border-transparent hover:bg-white/60 dark:hover:bg-white/10 hover:border-white dark:hover:border-white/20 shadow-sm'
-                  }`}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverItem(idx); }}
+                  onDrop={(e) => handleDrop(e, idx)}
+                  onDragEnd={() => { setDragItem(null); setDragOverItem(null); }}
+                  onDragLeave={() => setDragOverItem(null)}
                 >
-                  <div className="flex items-start gap-2">
-                    <GripVertical size={14} className="text-indigo-300 dark:text-slate-600 shrink-0 mt-0.5 cursor-grab" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between w-full items-start gap-2">
-                    <div className={`font-bold text-sm leading-tight line-clamp-2 ${activeItem === idx ? 'text-indigo-900 dark:text-[#D4B872]' : 'text-indigo-900/80 dark:text-indigo-200/70'}`}>
-                      {idx + 1}. {item.title || item.name || '(Tanpa Judul)'}
-                    </div>
-                    
-                    <div className="flex items-center gap-1">
-                      {(item.type === 'song' || item.type === 'bible' || item.type === 'video') && (
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (item.type === 'video') openVideoModal(idx);
-                            else openSegmentModal(idx, e);
-                          }}
-                          className="text-indigo-500 dark:text-indigo-300 hover:text-white dark:hover:text-white hover:bg-indigo-500 dark:hover:bg-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 p-1.5 rounded-lg transition-colors shrink-0"
-                          title={item.type === 'video' ? "Edit Link Video" : "Atur Slide / Bait"}
-                        >
-                          <Settings size={14} />
-                        </button>
-                      )}
-                      
-                      {item.type !== 'video' && item.type !== 'image' && (
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditItemIndex(idx);
-                            setEditSegmentIndex(0);
-                          }}
-                          className="text-emerald-600 dark:text-emerald-400 hover:text-white dark:hover:text-white hover:bg-emerald-500 dark:hover:bg-emerald-500 bg-emerald-50 dark:bg-emerald-900/40 p-1.5 rounded-lg transition-colors shrink-0"
-                          title="Edit Teks / Konten"
-                        >
-                          <Edit size={14} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                   <div className="flex justify-between items-center mt-2">
-                     <div className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-0.5 rounded uppercase tracking-widest">{item.type}</div>
-                     
-                     {item.type === 'countdown' && <div className="text-[10px] font-bold text-indigo-900/50 dark:text-indigo-200/50 uppercase">{Math.floor(parseInt(item.segments[0] || '0') / 60)}:{(parseInt(item.segments[0] || '0') % 60).toString().padStart(2, '0')}</div>}
-                     
-                     {isEditingRundown && (
-                       <div className="flex gap-1">
-                         <button 
-                           onClick={(e) => { 
-                             e.stopPropagation(); 
-                             if (replaceIndex === idx) setReplaceIndex(null); 
-                             else { setReplaceIndex(idx); setIsAddItemModalOpen(true); } 
-                           }}
-                           className={`p-1.5 rounded-lg transition-colors ${replaceIndex === idx ? 'bg-indigo-600 text-white' : 'text-indigo-500 hover:bg-indigo-50'}`}
-                           title="Ganti Item"
-                         >
-                           <RefreshCw size={12} />
-                         </button>
-                         <button 
-                           onClick={(e) => removePlaylistItem(idx, e)}
-                           className="text-red-500 hover:text-white hover:bg-red-500 p-1.5 rounded-lg transition-colors bg-red-50"
-                           title="Hapus"
-                         >
-                           <X size={12} />
-                         </button>
-                       </div>
-                     )}
-                   </div>
+                  <div
+                    onClick={() => {
+                      const visible = getVisibleSegments(item);
+                      const seg = visible.length > 0 ? visible[0] : 0;
+
+                      setActiveItem(idx);
+                      setActiveSegment(seg);
+                      setTempLiveItem(null);
+                      const newMode = item.type === 'video' ? 'logo' : 'content';
+                      setMode(newMode);
+                    }}
+                    onDoubleClick={() => {
+                      const visible = getVisibleSegments(item);
+                      const seg = visible.length > 0 ? visible[0] : 0;
+                      setActiveItem(idx);
+                      setActiveSegment(seg);
+                      setTempLiveItem(null);
+                      pushStateToLive(idx, seg, item.type === 'video' ? 'logo' : 'content');
+                    }}
+                    className={`flex-1 text-left p-3 rounded-xl border-2 backdrop-blur-sm transition-all cursor-pointer ${dragOverItem === idx && dragItem !== idx
+                      ? 'border-blue-400 dark:border-blue-400 shadow-[0_0_12px_rgba(96,165,250,0.5)] bg-blue-50/40 dark:bg-blue-900/20'
+                      : isCurrentLive && isCurrentActive
+                        ? 'bg-red-500/15 dark:bg-red-950/40 border-red-500 shadow-lg shadow-red-500/20 border-l-[6px] border-l-red-600 relative z-10'
+                        : isCurrentLive
+                          ? 'bg-red-500/10 dark:bg-red-950/25 border-red-500/80 shadow-md shadow-red-500/15 border-l-[6px] border-l-red-500 relative z-10'
+                          : isCurrentActive
+                            ? 'bg-white dark:bg-[#C5A059]/10 border-indigo-400 dark:border-[#C5A059] shadow-md shadow-indigo-500/10 dark:shadow-[0_0_15px_rgba(197,160,89,0.3)] border-l-[6px] border-l-indigo-500 dark:border-l-[#C5A059] relative z-10'
+                            : 'bg-white/40 dark:bg-white/5 border-transparent hover:bg-white/60 dark:hover:bg-white/10 hover:border-white dark:hover:border-white/20 shadow-sm border-l-2 border-l-transparent'
+                      }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <GripVertical size={14} className="text-indigo-300 dark:text-slate-600 shrink-0 mt-0.5 cursor-grab" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between w-full items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className={`font-bold text-sm leading-tight line-clamp-2 ${isCurrentLive
+                                ? 'text-red-950 dark:text-red-200'
+                                : isCurrentActive
+                                  ? 'text-indigo-900 dark:text-[#D4B872]'
+                                  : 'text-indigo-900/80 dark:text-indigo-200/70'
+                                }`}>
+                                {idx + 1}. {item.title || item.name || '(Tanpa Judul)'}
+                              </span>
+                              {isCurrentLive && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black bg-red-600 text-white shadow-xs shadow-red-600/40 animate-pulse shrink-0">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                                  LIVE
+                                </span>
+                              )}
+                              {isCurrentActive && !isCurrentLive && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shrink-0">
+                                  PREVIEW
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            {!isCurrentLive ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const visible = getVisibleSegments(item);
+                                  const seg = visible.length > 0 ? visible[0] : 0;
+                                  setActiveItem(idx);
+                                  setActiveSegment(seg);
+                                  setTempLiveItem(null);
+                                  pushStateToLive(idx, seg, item.type === 'video' ? 'logo' : 'content');
+                                }}
+                                className="text-red-600 hover:text-white hover:bg-red-600 bg-red-500/10 dark:bg-red-500/20 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white p-1.5 rounded-lg transition-colors shrink-0 shadow-xs"
+                                title="Tayangkan langsung ke layar proyektor (Live)"
+                              >
+                                <Play size={13} className="fill-current" />
+                              </button>
+                            ) : (
+                              <span
+                                className="bg-red-600 text-white p-1.5 rounded-lg text-[9px] font-bold flex items-center justify-center shrink-0 shadow-xs"
+                                title="Sedang tayang di layar proyektor (LIVE)"
+                              >
+                                <Monitor size={13} />
+                              </span>
+                            )}
+
+                            {(item.type === 'song' || item.type === 'bible' || item.type === 'video') && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (item.type === 'video') openVideoModal(idx);
+                                  else openSegmentModal(idx, e);
+                                }}
+                                className="text-indigo-500 dark:text-indigo-300 hover:text-white dark:hover:text-white hover:bg-indigo-500 dark:hover:bg-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 p-1.5 rounded-lg transition-colors shrink-0"
+                                title={item.type === 'video' ? "Edit Link Video" : "Atur Slide / Bait"}
+                              >
+                                <Settings size={14} />
+                              </button>
+                            )}
+
+                            {item.type !== 'video' && item.type !== 'image' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditItemIndex(idx);
+                                  setEditSegmentIndex(0);
+                                }}
+                                className="text-emerald-600 dark:text-emerald-400 hover:text-white dark:hover:text-white hover:bg-emerald-500 dark:hover:bg-emerald-500 bg-emerald-50 dark:bg-emerald-900/40 p-1.5 rounded-lg transition-colors shrink-0"
+                                title="Edit Teks / Konten"
+                              >
+                                <Edit size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-center mt-2">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <div className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest ${isCurrentLive
+                              ? 'text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/50 border border-red-200 dark:border-red-800/50'
+                              : 'text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/40'
+                              }`}>
+                              {item.type}
+                            </div>
+
+                            {isCurrentLive && (
+                              <span className="text-[10px] font-extrabold text-red-600 dark:text-red-400 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                                Slide {liveSegment + 1}{item.segmentLabels && item.segmentLabels[liveSegment] ? `: ${item.segmentLabels[liveSegment]}` : ''}
+                              </span>
+                            )}
+                          </div>
+
+                          {item.type === 'countdown' && (
+                            <div className="text-[10px] font-bold text-indigo-900/50 dark:text-indigo-200/50 uppercase">
+                              {Math.floor(parseInt(item.segments[0] || '0') / 60)}:{(parseInt(item.segments[0] || '0') % 60).toString().padStart(2, '0')}
+                            </div>
+                          )}
+
+                          {isEditingRundown && (
+                            <div className="flex gap-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (replaceIndex === idx) setReplaceIndex(null);
+                                  else { setReplaceIndex(idx); setIsAddItemModalOpen(true); }
+                                }}
+                                className={`p-1.5 rounded-lg transition-colors ${replaceIndex === idx ? 'bg-indigo-600 text-white' : 'text-indigo-500 hover:bg-indigo-50'}`}
+                                title="Ganti Item"
+                              >
+                                <RefreshCw size={12} />
+                              </button>
+                              <button
+                                onClick={(e) => removePlaylistItem(idx, e)}
+                                className="text-red-500 hover:text-white hover:bg-red-500 p-1.5 rounded-lg transition-colors bg-red-50"
+                                title="Hapus"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="mt-3 pt-3 border-t border-indigo-900/10 shrink-0">
             {replaceIndex !== null && (
               <div className="mb-2 bg-indigo-100 text-indigo-900 text-xs p-2 rounded-lg border border-indigo-200 flex justify-between items-center">
                 <span className="truncate pr-2">Ganti: <strong>{playlist[replaceIndex]?.title}</strong></span>
-                <button onClick={() => setReplaceIndex(null)} className="text-red-500 hover:bg-red-500/10 p-1 rounded shrink-0"><X size={12}/></button>
+                <button onClick={() => setReplaceIndex(null)} className="text-red-500 hover:bg-red-500/10 p-1 rounded shrink-0"><X size={12} /></button>
               </div>
             )}
             <div className="grid grid-cols-2 gap-2 mb-2">
-              <button 
+              <button
                 onClick={addQuickAnnouncement}
                 className="w-full glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
                 title="Tambah Teks / Pengumuman"
               >
                 <Plus size={14} /> TEKS
               </button>
-              <button 
+              <button
                 onClick={() => openVideoModal(replaceIndex)}
                 className="w-full glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
                 title="Tambah Video"
               >
                 <Video size={16} /> VIDEO
               </button>
-              <button 
+              <button
                 onClick={() => { setReplaceIndex(replaceIndex); document.getElementById('rundown-img-upload')?.click(); }}
                 className="w-full glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
                 title="Tambah Gambar atau File Presentasi (Bisa pilih banyak)"
               >
                 <ImageIcon size={16} /> GAMBAR / SLIDESHOW
               </button>
-              <button 
+              <button
                 onClick={addCountdown}
                 className="w-full glass-button border-indigo-300 border-dashed border-2 flex justify-center items-center gap-1.5 text-indigo-900 py-2 text-[11px] font-semibold hover:bg-white/70 transition-all"
                 title="Tambah Waktu / Hitung Mundur"
@@ -3128,112 +2937,44 @@ export default function ControlPanel() {
                 <Clock size={14} /> WAKTU
               </button>
             </div>
-            <input 
-              type="file" 
-              id="rundown-img-upload" 
-              multiple 
-              accept="image/*" 
-              className="hidden" 
-              onChange={handleRundownImageUpload} 
+            <input
+              type="file"
+              id="rundown-img-upload"
+              multiple
+              accept="image/*"
+              className="hidden"
+              onChange={handleRundownImageUpload}
             />
 
           </div>
         </aside>
       </main>
       {/* Hotkey Help Modal */}
-      {showHotkeyHelp && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowHotkeyHelp(false)}>
-          <div className="glass-panel w-[90%] max-w-md p-6 relative rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setShowHotkeyHelp(false)} className="absolute top-4 right-4 p-2 bg-slate-200 dark:bg-slate-700 rounded-full hover:bg-red-500 hover:text-white transition-all text-slate-500 dark:text-slate-300">
-              <X size={18} />
-            </button>
-            <h2 className="text-xl font-heading font-extrabold text-indigo-950 dark:text-white mb-6 flex items-center gap-2">
-              <Keyboard className="text-indigo-600 dark:text-indigo-400" /> Pintasan Keyboard
-            </h2>
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-slate-700">
-                <span className="font-bold text-slate-700 dark:text-slate-300 text-sm">Slide / Segmen Berikutnya</span>
-                <div className="flex gap-1">
-                  <kbd className="px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded-lg text-xs font-mono font-bold text-slate-800 dark:text-slate-200 border-b-2 border-slate-300 dark:border-slate-900">Spasi</kbd>
-                  <kbd className="px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded-lg text-xs font-mono font-bold text-slate-800 dark:text-slate-200 border-b-2 border-slate-300 dark:border-slate-900">→</kbd>
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-slate-700">
-                <span className="font-bold text-slate-700 dark:text-slate-300 text-sm">Slide / Segmen Sebelumnya</span>
-                <kbd className="px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded-lg text-xs font-mono font-bold text-slate-800 dark:text-slate-200 border-b-2 border-slate-300 dark:border-slate-900">←</kbd>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-slate-700">
-                <span className="font-bold text-slate-700 dark:text-slate-300 text-sm">Layar Gelap (Blank)</span>
-                <kbd className="px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded-lg text-xs font-mono font-bold text-slate-800 dark:text-slate-200 border-b-2 border-slate-300 dark:border-slate-900">B</kbd>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-slate-700">
-                <span className="font-bold text-slate-700 dark:text-slate-300 text-sm">Tampilan Logo Utama</span>
-                <kbd className="px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded-lg text-xs font-mono font-bold text-slate-800 dark:text-slate-200 border-b-2 border-slate-300 dark:border-slate-900">L</kbd>
-              </div>
-            </div>
-            <p className="mt-6 text-xs text-slate-500 dark:text-slate-400 text-center font-medium">Pintasan ini bisa dijalankan dari jarak jauh menggunakan Wireless Presenter / Pointer (karena tombol Next/Prev pada alat tersebut setara dengan panah kanan/kiri).</p>
-          </div>
-        </div>
-      )}
+      <HotkeyHelpModal
+        isOpen={showHotkeyHelp}
+        onClose={() => setShowHotkeyHelp(false)}
+      />
 
-      {/* Video Modal (Existing) */}
-      {isVideoModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
-          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-2xl max-w-xl w-full border border-white/50 dark:border-slate-700/50 relative">
-            <button onClick={() => setIsVideoModalOpen(false)} className="absolute top-4 right-4 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full p-2 transition-all">
-              <X size={20} />
-            </button>
-            <h2 className="text-xl font-bold text-indigo-900 dark:text-[#C5A059] mb-4">Tambahkan Video</h2>
-            <div className="mb-4 space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Upload File Video (MP4, dsb. Maks 30MB)</label>
-                <input 
-                  type="file" 
-                  accept="video/*" 
-                  id="cp-video-file-upload"
-                  className="hidden"
-                  onChange={handleVideoUpload}
-                />
-                <label 
-                  htmlFor="cp-video-file-upload"
-                  className={`glass-button text-sm py-4 cursor-pointer flex justify-center items-center gap-2 w-full border-2 border-dashed transition-all ${isVideoUploading ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-500 dark:text-indigo-400' : (videoUrlInput.startsWith('local_vid_') || videoUrlInput.startsWith('file://')) ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50' : 'bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-400 dark:hover:border-slate-600'}`}
-                >
-                  {isVideoUploading ? <Loader2 size={20} className="animate-spin" /> : ((videoUrlInput.startsWith('local_vid_') || videoUrlInput.startsWith('file://')) ? <><CheckCircle size={20} /> File Dipilih! Klik untuk mengganti</> : <><Plus size={20} /> Pilih File Video</>)}
-                </label>
-                
-                <label className="flex items-center gap-3 mt-4 cursor-pointer p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                  <input 
-                    type="checkbox" 
-                    checked={isVideoLoop} 
-                    onChange={(e) => setIsVideoLoop(e.target.checked)} 
-                    className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shadow-sm" 
-                  />
-                  <span className="text-slate-700 dark:text-slate-300 font-semibold select-none">Putar berulang-ulang (Loop) sampai pindah slide</span>
-                </label>
-                <label className="flex items-center gap-3 mt-3 cursor-pointer bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                  <input 
-                    type="checkbox" 
-                    checked={isVideoMuted} 
-                    onChange={(e) => setIsVideoMuted(e.target.checked)}
-                    className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" 
-                  />
-                  <span className="text-slate-700 dark:text-slate-300 font-semibold select-none">Bisukan Suara (Mute)</span>
-                </label>
-              </div>
-            </div>
-            
-            <button onClick={handleVideoSubmit} disabled={isVideoUploading || !videoUrlInput.trim()} className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/40 hover:-translate-y-0.5 transition-all mt-4">
-              Tambahkan Video
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Video Modal */}
+      <VideoModal
+        isOpen={isVideoModalOpen}
+        onClose={() => setIsVideoModalOpen(false)}
+        videoUrlInput={videoUrlInput}
+        setVideoUrlInput={setVideoUrlInput}
+        isVideoUploading={isVideoUploading}
+        isVideoLoop={isVideoLoop}
+        isVideoMuted={isVideoMuted}
+        onVideoUpload={handleVideoUpload}
+        setIsVideoLoop={setIsVideoLoop}
+        setIsVideoMuted={setIsVideoMuted}
+        onSubmit={handleVideoSubmit}
+      />
       {/* MODAL GANTI BACKGROUND */}
-      <BackgroundPickerModal 
-        isOpen={isBgModalOpen} 
-        onClose={() => setIsBgModalOpen(false)} 
-        onSelect={handleGlobalBackgroundSelect} 
-        currentBgUrl={localStorage.getItem('custom_bg')} 
+      <BackgroundPickerModal
+        isOpen={isBgModalOpen}
+        onClose={() => setIsBgModalOpen(false)}
+        onSelect={handleGlobalBackgroundSelect}
+        currentBgUrl={localStorage.getItem('custom_bg')}
       />
 
       {/* LOGO MODAL */}
@@ -3241,350 +2982,68 @@ export default function ControlPanel() {
 
 
       {/* SEGMENT SELECTION MODAL */}
-      {isSegmentModalOpen && segmentEditIndex !== null && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
-          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 rounded-2xl shadow-2xl max-w-lg w-full border border-white/40 dark:border-slate-700/50 flex flex-col max-h-[85vh]">
-            <h2 className="text-2xl font-bold text-indigo-900 dark:text-[#C5A059] mb-2 flex items-center gap-2">
-              <CheckSquare size={24} /> Pilih Bait / Ayat
-            </h2>
-            <div className="flex-1 overflow-y-auto space-y-2 border border-indigo-100 dark:border-slate-700 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-800/50">
-              {(playlist[segmentEditIndex].originalSegments || playlist[segmentEditIndex].segments).map((seg: string, i: number) => {
-                const isChecked = tempVisibleSegments.includes(i);
-                return (
-                  <label key={i} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer ${isChecked ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
-                    <input type="checkbox" className="mt-1 w-4 h-4" checked={isChecked} onChange={() => toggleSegment(i)} />
-                    <div className="text-sm dark:text-slate-200">{seg}</div>
-                  </label>
-                );
-              })}
-            </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setIsSegmentModalOpen(false)} className="px-6 py-2 rounded-xl font-bold text-indigo-900 dark:text-slate-300 bg-black/5 dark:bg-slate-800 dark:hover:bg-slate-700">Batal</button>
-              <button onClick={saveSegmentSelection} className="px-6 py-2 rounded-xl font-bold text-white bg-indigo-600">Simpan Pilihan</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SegmentModal
+        isOpen={isSegmentModalOpen && segmentEditIndex !== null}
+        onClose={() => setIsSegmentModalOpen(false)}
+        segments={segmentEditIndex !== null && playlist[segmentEditIndex] ? (playlist[segmentEditIndex].originalSegments || playlist[segmentEditIndex].segments) : []}
+        tempVisibleSegments={tempVisibleSegments}
+        onToggleSegment={toggleSegment}
+        onSave={saveSegmentSelection}
+        canEmbedChorus={Boolean(
+          segmentEditIndex !== null &&
+          playlist[segmentEditIndex]?.type === 'song' &&
+          hasChorus(playlist[segmentEditIndex]) &&
+          !isChorusAlreadyEmbedded(playlist[segmentEditIndex].segments, playlist[segmentEditIndex].segmentLabels)
+        )}
+        onEmbedChorus={() => {
+          if (segmentEditIndex !== null && playlist[segmentEditIndex]) {
+            const expanded = expandSongWithChorus(playlist[segmentEditIndex]);
+            setPlaylist(prev => {
+              const pl = [...prev];
+              pl[segmentEditIndex] = expanded;
+              return pl;
+            });
+            setTempVisibleSegments(expanded.segments.map((_: any, i: number) => i));
+          }
+        }}
+      />
 
       {/* COUNTDOWN MODAL */}
-      {isCountdownModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
-          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 rounded-2xl shadow-2xl max-w-md w-full border border-white/40 dark:border-slate-700/50 flex flex-col">
-            <h2 className="text-2xl font-bold text-indigo-900 dark:text-[#C5A059] mb-2 flex items-center gap-2">
-              <Clock size={24} /> Tambah Hitung Mundur
-            </h2>
-            <form onSubmit={handleCountdownSubmit} className="space-y-4 mt-4">
-              <div>
-                <label className="block text-sm font-bold text-indigo-900/70 dark:text-slate-300 mb-2">
-                  Masukkan durasi (misal: 5 untuk 5 menit, 30s untuk 30 detik, 5m 30s)
-                </label>
-                <input 
-                  autoFocus
-                  className="w-full text-lg bg-white dark:bg-slate-800 border-2 border-indigo-200 dark:border-slate-700 dark:text-white rounded-xl p-3 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-500/20 transition-all font-medium"
-                  value={countdownInputValue}
-                  onChange={(e) => setCountdownInputValue(e.target.value)}
-                  placeholder="5m 30s"
-                />
-              </div>
-              <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setIsCountdownModalOpen(false)} className="px-6 py-2 rounded-xl font-bold text-indigo-900 dark:text-slate-300 bg-black/5 dark:bg-slate-800 hover:bg-black/10 dark:hover:bg-slate-700 transition">Batal</button>
-                <button type="submit" className="px-6 py-2 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition">Tambahkan</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <CountdownModal
+        isOpen={isCountdownModalOpen}
+        onClose={() => setIsCountdownModalOpen(false)}
+        value={countdownInputValue}
+        onChange={setCountdownInputValue}
+        onSubmit={handleCountdownSubmit}
+      />
 
       {/* EDIT ITEM MODAL */}
-      {editItemIndex !== null && playlist[editItemIndex] && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
-          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-6 md:p-8 rounded-3xl shadow-2xl max-w-2xl w-full border border-white/50 dark:border-slate-700/50 relative flex flex-col max-h-[90vh]">
-            <button onClick={() => setEditItemIndex(null)} className="absolute top-4 right-4 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full p-2 transition-all">
-              <X size={20} />
-            </button>
-            <h2 className="text-xl font-bold text-indigo-900 dark:text-[#C5A059] mb-4 flex items-center gap-2">
-              <Edit size={24} /> Edit {playlist[editItemIndex].type === 'announcement' ? 'Pengumuman' : playlist[editItemIndex].type === 'countdown' ? 'Hitung Mundur' : 'Lagu / Teks'}
-            </h2>
-            
-            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-              {/* Title Input */}
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Judul (Opsional)</label>
-                  <input 
-                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-indigo-900 dark:text-white font-semibold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/20 transition-all"
-                    value={playlist[editItemIndex].title || ''}
-                    onChange={(e) => {
-                      setPlaylist(prev => {
-                        const pl = [...prev];
-                        pl[editItemIndex] = { ...pl[editItemIndex], title: e.target.value };
-                        return pl;
-                      });
-                    }}
-                    placeholder="Masukkan Judul..."
-                  />
-                </div>
-                {(playlist[editItemIndex].type === 'song' || playlist[editItemIndex].type === 'bible') && (
-                  <div className="flex-none">
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 text-center">Sembunyikan<br/>Judul Header</label>
-                    <div className="flex items-center justify-center h-12">
-                      <input 
-                        type="checkbox"
-                        className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                        checked={playlist[editItemIndex].hideHeaderTitle || false}
-                        onChange={(e) => {
-                          setPlaylist(prev => {
-                            const pl = [...prev];
-                            pl[editItemIndex] = { ...pl[editItemIndex], hideHeaderTitle: e.target.checked };
-                            return pl;
-                          });
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Title Font Size Control */}
-              {(playlist[editItemIndex].type === 'song' || playlist[editItemIndex].type === 'bible') && !playlist[editItemIndex].hideHeaderTitle && (
-                <div>
-                  <div className="flex justify-between text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                    <span>Ukuran Font Judul Header (Khusus Item Ini)</span>
-                    <span>{(playlist[editItemIndex].headerTitleFontSizeOffset || 0) > 0 ? '+' : ''}{playlist[editItemIndex].headerTitleFontSizeOffset || 0}</span>
-                  </div>
-                  <input 
-                    type="range"
-                    min="-1"
-                    max="5"
-                    step="0.5"
-                    value={playlist[editItemIndex].headerTitleFontSizeOffset || 0}
-                    onChange={(e) => {
-                      setPlaylist(prev => {
-                        const pl = [...prev];
-                        pl[editItemIndex] = { ...pl[editItemIndex], headerTitleFontSizeOffset: Number(e.target.value) };
-                        return pl;
-                      });
-                    }}
-                    className="w-full accent-indigo-600 dark:accent-[#C5A059]"
-                  />
-                  <div className="flex justify-between text-xs text-slate-500 mt-1">
-                    <span>Kecil (-1)</span>
-                    <span>Normal (0)</span>
-                    <span>Besar (+5)</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Countdown Inputs */}
-              {playlist[editItemIndex].type === 'countdown' ? (
-                <div className="flex gap-4 items-center justify-center p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                  <div className="flex flex-col items-center">
-                    <input 
-                      type="number"
-                      className="w-24 text-center bg-white dark:bg-slate-900 border-2 border-indigo-200 dark:border-slate-700 rounded-xl p-3 text-3xl focus:outline-none focus:border-indigo-500 transition-all font-bold dark:text-white"
-                      value={Math.floor(parseInt(playlist[editItemIndex].segments[0] || '0') / 60)}
-                      onChange={(e) => {
-                        setPlaylist(prev => {
-                          const pl = [...prev];
-                          const sec = parseInt(pl[editItemIndex].segments[0] || '0') % 60;
-                          pl[editItemIndex] = { ...pl[editItemIndex], segments: [String(Number(e.target.value) * 60 + sec)] };
-                          return pl;
-                        });
-                      }}
-                    />
-                    <span className="text-slate-500 dark:text-slate-400 mt-2 text-xs font-bold uppercase tracking-wider">Menit</span>
-                  </div>
-                  <div className="text-3xl font-bold text-slate-300 dark:text-slate-600 pb-6">:</div>
-                  <div className="flex flex-col items-center">
-                    <input 
-                      type="number"
-                      className="w-24 text-center bg-white dark:bg-slate-900 border-2 border-indigo-200 dark:border-slate-700 rounded-xl p-3 text-3xl focus:outline-none focus:border-indigo-500 transition-all font-bold dark:text-white"
-                      value={parseInt(playlist[editItemIndex].segments[0] || '0') % 60}
-                      onChange={(e) => {
-                        setPlaylist(prev => {
-                          const pl = [...prev];
-                          const min = Math.floor(parseInt(pl[editItemIndex].segments[0] || '0') / 60);
-                          pl[editItemIndex] = { ...pl[editItemIndex], segments: [String(min * 60 + Number(e.target.value))] };
-                          return pl;
-                        });
-                      }}
-                    />
-                    <span className="text-slate-500 dark:text-slate-400 mt-2 text-xs font-bold uppercase tracking-wider">Detik</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {/* Segment Tabs */}
-                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-                    {(playlist[editItemIndex].segments as any[]).map((_: any, i: number) => {
-                      const isMulti = playlist[editItemIndex].segments.length > 1;
-                      const isActive = editSegmentIndex === i;
-                      return (
-                      <div key={i} className="flex relative group">
-                        <button
-                          onClick={() => setEditSegmentIndex(i)}
-                          className={`px-3 py-1.5 text-sm font-bold whitespace-nowrap transition-all ${
-                            isActive ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-                          } ${isActive && isMulti ? 'rounded-l-lg pr-2' : 'rounded-lg'}`}
-                        >
-                          {playlist[editItemIndex].segmentLabels?.[i] || (playlist[editItemIndex].type === 'announcement' ? `Slide ${i + 1}` : `Bait ${i + 1}`)}
-                        </button>
-                        {isActive && isMulti && (
-                          <button
-                            onClick={() => {
-                              if (confirm('Hapus ' + (playlist[editItemIndex].type === 'announcement' ? 'slide' : 'bait') + ' ini?')) {
-                                setPlaylist(prev => {
-                                  const pl = [...prev];
-                                  const item = { ...pl[editItemIndex] };
-                                  item.segments = item.segments.filter((_: any, idx: number) => idx !== i);
-                                  if (item.segmentLabels) {
-                                    item.segmentLabels = item.segmentLabels.filter((_: any, idx: number) => idx !== i);
-                                  }
-                                  if (item.visibleSegments) {
-                                    item.visibleSegments = item.visibleSegments
-                                      .filter((idx: number) => idx !== i)
-                                      .map((idx: number) => idx > i ? idx - 1 : idx);
-                                  }
-                                  pl[editItemIndex] = item;
-                                  return pl;
-                                });
-                                setEditSegmentIndex(Math.max(0, i - 1));
-                              }
-                            }}
-                            className="bg-indigo-700 hover:bg-red-500 text-white/80 hover:text-white px-2 py-1.5 rounded-r-lg transition-colors flex items-center justify-center border-l border-indigo-500/50"
-                            title="Hapus"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        )}
-                      </div>
-                      );
-                    })}
-                    {(playlist[editItemIndex].type === 'song' || playlist[editItemIndex].type === 'announcement') && (
-                      <button
-                        onClick={() => {
-                          setPlaylist(prev => {
-                            const pl = [...prev];
-                            const currentLabels = pl[editItemIndex].segmentLabels || pl[editItemIndex].segments.map((_: any, i: number) => pl[editItemIndex].type === 'announcement' ? `Slide ${i + 1}` : `Bait ${i + 1}`);
-                            const newLabel = pl[editItemIndex].type === 'announcement' ? `Slide ${pl[editItemIndex].segments.length + 1}` : `Bait ${pl[editItemIndex].segments.length + 1}`;
-                            pl[editItemIndex] = { 
-                              ...pl[editItemIndex], 
-                              segments: [...pl[editItemIndex].segments, ''],
-                              segmentLabels: [...currentLabels, newLabel]
-                            };
-                            return pl;
-                          });
-                          setEditSegmentIndex(playlist[editItemIndex].segments.length);
-                        }}
-                        className="px-3 py-1.5 rounded-lg text-sm font-bold bg-green-100 text-green-700 hover:bg-green-200 transition-all flex items-center gap-1"
-                      >
-                        <Plus size={14} /> {playlist[editItemIndex].type === 'announcement' ? 'Tambah Slide' : 'Tambah Bait'}
-                      </button>
-                    )}
-                  </div>
-                  
-                  {/* Rich Editor */}
-                  <div className="flex flex-col gap-2">
-                    {(() => {
-                      const val = playlist[editItemIndex].segments[editSegmentIndex] || '';
-                      const is2Kolom = val.includes('\n[kolom2]') && val.endsWith('[/kolom2]');
-                      
-                      const setVal = (newVal: string) => {
-                        setPlaylist(prev => {
-                          const pl = [...prev];
-                          pl[editItemIndex] = { ...pl[editItemIndex], segments: [...pl[editItemIndex].segments] };
-                          pl[editItemIndex].segments[editSegmentIndex] = newVal;
-                          return pl;
-                        });
-                      };
-
-                      if (is2Kolom) {
-                        const parts = val.split('\n[kolom2]');
-                        const left = parts[0] || '';
-                        const right = parts[1] ? parts[1].replace('[/kolom2]', '') : '';
-                        return (
-                          <div className="flex gap-4 w-full">
-                            <div className="flex-1 flex flex-col gap-1">
-                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Kolom Kiri</span>
-                              <RichEditor
-                                ref={editorRef}
-                                className="w-full min-h-[150px] bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/20 text-indigo-900 dark:text-white whitespace-pre-wrap leading-relaxed transition-all resize-y"
-                                value={left}
-                                onChange={(v) => {
-                                  if (!v && !right) setVal('');
-                                  else if (!right) setVal(v);
-                                  else setVal(v + '\n[kolom2]' + right + '[/kolom2]');
-                                }}
-                                onSelectChange={setHasSelection}
-                                placeholder="Teks kiri..."
-                              />
-                            </div>
-                            <div className="flex-1 flex flex-col gap-1">
-                              <div className="flex justify-between items-center px-1">
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Kolom Kanan</span>
-                                <button onClick={() => setVal(left)} className="text-[10px] font-bold text-red-400 hover:text-red-500 px-2 py-0.5 rounded hover:bg-red-500/10 transition">✕ Tutup</button>
-                              </div>
-                              <RichEditor
-                                className="w-full min-h-[150px] bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/20 text-indigo-900 dark:text-white whitespace-pre-wrap leading-relaxed transition-all resize-y"
-                                value={right}
-                                onChange={(v) => {
-                                  if (!v && !left) setVal('');
-                                  else if (!v) setVal(left);
-                                  else setVal(left + '\n[kolom2]' + v + '[/kolom2]');
-                                }}
-                                onSelectChange={setHasSelection}
-                                placeholder="Teks kanan..."
-                              />
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div className="relative group w-full">
-                          <RichEditor
-                            ref={editorRef}
-                            className="w-full min-h-[150px] bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/20 text-indigo-900 dark:text-white whitespace-pre-wrap leading-relaxed transition-all resize-y"
-                            value={val}
-                            onChange={setVal}
-                            onSelectChange={setHasSelection}
-                            placeholder="Ketik teks di sini (blok teks untuk mewarnai)..."
-                          />
-                          <button 
-                            onClick={() => setVal(val + '\n[kolom2][/kolom2]')}
-                            className="absolute bottom-4 right-4 text-xs font-bold text-indigo-600 dark:text-indigo-300 bg-white/90 dark:bg-slate-700/90 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-slate-600 px-3 py-1.5 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm"
-                          >
-                            + Kolom Kanan
-                          </button>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-100 dark:border-slate-700">
-              <button 
-                onClick={() => {
-                  setPlaylist(prev => {
-                    const pl = [...prev];
-                    pl.splice(editItemIndex, 1);
-                    return pl;
-                  });
-                  setEditItemIndex(null);
-                }}
-                className="px-4 py-2 rounded-xl text-red-600 font-bold hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2 transition"
-              >
-                <Trash2 size={16} /> Hapus Item
-              </button>
-              <button onClick={() => setEditItemIndex(null)} className="px-6 py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition">
-                Selesai
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <EditItemModal
+        isOpen={editItemIndex !== null && editItemIndex >= 0 && editItemIndex < playlist.length}
+        item={editItemIndex !== null ? playlist[editItemIndex] : null}
+        itemIndex={editItemIndex}
+        editSegmentIndex={editSegmentIndex}
+        setEditSegmentIndex={setEditSegmentIndex}
+        onUpdateItem={(idx, updatedItem) => {
+          setPlaylist(prev => {
+            const pl = [...prev];
+            pl[idx] = updatedItem;
+            return pl;
+          });
+          if (activeItem === idx) {
+            pushStateToLive(idx, activeSegment, mode);
+          }
+        }}
+        onDeleteItem={(idx) => {
+          setPlaylist(prev => {
+            const pl = [...prev];
+            pl.splice(idx, 1);
+            return pl;
+          });
+          setEditItemIndex(null);
+        }}
+        onClose={() => setEditItemIndex(null)}
+      />
 
       {/* Modal Pilih Background Per Slide */}
       <BackgroundPickerModal
