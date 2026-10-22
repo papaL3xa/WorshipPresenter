@@ -1,59 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Lock, Loader2, CheckCircle, ShieldAlert, Download, Upload, Database, Monitor } from 'lucide-react';
-import { callApi } from '../api';
+import { ArrowLeft, Loader2, CheckCircle, ShieldAlert, Download, Upload, Database } from 'lucide-react';
 import { exportCustomSongsJson, exportPlaylistsJson, exportAllJson, importBackupTsv } from '../utils/backupRestore';
 import { FooterClock } from '../components/FooterClock';
 import { ThemeToggle } from '../components/ThemeToggle';
 
 export default function Settings() {
   const navigate = useNavigate();
-  const [currentAdminPin, setCurrentAdminPin] = useState('');
-  const [newOperatorPin, setNewOperatorPin] = useState('');
-  const [newAdminPin, setNewAdminPin] = useState('');
-  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('worship_dark_mode') !== 'false');
-  const isDesktop = typeof window !== 'undefined' && (window as any).electronAPI;
-  const [activeTab, setActiveTab] = useState<'security' | 'backup'>('backup');
-  
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
-
-  const handleSave = async () => {
-    if (!currentAdminPin) {
-      setIsError(true);
-      setMessage('PIN Admin saat ini harus diisi!');
-      return;
-    }
-    
-    setIsLoading(true);
-    setMessage('');
-    try {
-      const res = await callApi('updatePins', {}, {
-        method: 'POST',
-        payload: {
-          adminPin: currentAdminPin,
-          newOperatorPin: newOperatorPin || undefined,
-          newAdminPin: newAdminPin || undefined
-        }
-      });
-      
-      if (res && res.success) {
-        setIsError(false);
-        setMessage('PIN berhasil diperbarui!');
-        setCurrentAdminPin('');
-        setNewOperatorPin('');
-        setNewAdminPin('');
-      } else {
-        throw new Error(res.error?.message || 'Gagal mengubah PIN.');
-      }
-    } catch (err: any) {
-      setIsError(true);
-      setMessage(err.message || 'Terjadi kesalahan jaringan.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-full flex flex-col p-4 md:p-8 gap-4 overflow-hidden relative">
@@ -62,22 +18,12 @@ export default function Settings() {
         <div className="flex items-center gap-4">
           <button onClick={() => navigate(-1)} className="glass-button text-indigo-900 dark:text-[#C5A059] p-2.5 rounded-full hover:bg-white/70 dark:hover:bg-white/10 shadow-sm"><ArrowLeft size={20}/></button>
           <h1 className="text-3xl font-heading font-extrabold text-indigo-950 dark:text-[#D4B872] drop-shadow-sm tracking-tight flex items-center gap-4">
-            Pengaturan
+            Pengaturan & Cadangan Data
             <FooterClock />
           </h1>
         </div>
         <div className="flex gap-4">
           <ThemeToggle />
-          {activeTab === 'security' && !isDesktop && (
-            <button 
-              onClick={handleSave} 
-              disabled={isLoading || !currentAdminPin}
-              className="glass-button bg-gradient-to-r from-indigo-500 to-indigo-600 text-white border-transparent hover:from-indigo-600 hover:to-indigo-700 hover:shadow-lg hover:shadow-indigo-600/30 flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed hover:-translate-y-0.5"
-            >
-              {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} 
-              Simpan Perubahan
-            </button>
-          )}
         </div>
       </header>
 
@@ -89,7 +35,7 @@ export default function Settings() {
             <span className="font-semibold">{message}</span>
           </div>
         )}
-        {activeTab === 'backup' && (
+
         <div className="space-y-8">
           <div className="bg-white/40 dark:bg-black/20 p-8 rounded-2xl border border-white/60 dark:border-white/10 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:bg-white/50 dark:hover:bg-black/30 transition-colors">
             <h2 className="text-xl font-heading font-bold text-indigo-950 dark:text-[#D4B872] mb-6 flex items-center gap-3 drop-shadow-sm">
@@ -166,7 +112,6 @@ export default function Settings() {
             </div>
           </div>
         </div>
-        )}
       </main>
     </div>
   );

@@ -6,15 +6,6 @@ import StageDisplay from './pages/StageDisplay';
 import LowerThird from './pages/LowerThird';
 import Library from './pages/Library';
 import Settings from './pages/Settings';
-
-const RequireAuth = ({ children }: { children: JSX.Element }) => {
-  return children;
-};
-
-const RequireAdmin = ({ children }: { children: JSX.Element }) => {
-  return children;
-};
-
 import { useEffect } from 'react';
 
 function App() {
@@ -59,17 +50,15 @@ function App() {
   return (
     <HashRouter>
       <Routes>
-        {/* Rute Terbuka (Public) */}
+        {/* Rute Navigasi Aplikasi */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/display" element={<DisplayWindow />} />
         <Route path="/stage" element={<StageDisplay />} />
         <Route path="/lower-third" element={<LowerThird />} />
-
-        {/* Rute Terlindungi (Protected) */}
-        <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
-        <Route path="/control" element={<RequireAuth><ControlPanel /></RequireAuth>} />
-        <Route path="/library" element={<RequireAuth><Library /></RequireAuth>} />
-        <Route path="/settings" element={<RequireAuth><RequireAdmin><Settings /></RequireAdmin></RequireAuth>} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/control" element={<ControlPanel />} />
+        <Route path="/library" element={<Library />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </HashRouter>
   );

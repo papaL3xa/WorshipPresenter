@@ -166,56 +166,7 @@ function handleBrowserOfflineApi(action: string, params: Record<string, any> = {
     }
   }
 
-  // 4. Authentication & PINs
-  if (action === 'verifyLogin') {
-    let pin = '';
-    if (params && params.payload) {
-      try {
-        const parsed = JSON.parse(params.payload);
-        pin = parsed.pin;
-      } catch (_) { }
-    } else if (payload && payload.pin) {
-      pin = payload.pin;
-    }
-
-    try {
-      const rawPins = localStorage.getItem('worship_offline_pins');
-      const pins = rawPins ? JSON.parse(rawPins) : { adminPin: '1234', operatorPin: '0000' };
-      const adminPin = pins.adminPin || '1234';
-      const operatorPin = pins.operatorPin || '0000';
-
-      if (!pin || pin === adminPin || pin === 'admin' || pin === '1234') {
-        return { success: true, data: { role: 'admin' } };
-      }
-      if (pin === operatorPin || pin === '0000') {
-        return { success: true, data: { role: 'operator' } };
-      }
-      return { success: false, error: { message: 'PIN yang dimasukkan salah.' } };
-    } catch (_) {
-      return { success: true, data: { role: 'admin' } };
-    }
-  }
-
-  if (action === 'updatePins') {
-    try {
-      const rawPins = localStorage.getItem('worship_offline_pins');
-      const pins = rawPins ? JSON.parse(rawPins) : { adminPin: '1234', operatorPin: '0000' };
-      const currentAdmin = pins.adminPin || '1234';
-
-      if (payload && payload.adminPin && payload.adminPin !== currentAdmin && currentAdmin !== '1234') {
-        return { success: false, error: { message: 'PIN Admin saat ini salah!' } };
-      }
-
-      if (payload?.newOperatorPin) pins.operatorPin = payload.newOperatorPin;
-      if (payload?.newAdminPin) pins.adminPin = payload.newAdminPin;
-      localStorage.setItem('worship_offline_pins', JSON.stringify(pins));
-      return { success: true };
-    } catch (e: any) {
-      return { success: false, error: { message: e.message } };
-    }
-  }
-
-  // 5. Global Settings & Backup
+  // 4. Global Settings & Backup
   if (action === 'getGlobalSettings') {
     try {
       const raw = localStorage.getItem('worship_offline_settings');

@@ -27,3 +27,4 @@ frontend/scripts/*.sqlite
 *.log
 khotbah*.json
 sabat*.json
+.wine/

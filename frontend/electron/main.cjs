@@ -278,41 +278,6 @@ ipcMain.handle('api-call', async (event, args) => {
     }
   }
 
-  if (action === 'verifyLogin') {
-    let pin = '';
-    if (params && params.payload) {
-      try {
-        const parsed = JSON.parse(params.payload);
-        pin = parsed.pin;
-      } catch (_) { }
-    } else if (payload && payload.pin) {
-      pin = payload.pin;
-    }
-    const adminPin = (db.pins && db.pins.adminPin) || '1234';
-    const operatorPin = (db.pins && db.pins.operatorPin) || '0000';
-    if (!pin || pin === adminPin || pin === 'admin' || pin === '1234') {
-      return { success: true, data: { role: 'admin' } };
-    }
-    if (pin === operatorPin || pin === '0000') {
-      return { success: true, data: { role: 'operator' } };
-    }
-    return { success: false, error: { message: 'PIN yang dimasukkan salah.' } };
-  }
-
-  if (action === 'updatePins') {
-    if (!db.pins) {
-      db.pins = { adminPin: '1234', operatorPin: '0000' };
-    }
-    const currentAdmin = db.pins.adminPin || '1234';
-    if (payload && payload.adminPin && payload.adminPin !== currentAdmin && currentAdmin !== '1234') {
-      return { success: false, error: { message: 'PIN Admin saat ini salah!' } };
-    }
-    if (payload && payload.newOperatorPin) db.pins.operatorPin = payload.newOperatorPin;
-    if (payload && payload.newAdminPin) db.pins.adminPin = payload.newAdminPin;
-    saveDb(db);
-    return { success: true };
-  }
-
   if (action === 'setLiveState') {
     inMemoryLiveState = { ...inMemoryLiveState, ...payload, updatedAt: Date.now() };
     return { success: true };
